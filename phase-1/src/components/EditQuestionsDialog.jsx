@@ -1,21 +1,36 @@
 // EditQuestionsDialog.jsx — Add questions (library-order default + Theme view) — Engage DS
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Icon } from "./Icon.jsx";
 import { themeStatus, groupQuestions, rowSubtext, QTypeIcon, Tag, Checkbox, SortBy, Tooltip } from "./shared.jsx";
 import { CustomQuestionDialog } from "./CustomQuestionDialog.jsx";
 import { THEMES } from "../data/data.js";
 
-function QRow({ q, sub, on, onToggle }) {
+function QRow({ q, sub, on, onToggle, flash, added, rowRef }) {
   return (
-    <div className={"qrow qrow-pick" + (on ? " is-picked" : "")} onClick={onToggle} style={{ cursor: "pointer" }}>
+    <div ref={rowRef} className={"qrow qrow-pick" + (on ? " is-picked" : "") + (added ? " is-added" : "") + (flash ? " is-just-added" : "")} onClick={onToggle} style={{ cursor: "pointer" }}>
       <Checkbox on={on} onClick={(e) => { e.stopPropagation(); onToggle(); }} />
       <div className="qrow-main">
         <div style={{ fontSize: 14, fontWeight: 500, color: "var(--content-base)", lineHeight: 1.5 }}>{q.text}</div>
         {sub && <div className="text-small" style={{ color: "var(--content-secondary)", marginTop: 2 }}>{sub}</div>}
       </div>
       <div className="qrow-meta">
+        {added && <Tag kind="theme" icon="check">Just added</Tag>}
         <QTypeIcon type={q.type} size={24} tip />
         {q.custom ? <Tag kind="custom">Custom</Tag> : (q.bench && <Tag kind="benchmark">Benchmark</Tag>)}
+      </div>
+    </div>
+  );
+}
+
+// DS system notification, top-right, auto-dismissing — confirms a custom
+// question was added and names the topic it landed in.
+function AddedToast({ topic, onClose }) {
+  return (
+    <div className="sysnotif-stack">
+      <div className="sysnotif" role="status">
+        <div className="sysnotif-title">Custom question added</div>
+        <div className="sysnotif-desc">Added to “{topic}” — selected and ready in your questionnaire.</div>
+        <button className="sysnotif-close" aria-label="Dismiss" onClick={onClose}><Icon name="cross" size={16} /></button>
       </div>
     </div>
   );
@@ -70,9 +85,20 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
   const [sort, setSort] = useState("library");
   const [customOpen, setCustomOpen] = useState(false);
   const [confirm, setConfirm] = useState(null);
+  const [justAdded, setJustAdded] = useState(null); // id flashed/scrolled-to right after adding (transient)
+  const [addedIds, setAddedIds] = useState(() => new Set()); // all questions added this session — keep "Just added" until applied
+  const [toast, setToast] = useState(null);         // { topic }
+  const addedRef = useRef(null);
+  const timers = useRef([]);
 
   const status = useMemo(() => themeStatus([...sel]), [sel]);
   const statusFor = (name) => status.find(t => t.name === name);
+
+  // Scroll the just-added question into view inside the dialog body.
+  useEffect(() => {
+    if (justAdded && addedRef.current) addedRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [justAdded]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   const toggle = (qq) => {
     const isOn = sel.has(qq.id);
@@ -81,7 +107,19 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
   };
   const doRemove = (qq) => { setSel(s => { const n = new Set(s); n.delete(qq.id); return n; }); setConfirm(null); };
   const setMany = (ids, on) => setSel(s => { const n = new Set(s); ids.forEach(id => on ? n.add(id) : n.delete(id)); return n; });
-  const addCustom = (nq) => { setPool(p => [...p, nq]); setSel(s => new Set([...s, nq.id])); setCustomOpen(false); };
+  const addCustom = (nq) => {
+    setPool(p => [...p, nq]); setSel(s => new Set([...s, nq.id])); setCustomOpen(false);
+    setAddedIds(s => new Set([...s, nq.id])); // keep the "Just added" label until Apply
+    // Make sure the new question is visible where it landed: clear any search,
+    // switch to the library (topic) view, flash + scroll to the row, and toast.
+    setQ(""); setSort("library");
+    setJustAdded(nq.id); setToast({ topic: nq.topic });
+    timers.current.forEach(clearTimeout);
+    timers.current = [
+      setTimeout(() => setJustAdded(null), 2600),
+      setTimeout(() => setToast(null), 5000),
+    ];
+  };
 
   const visible = pool.filter(x => [x.text, x.theme, x.topic].some(v => (v || "").toLowerCase().includes(q.toLowerCase())));
   const groups = groupQuestions(visible, sort);
@@ -143,7 +181,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
                     </div>
                     <p className="text-medium" style={{ margin: "var(--spacing-tight) 0 0 32px", color: "var(--content-secondary)" }}>{g.desc}</p>
                   </div>
-                  <div>{g.items.map(qq => <QRow key={qq.id} q={qq} sub={rowSubtext(qq, sort)} on={sel.has(qq.id)} onToggle={() => toggle(qq)} />)}</div>
+                  <div>{g.items.map(qq => <QRow key={qq.id} q={qq} sub={rowSubtext(qq, sort)} on={sel.has(qq.id)} onToggle={() => toggle(qq)}
+                    flash={qq.id === justAdded} added={addedIds.has(qq.id)} rowRef={qq.id === justAdded ? addedRef : null} />)}</div>
                 </section>
               );
             }
@@ -156,7 +195,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
                   <button className="btn btn-link" style={{ padding: "4px 6px" }} onClick={() => setMany(ids, !allOn)}>{allOn ? "Deselect all" : "Select all"}</button>
                 </div>
                 <div className="card" style={{ overflow: "hidden", boxShadow: "none" }}>
-                  {g.items.map(qq => <QRow key={qq.id} q={qq} sub={rowSubtext(qq, sort)} on={sel.has(qq.id)} onToggle={() => toggle(qq)} />)}
+                  {g.items.map(qq => <QRow key={qq.id} q={qq} sub={rowSubtext(qq, sort)} on={sel.has(qq.id)} onToggle={() => toggle(qq)}
+                    flash={qq.id === justAdded} added={addedIds.has(qq.id)} rowRef={qq.id === justAdded ? addedRef : null} />)}
                 </div>
               </section>
             );
@@ -177,8 +217,10 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
         </div>
       </div>
 
-      {customOpen && <CustomQuestionDialog onCancel={() => setCustomOpen(false)} onAdd={addCustom} />}
+      {customOpen && <CustomQuestionDialog topics={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))]}
+        onCancel={() => setCustomOpen(false)} onAdd={addCustom} />}
       {confirm && <ThemeConfirm q={confirm} onKeep={() => setConfirm(null)} onRemove={() => doRemove(confirm)} />}
+      {toast && <AddedToast topic={toast.topic} onClose={() => setToast(null)} />}
     </div>
   );
 }

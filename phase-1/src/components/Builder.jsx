@@ -67,31 +67,6 @@ function TopNav({ name, onRename }) {
   );
 }
 
-// Small info dialog explaining where template-level edits really happen.
-function EditTemplateInfo({ templateName, onClose }) {
-  return (
-    <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 70 }}
-      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="dialog dialog-s" role="dialog" aria-modal="true" aria-labelledby="eti-title">
-        <div className="dialog-header is-sm">
-          <div className="dialog-header-top">
-            <Icon name="info" size={20} className="dialog-header-icon" />
-            <h3 className="dialog-title" id="eti-title">Editing the template itself</h3>
-          </div>
-          <p className="dialog-subtitle">
-            The changes you make here apply to <b>this survey only</b>. To change the {templateName ? <b>{templateName}</b> : "template"} template
-            for everyone — its default questions, topics and themes — you’d head to the <b>question library</b>, where templates are managed
-            organisation-wide. The library isn’t touched by anything you do in this questionnaire.</p>
-        </div>
-        <div className="dialog-footer">
-          <button className="btn btn-tertiary" onClick={onClose}>Close</button>
-          <button className="btn btn-secondary" onClick={onClose}><Icon name="external-link" size={16} />Go to question library</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function BuilderRow({ q, sub, onRemove, onEdit, hintClass, dragging, onDragStart, onDragEnd }) {
   const m = QTYPES[q.type];
   const [menu, setMenu] = useState(false);
@@ -159,7 +134,6 @@ function reconcileLayout(prev, groups) {
 
 export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic }) {
   const { name, templateName, isTemplate, selectedIds, pool } = survey;
-  const [tmplInfo, setTmplInfo] = useState(false);
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
   const sel = new Set(selectedIds);
@@ -190,14 +164,22 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   useLayoutEffect(() => {
     const root = rootRef.current; if (!root) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Measure in the scroll container's CONTENT coordinates (add scroll offset),
+    // not viewport coordinates — otherwise scrolling between two reorders makes
+    // every element look like it moved by the scroll delta, and the whole list
+    // animates spuriously.
+    const scroller = root.querySelector(".scroll-y") || root;
+    const base = scroller.getBoundingClientRect();
+    const sx = scroller.scrollLeft, sy = scroller.scrollTop;
     const next = new Map();
     root.querySelectorAll("[data-flip-id]").forEach(node => {
       const id = node.dataset.flipId;
-      const rect = node.getBoundingClientRect();
-      next.set(id, rect);
+      const r = node.getBoundingClientRect();
+      const pos = { left: r.left - base.left + sx, top: r.top - base.top + sy };
+      next.set(id, pos);
       const old = flipPrev.current.get(id);
       if (!old || reduce) return;
-      const dx = old.left - rect.left, dy = old.top - rect.top;
+      const dx = old.left - pos.left, dy = old.top - pos.top;
       if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
       // Invert to the old position, force a synchronous reflow so the browser
       // registers it as the start frame, then play back to the new position.
@@ -339,7 +321,6 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
                 {isTemplate ? (customized ? `Based on the ${templateName} template` : "Effectory template") : "Custom survey · built from scratch"} · {chosen.length} questions
               </div>
             </div>
-            {isTemplate && <button className="btn btn-tertiary" onClick={() => setTmplInfo(true)}><Icon name="external-link" size={16} />Edit template</button>}
             <button className="btn btn-secondary" onClick={onEditQuestions}><Icon name="edit" size={16} />Add questions</button>
           </div>
 
@@ -415,7 +396,6 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
         <button className="btn btn-secondary is-disabled" disabled><Icon name="send" size={16} />Plan survey</button>
       </div>
 
-      {tmplInfo && <EditTemplateInfo templateName={templateName} onClose={() => setTmplInfo(false)} />}
       {rename && <RenameDialog
         title={rename.kind === "survey" ? "Rename survey" : "Rename topic"}
         label={rename.kind === "survey" ? "Survey name" : "Topic name"}

@@ -3,7 +3,7 @@
 // THEME = research-based construct with a COMPOSITE SCORE. Only ~30–50% of
 //         questions belong to a theme. A theme's score appears in results only
 //         if ALL of its questions are kept — breaking it is a deliberate problem.
-import { TEMPLATE_PREVIEWS } from "./qlib.js";
+import { TEMPLATE_PREVIEWS, libraryPool } from "./qlib.js";
 
 export const QTYPES = {
   scale5:   { label: "5-point scale",   icon: "point-scale",  bg: "var(--bg-accent-turquoise-subtle)", fg: "var(--content-accent-turquoise-base)", creatable: true },
@@ -31,38 +31,40 @@ export const CUSTOM_GROUP = "Your custom questions";
 // Every library question has an industry benchmark (bench:true). Only custom
 // questions, added by the user, have no benchmark.
 // `tmpl` = part of the Smart Organization Scan template (pre-selected = 12).
+// NOTE: original, illustrative wording — generic engagement items written for
+// this prototype, not Effectory's proprietary validated questions.
 export const POOL = [
   // Welcome & Integration
-  { id: "q1",  topic: "Welcome & Integration", theme: "Onboarding experience", type: "scale5",   bench: true, tmpl: true,  text: "I received a warm welcome when I started at the organisation." },
-  { id: "q2",  topic: "Welcome & Integration", theme: "Onboarding experience", type: "scale5",   bench: true, tmpl: true,  text: "I quickly felt part of the team." },
-  { id: "q3",  topic: "Welcome & Integration", theme: "Onboarding experience", type: "scale5",   bench: true, tmpl: true,  text: "I had the tools and information I needed to do my job from day one." },
-  { id: "q4",  topic: "Welcome & Integration", theme: null,                    type: "multiple", bench: true, tmpl: false, text: "How did you first hear about working here?",
+  { id: "q1",  topic: "Welcome & Integration", theme: "Onboarding experience", type: "scale5",   bench: true, tmpl: true,  text: "I felt genuinely welcomed during my first days here." },
+  { id: "q2",  topic: "Welcome & Integration", theme: "Onboarding experience", type: "scale5",   bench: true, tmpl: true,  text: "It didn't take long to feel part of the team." },
+  { id: "q3",  topic: "Welcome & Integration", theme: "Onboarding experience", type: "scale5",   bench: true, tmpl: true,  text: "From the start I had what I needed to do my job." },
+  { id: "q4",  topic: "Welcome & Integration", theme: null,                    type: "multiple", bench: true, tmpl: false, text: "How did you first come across this employer?",
     options: ["Referral from an employee", "Job board or website", "Social media", "Recruitment agency", "Other"] },
 
   // Clarity & Enablement
-  { id: "q5",  topic: "Clarity & Enablement", theme: null, type: "scale5", bench: true, tmpl: true,  text: "I know what is expected of me in my role." },
-  { id: "q6",  topic: "Clarity & Enablement", theme: null, type: "scale5", bench: true, tmpl: true,  text: "I understand how my work contributes to our goals." },
-  { id: "q7",  topic: "Clarity & Enablement", theme: null, type: "scale5", bench: true, tmpl: false, text: "I have access to the resources I need to do my work well." },
-  { id: "q8",  topic: "Clarity & Enablement", theme: null, type: "scale5", bench: true, tmpl: false, text: "Decisions are made at the right level in the organisation." },
+  { id: "q5",  topic: "Clarity & Enablement", theme: null, type: "scale5", bench: true, tmpl: true,  text: "It's clear to me what's expected in my role." },
+  { id: "q6",  topic: "Clarity & Enablement", theme: null, type: "scale5", bench: true, tmpl: true,  text: "I can see how my work contributes to our goals." },
+  { id: "q7",  topic: "Clarity & Enablement", theme: null, type: "scale5", bench: true, tmpl: false, text: "I can get hold of the resources I need to do good work." },
+  { id: "q8",  topic: "Clarity & Enablement", theme: null, type: "scale5", bench: true, tmpl: false, text: "Decisions are made at the right level here." },
 
   // Leadership & Trust
-  { id: "q9",  topic: "Leadership & Trust", theme: "Leadership", type: "scale5", bench: true, tmpl: true,  text: "My manager supports me in my development." },
-  { id: "q10", topic: "Leadership & Trust", theme: "Leadership", type: "scale5", bench: true, tmpl: true,  text: "My manager gives me useful feedback." },
-  { id: "q11", topic: "Leadership & Trust", theme: "Leadership", type: "scale5", bench: true, tmpl: true,  text: "I trust the decisions made by senior leadership." },
-  { id: "q12", topic: "Leadership & Trust", theme: null,         type: "scale5", bench: true, tmpl: false, text: "Leadership communicates openly about the direction of the organisation." },
+  { id: "q9",  topic: "Leadership & Trust", theme: "Leadership", type: "scale5", bench: true, tmpl: true,  text: "My manager actively supports my development." },
+  { id: "q10", topic: "Leadership & Trust", theme: "Leadership", type: "scale5", bench: true, tmpl: true,  text: "The feedback I get from my manager is useful." },
+  { id: "q11", topic: "Leadership & Trust", theme: "Leadership", type: "scale5", bench: true, tmpl: true,  text: "I have confidence in senior leadership's decisions." },
+  { id: "q12", topic: "Leadership & Trust", theme: null,         type: "scale5", bench: true, tmpl: false, text: "Leadership is open about where the organisation is heading." },
 
   // Wellbeing & Workload
-  { id: "q13", topic: "Wellbeing & Workload", theme: null, type: "scale5",   bench: true, tmpl: true,  text: "I can maintain a healthy balance between work and my private life." },
-  { id: "q14", topic: "Wellbeing & Workload", theme: null, type: "scale5",   bench: true, tmpl: true,  text: "My workload is manageable." },
-  { id: "q15", topic: "Wellbeing & Workload", theme: null, type: "scale5",   bench: true, tmpl: false, text: "I feel energised at the end of most workdays." },
-  { id: "q16", topic: "Wellbeing & Workload", theme: null, type: "multiple", bench: true, tmpl: false, text: "Which best describes your current workload?",
+  { id: "q13", topic: "Wellbeing & Workload", theme: null, type: "scale5",   bench: true, tmpl: true,  text: "I'm able to balance work with my personal life." },
+  { id: "q14", topic: "Wellbeing & Workload", theme: null, type: "scale5",   bench: true, tmpl: true,  text: "My workload feels manageable." },
+  { id: "q15", topic: "Wellbeing & Workload", theme: null, type: "scale5",   bench: true, tmpl: false, text: "Most workdays leave me with energy rather than drained." },
+  { id: "q16", topic: "Wellbeing & Workload", theme: null, type: "multiple", bench: true, tmpl: false, text: "How does your current workload feel?",
     options: ["Far too little", "A little too little", "About right", "A little too much", "Far too much"] },
 
   // Engagement & Commitment
-  { id: "q17", topic: "Engagement & Commitment", theme: null, type: "scale5", bench: true, tmpl: true,  text: "I would recommend us as a place to work." },
-  { id: "q18", topic: "Engagement & Commitment", theme: null, type: "scale5", bench: true, tmpl: true,  text: "I am proud to work here." },
-  { id: "q19", topic: "Engagement & Commitment", theme: null, type: "scale5", bench: true, tmpl: false, text: "I see myself working here two years from now." },
-  { id: "q20", topic: "Engagement & Commitment", theme: null, type: "scale5", bench: true, tmpl: false, text: "I feel motivated to go the extra mile for the organisation." },
+  { id: "q17", topic: "Engagement & Commitment", theme: null, type: "scale5", bench: true, tmpl: true,  text: "I'd recommend this organisation to others as a place to work." },
+  { id: "q18", topic: "Engagement & Commitment", theme: null, type: "scale5", bench: true, tmpl: true,  text: "I feel proud to work here." },
+  { id: "q19", topic: "Engagement & Commitment", theme: null, type: "scale5", bench: true, tmpl: false, text: "I expect to still be working here in two years." },
+  { id: "q20", topic: "Engagement & Commitment", theme: null, type: "scale5", bench: true, tmpl: false, text: "I'm happy to go the extra mile when it counts." },
 ];
 
 // templates for the modal
@@ -107,16 +109,22 @@ export const SCALE_LABELS = ["Strongly disagree", "Disagree", "Neutral", "Agree"
 
 // Build a real questionnaire (pool + all-selected) from a template's own
 // question set in the library export — so each template loads its own questions.
-export function surveyFromTemplate(templateId, id, name) {
+// `preselectPerTopic` controls how many questions per topic start selected — the
+// rest stay in the library, unselected, so there are plenty more to add.
+export function surveyFromTemplate(templateId, id, name, preselectPerTopic = 3) {
   const groups = TEMPLATE_PREVIEWS[templateId] || [];
-  const pool = [];
+  const pool = [], selectedIds = [];
   groups.forEach((g, gi) => g.questions.forEach((q, qi) => {
-    pool.push({ id: `${templateId}-${gi}-${qi}`, topic: g.topic, theme: q.theme || null,
+    const qid = `${templateId}-${gi}-${qi}`;
+    pool.push({ id: qid, topic: g.topic, theme: q.theme || null,
       type: q.type, bench: true, custom: false, text: q.text, options: q.options });
+    if (qi < preselectPerTopic) selectedIds.push(qid);
   }));
+  // Add the rest of the shared library (unselected) so there's plenty more to
+  // choose from in "Add questions" beyond the template's own picks.
+  libraryPool().forEach(q => pool.push(q));
   const t = TEMPLATES.find(x => x.id === templateId);
-  return { id, name, templateName: t ? t.name : templateId, isTemplate: true,
-    selectedIds: pool.map(p => p.id), pool };
+  return { id, name, templateName: t ? t.name : templateId, isTemplate: true, selectedIds, pool };
 }
 
 // Seed rows for the Surveys landing page. Drafts created in the flow are

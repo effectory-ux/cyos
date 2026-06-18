@@ -26,10 +26,10 @@ from a separate public repo; redeploy with `./deploy-demo.sh`).
   scratch), *Back* returns to template selection, and an empty name surfaces a DS
   error state (no disabled button).
 - **Questionnaire builder** — full-width (no sidebar), wizard stepper, template
-  card with *Edit template* info dialog, draggable topic sections (grip-aligned,
-  border-top rows), drag-and-drop for questions (within/across sections) and
-  whole sections (including gaps between cards), topic kebab menu (*Rename topic*,
-  *Remove topic from questionnaire*), survey rename, footer bar.
+  card, draggable topic sections (grip-aligned, border-top rows), drag-and-drop
+  for questions (within/across sections) and whole sections (including gaps
+  between cards), topic kebab menu (*Rename topic*, *Remove topic from
+  questionnaire*), survey rename, footer bar.
 - **Drag-and-drop polish** — the lifted item dims + its grip lights up on hover; a
   clear brand insertion line (with a leading dot) marks the drop point between
   rows or in the gap between section cards; on drop, every affected row/section
@@ -42,7 +42,9 @@ from a separate public repo; redeploy with `./deploy-demo.sh`).
   respondent-style preview (5-point scale with distribution-colour dots,
   multiple-choice option editor, text answer), DS error states (never a disabled
   button), and the same dialog prefilled for **editing** a custom question
-  (kebab menu on custom rows) with delete.
+  (kebab menu on custom rows) with delete. On add, a DS system notification
+  (top-right) confirms the question and names the topic it landed in, and the new
+  row flashes + scrolls into view with a "Just added" tag so the location is clear.
 - **Theme soft-lock** — removing the last question of a complete theme shows the
   positive "Keep the theme complete" dialog with a results preview.
 - **Icon-button tooltips** — every icon-only button (kebabs, close, remove, etc.)

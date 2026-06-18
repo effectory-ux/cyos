@@ -8,6 +8,7 @@ import { CustomQuestionDialog } from "./components/CustomQuestionDialog.jsx";
 import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus } from "./components/shared.jsx";
 import { POOL, SEED_SURVEYS } from "./data/data.js";
+import { libraryPool } from "./data/qlib.js";
 
 // Behaviour the design iterations landed on: removing the last question of a
 // complete theme soft-locks (asks first), and "Add custom question" lives in
@@ -33,13 +34,15 @@ export function App() {
   const [outOfScope, setOutOfScope] = useState(null);
 
   const useTemplate = (tmpl) => {
-    const pool = POOL.map(q => ({ ...q }));
+    // Template's curated questions are pre-selected; the rest of the shared
+    // library comes along (unselected) so there's plenty more to add.
+    const pool = [...POOL.map(q => ({ ...q })), ...libraryPool()];
     const selectedIds = pool.filter(q => q.tmpl).map(q => q.id);
     setPending({ suggested: tmpl.name, survey: { templateName: tmpl.name, isTemplate: true, selectedIds, pool } });
     setModal(false);
   };
   const startScratch = () => {
-    setPending({ suggested: "", survey: { templateName: null, isTemplate: false, selectedIds: [], pool: POOL.map(q => ({ ...q })) } });
+    setPending({ suggested: "", survey: { templateName: null, isTemplate: false, selectedIds: [], pool: [...POOL.map(q => ({ ...q })), ...libraryPool()] } });
     setModal(false);
   };
   // Commit the named survey (with a stable id) and open the builder.
@@ -121,6 +124,7 @@ export function App() {
         onKeep={() => setRemoveConfirm(null)}
         onRemove={() => { removeFromSurvey(removeConfirm); setRemoveConfirm(null); }} />}
       {editCustom && <CustomQuestionDialog question={editCustom}
+        topics={survey ? [...new Set(survey.pool.filter(x => survey.selectedIds.includes(x.id) && x.topic).map(x => x.topic))] : undefined}
         onCancel={() => setEditCustom(null)} onSubmit={saveCustomEdit}
         onDelete={(q) => { removeFromSurvey(q); setEditCustom(null); }} />}
       {outOfScope && <OutOfScopeDialog row={outOfScope} onClose={() => setOutOfScope(null)} />}

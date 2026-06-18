@@ -222,6 +222,17 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .qrow-pick:hover { background: var(--bg-base-hover); }
 .qrow-pick.is-picked { background: var(--bg-brand-subtle-selected); }
 .qrow-pick.is-picked:hover { background: var(--bg-brand-subtle-selected); }
+/* A just-added custom question keeps a brand left-accent (until the selection is
+   applied), with a one-time flash that settles into the selected state so it's
+   obvious where the question landed. */
+.qrow-pick.is-added { box-shadow: inset 4px 0 0 0 var(--border-brand-base); }
+.qrow-pick.is-just-added { animation: qrow-added 2.4s var(--ease-out); }
+@keyframes qrow-added {
+  0%   { background: var(--bg-brand-base); }
+  10%  { background: var(--bg-brand-subtle); }
+  100% { background: var(--bg-brand-subtle-selected); }
+}
+@media (prefers-reduced-motion: reduce) { .qrow-pick.is-just-added { animation: none; } }
 
 /* ---- surveys list: clickable rows ---- */
 .survey-row { cursor: pointer; transition: background var(--motion-fast) var(--ease-standard); }

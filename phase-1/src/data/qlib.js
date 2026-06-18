@@ -1,918 +1,345 @@
-// qlib.jsx — real per-template preview content, extracted from the
-// Effectory question-library export (Solution=template · Topic · Theme · Question).
-// Each entry: [{ topic, questions:[{text,type,theme}] }]. Generated, do not hand-edit.
+// qlib.js — per-template preview content.
+// IMPORTANT: these are ORIGINAL, illustrative sample questions written for this
+// prototype. They are intentionally generic and are NOT Effectory's proprietary
+// validated question wording — do not paste real library items in here.
+// Shape: { [templateId]: [{ topic, questions: [{ text, type, theme }] }] }
+
+const Q = (text, type = "scale5", theme = null, options) => ({ text, type, theme, ...(options ? { options } : {}) });
+
 export const TEMPLATE_PREVIEWS = {
- "sos": [
-  {
-   "topic": "Job satisfaction",
-   "questions": [
-    {
-     "text": "I enjoy the work I do",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I'm satisfied with my job",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I feel enthusiastic about my job",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My work is meaningful",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I'm proud of the work I do",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I enjoy taking on new or different tasks",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  },
-  {
-   "topic": "Role & contribution",
-   "questions": [
-    {
-     "text": "I get the chance to do what I'm good at",
-     "type": "scale5",
-     "theme": "Future fit"
-    },
-    {
-     "text": "I understand how my work contributes to the organisation's strategy",
-     "type": "scale5",
-     "theme": "Strategic alignment"
-    },
-    {
-     "text": "My tasks make good use of my strengths",
-     "type": "scale5",
-     "theme": "Future fit"
-    },
-    {
-     "text": "I have enough freedom to decide how I do my work",
-     "type": "scale5",
-     "theme": "Autonomy"
-    },
-    {
-     "text": "I know which results are expected of me",
-     "type": "scale5",
-     "theme": "Role clarity"
-    },
-    {
-     "text": "It's clear to me which tasks my role involves",
-     "type": "scale5",
-     "theme": "Role clarity"
-    },
-    {
-     "text": "I'm willing to go beyond my role to contribute to the organisation's success",
-     "type": "scale5",
-     "theme": "Ownership"
-    }
-   ]
-  },
-  {
-   "topic": "Manager support",
-   "questions": [
-    {
-     "text": "I have confidence in my manager",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "I regularly receive useful feedback on how I'm doing",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My manager motivates me in my work",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "My manager encourages my development",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "My manager sets a good example within my team",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "My manager guides change well",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My manager supports me in achieving my objectives",
-     "type": "scale5",
-     "theme": "Team leadership"
-    }
-   ]
-  },
-  {
-   "topic": "Company culture",
-   "questions": [
-    {
-     "text": "I'm satisfied with the organisation as a place to work",
-     "type": "scale5",
-     "theme": "Employer quality"
-    },
-    {
-     "text": "I'm proud of the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I feel that I fit in at the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I feel valued by the organisation",
-     "type": "scale5",
-     "theme": "Employer quality"
-    },
-    {
-     "text": "The organisation's culture appeals to me",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "Employees are treated fairly within the organisation",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "Good performance is rewarded within the organisation",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  },
-  {
-   "topic": "Workload & wellbeing",
-   "questions": [
-    {
-     "text": "I have a good balance between work and my private life",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My work gives me energy",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I would describe my workload as",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My workload is at an acceptable level",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I'm able to balance work and rest well",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "In the past year I have experienced unwanted behaviour from colleagues (e.g. verbal abuse, physical aggression, unwanted advances, bullying, discrimination)",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "At work I feel fit and energetic",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  },
-  {
-   "topic": "Engagement",
-   "questions": [
-    {
-     "text": "I'm proud of the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I enjoy the work I do",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I feel that I fit in at the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "My work gives me energy",
-     "type": "scale5",
-     "theme": "Engagement"
-    }
-   ]
-  }
- ],
- "tds": [
-  {
-   "topic": "Team effectiveness",
-   "questions": [
-    {
-     "text": "My team's goals are clear",
-     "type": "scale5",
-     "theme": "Role clarity"
-    },
-    {
-     "text": "Within my team it's clear how we can contribute to the organisation's success",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I experience good collaboration within my team",
-     "type": "scale5",
-     "theme": "Team collaboration"
-    },
-    {
-     "text": "People in my team focus on the right things",
-     "type": "scale5",
-     "theme": "Team productivity"
-    },
-    {
-     "text": "People in my team take responsibility for their tasks and projects",
-     "type": "scale5",
-     "theme": "Ownership"
-    },
-    {
-     "text": "My team regularly comes up with good ideas for improvement",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My team's work contributes to the organisation's success",
-     "type": "scale5",
-     "theme": "Team productivity"
-    }
-   ]
-  },
-  {
-   "topic": "Team relationships",
-   "questions": [
-    {
-     "text": "As a team we hold one another accountable for our behaviour",
-     "type": "scale5",
-     "theme": "Team collaboration"
-    },
-    {
-     "text": "I feel safe addressing my colleagues about their behaviour",
-     "type": "scale5",
-     "theme": "Psychological safety"
-    },
-    {
-     "text": "I feel safe enough to openly discuss a mistake I've made",
-     "type": "scale5",
-     "theme": "Psychological safety"
-    },
-    {
-     "text": "I enjoy working with my colleagues",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I trust my colleagues",
-     "type": "scale5",
-     "theme": "Trust"
-    },
-    {
-     "text": "I feel valued by my colleagues",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My colleagues keep their commitments",
-     "type": "scale5",
-     "theme": "Team collaboration"
-    }
-   ]
-  },
-  {
-   "topic": "Cross-team communication",
-   "questions": [
-    {
-     "text": "Collaboration between my team and other teams runs smoothly",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "Work processes are well organised across the organisation",
-     "type": "scale5",
-     "theme": "Job resources"
-    },
-    {
-     "text": "There's a clear decision-making process within the organisation",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "There's open communication between employees across the organisation",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I experience good communication between the different teams in the organisation",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I feel there are enough opportunities to contribute ideas on organisation-wide topics",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  },
-  {
-   "topic": "Manager support",
-   "questions": [
-    {
-     "text": "I have confidence in my manager",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "I regularly receive useful feedback on how I'm doing",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My manager motivates me in my work",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "My manager encourages my development",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "My manager sets a good example within my team",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "My manager guides change well",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My manager supports me in achieving my objectives",
-     "type": "scale5",
-     "theme": "Team leadership"
-    }
-   ]
-  }
- ],
- "sfm": [
-  {
-   "topic": "Job satisfaction",
-   "questions": [
-    {
-     "text": "I enjoy the work I do",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I'm satisfied with my job",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I feel enthusiastic about my job",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My work is meaningful",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I'm proud of the work I do",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I enjoy taking on new or different tasks",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  },
-  {
-   "topic": "Role & contribution",
-   "questions": [
-    {
-     "text": "I get the chance to do what I'm good at",
-     "type": "scale5",
-     "theme": "Future fit"
-    },
-    {
-     "text": "I understand how my work contributes to the organisation's strategy",
-     "type": "scale5",
-     "theme": "Strategic alignment"
-    },
-    {
-     "text": "My tasks make good use of my strengths",
-     "type": "scale5",
-     "theme": "Future fit"
-    },
-    {
-     "text": "I have enough freedom to decide how I do my work",
-     "type": "scale5",
-     "theme": "Autonomy"
-    },
-    {
-     "text": "I know which results are expected of me",
-     "type": "scale5",
-     "theme": "Role clarity"
-    },
-    {
-     "text": "It's clear to me which tasks my role involves",
-     "type": "scale5",
-     "theme": "Role clarity"
-    },
-    {
-     "text": "I'm willing to go beyond my role to contribute to the organisation's success",
-     "type": "scale5",
-     "theme": "Ownership"
-    }
-   ]
-  },
-  {
-   "topic": "Strategy & goals",
-   "questions": [
-    {
-     "text": "It's clear to me which goals we want to achieve together as an organisation",
-     "type": "scale5",
-     "theme": "Strategic alignment"
-    },
-    {
-     "text": "I support the organisation's goals and strategy",
-     "type": "scale5",
-     "theme": "Strategic alignment"
-    },
-    {
-     "text": "The organisation's vision for the future inspires me",
-     "type": "scale5",
-     "theme": "Employer quality"
-    },
-    {
-     "text": "I care about the organisation's future",
-     "type": "scale5",
-     "theme": "Future fit"
-    }
-   ]
-  },
-  {
-   "topic": "Engagement",
-   "questions": [
-    {
-     "text": "I'm proud of the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I enjoy the work I do",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I feel that I fit in at the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "My work gives me energy",
-     "type": "scale5",
-     "theme": "Engagement"
-    }
-   ]
-  },
-  {
-   "topic": "Company culture",
-   "questions": [
-    {
-     "text": "I'm satisfied with the organisation as a place to work",
-     "type": "scale5",
-     "theme": "Employer quality"
-    },
-    {
-     "text": "I'm proud of the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I feel that I fit in at the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I feel valued by the organisation",
-     "type": "scale5",
-     "theme": "Employer quality"
-    },
-    {
-     "text": "The organisation's culture appeals to me",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "Employees are treated fairly within the organisation",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "Good performance is rewarded within the organisation",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  }
- ],
- "wcwp": [
-  {
-   "topic": "Company culture",
-   "questions": [
-    {
-     "text": "I'm satisfied with the organisation as a place to work",
-     "type": "scale5",
-     "theme": "Employer quality"
-    },
-    {
-     "text": "I'm proud of the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I feel that I fit in at the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I feel valued by the organisation",
-     "type": "scale5",
-     "theme": "Employer quality"
-    },
-    {
-     "text": "The organisation's culture appeals to me",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "Employees are treated fairly within the organisation",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "Good performance is rewarded within the organisation",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  },
-  {
-   "topic": "Pride & highlights",
-   "questions": [
-    {
-     "text": "What are you most proud of within the organisation?",
-     "type": "multiple",
-     "theme": null
-    },
-    {
-     "text": "Why are you proud of this? Please give a short description",
-     "type": "text",
-     "theme": null
-    }
-   ]
-  },
-  {
-   "topic": "Engagement",
-   "questions": [
-    {
-     "text": "I'm proud of the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I enjoy the work I do",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I feel that I fit in at the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "My work gives me energy",
-     "type": "scale5",
-     "theme": "Engagement"
-    }
-   ]
-  },
-  {
-   "topic": "eNPS",
-   "questions": [
-    {
-     "text": "How likely are you to recommend the organisation as an employer to others?",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  }
- ],
- "dei": [
-  {
-   "topic": "Belonging & fairness",
-   "questions": [
-    {
-     "text": "I feel free to be myself at the organisation",
-     "type": "scale5",
-     "theme": "Inclusion"
-    },
-    {
-     "text": "I'm accepted for who I am within the organisation",
-     "type": "scale5",
-     "theme": "Inclusion"
-    },
-    {
-     "text": "In my immediate work environment everyone is treated equally and with respect, regardless of background or personal characteristics",
-     "type": "scale5",
-     "theme": "Inclusion"
-    },
-    {
-     "text": "I can share my opinion freely without fear of the consequences",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "The organisation is free from harassment and intimidation",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "The organisation is committed to a culture of inclusion",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "Everyone, regardless of background, can succeed within the organisation",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  },
-  {
-   "topic": "Company culture",
-   "questions": [
-    {
-     "text": "I'm satisfied with the organisation as a place to work",
-     "type": "scale5",
-     "theme": "Employer quality"
-    },
-    {
-     "text": "I'm proud of the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I feel that I fit in at the organisation",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "I feel valued by the organisation",
-     "type": "scale5",
-     "theme": "Employer quality"
-    },
-    {
-     "text": "The organisation's culture appeals to me",
-     "type": "scale5",
-     "theme": "Engagement"
-    },
-    {
-     "text": "Employees are treated fairly within the organisation",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "Good performance is rewarded within the organisation",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  },
-  {
-   "topic": "Working conditions",
-   "questions": [
-    {
-     "text": "I'm satisfied with my working conditions (physical environment)",
-     "type": "scale5",
-     "theme": "Future fit"
-    },
-    {
-     "text": "I can do my work without being held back by unnecessary rules and procedures",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I feel safe while carrying out my work",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I feel free to act if a situation is unsafe",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "The organisation takes sufficient action on unsafe situations",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My salary is set in a fair way",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "Compared with people outside the organisation, I'm well paid",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  }
- ],
- "onb": [
-  {
-   "topic": "Role & contribution",
-   "questions": [
-    {
-     "text": "I get the chance to do what I'm good at",
-     "type": "scale5",
-     "theme": "Future fit"
-    },
-    {
-     "text": "I understand how my work contributes to the organisation's strategy",
-     "type": "scale5",
-     "theme": "Strategic alignment"
-    },
-    {
-     "text": "My tasks make good use of my strengths",
-     "type": "scale5",
-     "theme": "Future fit"
-    },
-    {
-     "text": "I have enough freedom to decide how I do my work",
-     "type": "scale5",
-     "theme": "Autonomy"
-    },
-    {
-     "text": "I know which results are expected of me",
-     "type": "scale5",
-     "theme": "Role clarity"
-    },
-    {
-     "text": "It's clear to me which tasks my role involves",
-     "type": "scale5",
-     "theme": "Role clarity"
-    },
-    {
-     "text": "I'm willing to go beyond my role to contribute to the organisation's success",
-     "type": "scale5",
-     "theme": "Ownership"
-    }
-   ]
-  },
-  {
-   "topic": "Tools & resources",
-   "questions": [
-    {
-     "text": "I have the equipment, materials and systems I need to do my job well",
-     "type": "scale5",
-     "theme": "Job resources"
-    },
-    {
-     "text": "I can easily find the information I need",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I'm enabled to work efficiently",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I'm enabled to do my work remotely (tools, devices, access)",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "What gets in the way of doing your work remotely?",
-     "type": "multiple",
-     "theme": null
-    }
-   ]
-  },
-  {
-   "topic": "Learning & growth",
-   "questions": [
-    {
-     "text": "The organisation offers me a range of opportunities to develop myself",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I'd happily keep working at the organisation for the next one to two years",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "In the past three months I have taken concrete steps to find other work, or plan to in the next three months",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "I'm satisfied with my development opportunities",
-     "type": "scale5",
-     "theme": "Future fit"
-    },
-    {
-     "text": "My work lets me build enough new knowledge",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "The organisation offers me good training and learning opportunities",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "With my current knowledge and skills I could easily find another job",
-     "type": "scale5",
-     "theme": null
-    }
-   ]
-  },
-  {
-   "topic": "Manager support",
-   "questions": [
-    {
-     "text": "I have confidence in my manager",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "I regularly receive useful feedback on how I'm doing",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My manager motivates me in my work",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "My manager encourages my development",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "My manager sets a good example within my team",
-     "type": "scale5",
-     "theme": "Team leadership"
-    },
-    {
-     "text": "My manager guides change well",
-     "type": "scale5",
-     "theme": null
-    },
-    {
-     "text": "My manager supports me in achieving my objectives",
-     "type": "scale5",
-     "theme": "Team leadership"
-    }
-   ]
-  }
- ]
+  sos: [
+    { topic: "Job satisfaction", questions: [
+      Q("Overall, I enjoy the work I do day to day.", "scale5", "Engagement"),
+      Q("My work gives me a sense of purpose.", "scale5", "Engagement"),
+      Q("I would describe myself as happy in my current role."),
+      Q("The work I do makes good use of my strengths."),
+      Q("I rarely find myself thinking about leaving."),
+      Q("How would you rate your overall job satisfaction?"),
+    ]},
+    { topic: "Role & enablement", questions: [
+      Q("It is clear to me what is expected in my role.", "scale5", "Role clarity"),
+      Q("I understand how my work supports our wider goals.", "scale5", "Role clarity"),
+      Q("I have the tools and resources to do my job well."),
+      Q("I'm able to make decisions within my area of work."),
+      Q("Our day-to-day processes help rather than hinder me."),
+    ]},
+    { topic: "My manager", questions: [
+      Q("My manager treats me with respect.", "scale5", "Leadership"),
+      Q("I receive helpful feedback from my manager.", "scale5", "Leadership"),
+      Q("My manager supports my growth and development.", "scale5", "Leadership"),
+      Q("I can raise concerns with my manager openly."),
+      Q("My manager notices and recognises good work."),
+    ]},
+    { topic: "Collaboration", questions: [
+      Q("People in my team help each other out."),
+      Q("Information is shared openly across teams."),
+      Q("We handle disagreements in a constructive way."),
+      Q("Other departments are easy to work with."),
+      Q("How often do you collaborate with other teams?", "multiple", null, ["Rarely", "A few times a month", "Weekly", "Most days", "Constantly"]),
+    ]},
+    { topic: "Wellbeing & workload", questions: [
+      Q("I can keep a healthy balance between work and personal life.", "scale5", "Wellbeing"),
+      Q("My workload is manageable most weeks.", "scale5", "Wellbeing"),
+      Q("I feel energised by my work more often than drained.", "scale5", "Wellbeing"),
+      Q("I feel comfortable taking time off when I need it."),
+      Q("Stress at work stays at a level I can handle."),
+    ]},
+    { topic: "Commitment", questions: [
+      Q("I'm proud to tell people where I work.", "scale5", "Engagement"),
+      Q("I would recommend this organisation as a place to work.", "scale5", "Engagement"),
+      Q("I can see myself still working here in two years."),
+      Q("I'm willing to put in extra effort when it's needed."),
+    ]},
+  ],
+
+  tds: [
+    { topic: "Team goals", questions: [
+      Q("Our team has clear, shared goals.", "scale5", "Team effectiveness"),
+      Q("Everyone understands what we're working towards."),
+      Q("We regularly review our progress as a team."),
+      Q("Priorities in our team are clear to me."),
+      Q("We adjust our plans well when circumstances change."),
+    ]},
+    { topic: "Communication", questions: [
+      Q("Communication within our team is open and honest."),
+      Q("I get the information I need from teammates in time."),
+      Q("Our meetings are a good use of time."),
+      Q("We give each other timely feedback."),
+      Q("It's easy to ask teammates for help."),
+    ]},
+    { topic: "Collaboration", questions: [
+      Q("We trust each other to deliver on commitments.", "scale5", "Team collaboration"),
+      Q("Workload is shared fairly across the team.", "scale5", "Team collaboration"),
+      Q("We make decisions together when it matters.", "scale5", "Team collaboration"),
+      Q("Different perspectives are welcomed in our team."),
+      Q("We celebrate our successes together."),
+    ]},
+    { topic: "Ways of working", questions: [
+      Q("Our processes help us work efficiently."),
+      Q("Roles and responsibilities are clear within the team."),
+      Q("We learn from mistakes rather than assign blame."),
+      Q("We keep looking for ways to improve."),
+      Q("What gets in the way of our team performing at its best?", "text"),
+    ]},
+    { topic: "Effectiveness", questions: [
+      Q("Our team consistently delivers quality work.", "scale5", "Team effectiveness"),
+      Q("We meet the goals we set for ourselves.", "scale5", "Team effectiveness"),
+      Q("Our team adapts well to new challenges."),
+      Q("I'm proud of what our team achieves."),
+    ]},
+  ],
+
+  sfm: [
+    { topic: "Direction & strategy", questions: [
+      Q("I understand the direction the organisation is heading.", "scale5", "Strategic alignment"),
+      Q("Our strategy is communicated clearly.", "scale5", "Strategic alignment"),
+      Q("I can see how my work connects to the bigger picture.", "scale5", "Strategic alignment"),
+      Q("Leaders make decisions that fit our long-term goals."),
+      Q("Changes are explained in a way that makes sense."),
+    ]},
+    { topic: "Ability to perform", questions: [
+      Q("I have what I need to perform well in my role."),
+      Q("Obstacles to doing good work get dealt with quickly."),
+      Q("I have enough autonomy to do my job effectively."),
+      Q("Skills and talents are used well across the organisation."),
+      Q("We have the right capabilities to reach our goals."),
+      Q("Decisions are made at the right level."),
+    ]},
+    { topic: "Motivation", questions: [
+      Q("I feel motivated to give my best at work.", "scale5", "Engagement"),
+      Q("I care about the future of this organisation.", "scale5", "Engagement"),
+      Q("My work gives me energy.", "scale5", "Engagement"),
+      Q("I feel valued for the contribution I make."),
+      Q("I feel a strong sense of ownership over my work."),
+    ]},
+    { topic: "Agility", questions: [
+      Q("We respond quickly to changes around us."),
+      Q("New ideas are encouraged and tried out."),
+      Q("We're willing to change how we work when needed."),
+      Q("The organisation learns from what doesn't work."),
+      Q("Bureaucracy rarely slows us down."),
+    ]},
+  ],
+
+  wcwp: [
+    { topic: "Employership", questions: [
+      Q("This is a great place to work.", "scale5", "Employership"),
+      Q("I would happily refer a friend to work here.", "scale5", "Employership"),
+      Q("The organisation lives up to the promises it makes to staff.", "scale5", "Employership"),
+      Q("I feel genuinely supported by the organisation."),
+      Q("I trust the organisation to treat people fairly."),
+    ]},
+    { topic: "Pride & advocacy", questions: [
+      Q("I'm proud to be part of this organisation.", "scale5", "Engagement"),
+      Q("I speak positively about my employer to others.", "scale5", "Engagement"),
+      Q("I feel a strong connection to what we do here."),
+      Q("My values align well with the organisation's values."),
+    ]},
+    { topic: "Trust in leadership", questions: [
+      Q("I trust the decisions made by senior leadership.", "scale5", "Leadership"),
+      Q("Leadership communicates openly about important matters.", "scale5", "Leadership"),
+      Q("Leaders act in line with our stated values.", "scale5", "Leadership"),
+      Q("I have confidence in the direction leadership has set."),
+      Q("Senior leaders are visible and approachable."),
+    ]},
+    { topic: "Growth", questions: [
+      Q("I have good opportunities to grow here."),
+      Q("I'm encouraged to develop new skills."),
+      Q("There is a clear path for my development."),
+      Q("I get the training I need to do my job well."),
+    ]},
+  ],
+
+  dei: [
+    { topic: "Belonging", questions: [
+      Q("I feel I belong at this organisation.", "scale5", "Inclusion"),
+      Q("I can be myself at work.", "scale5", "Inclusion"),
+      Q("I feel accepted by the people I work with.", "scale5", "Inclusion"),
+      Q("People here are valued for who they are."),
+      Q("I feel included in team decisions and activities."),
+    ]},
+    { topic: "Fair treatment", questions: [
+      Q("Everyone has a fair chance to progress here."),
+      Q("Pay and rewards are decided fairly."),
+      Q("People are treated equally regardless of background."),
+      Q("Opportunities are given based on merit."),
+      Q("Our policies support fair treatment for all."),
+    ]},
+    { topic: "Voice & safety", questions: [
+      Q("I feel safe to speak up with my opinions.", "scale5", "Psychological safety"),
+      Q("I can raise concerns without fear of negative consequences.", "scale5", "Psychological safety"),
+      Q("Mistakes are treated as a chance to learn.", "scale5", "Psychological safety"),
+      Q("My ideas are taken seriously."),
+      Q("Different viewpoints are respected here."),
+    ]},
+    { topic: "Representation", questions: [
+      Q("Leadership reflects the diversity of our people."),
+      Q("I see people like me represented at senior levels."),
+      Q("The organisation is genuinely committed to inclusion."),
+      Q("We talk openly about inclusion at work."),
+      Q("How included do you feel day to day?", "multiple", null, ["Not at all", "Slightly", "Moderately", "Mostly", "Fully"]),
+    ]},
+  ],
+
+  onb: [
+    { topic: "First impressions", questions: [
+      Q("I felt welcome when I first joined.", "scale5", "Onboarding"),
+      Q("I quickly felt like part of the team.", "scale5", "Onboarding"),
+      Q("My first days were well organised.", "scale5", "Onboarding"),
+      Q("I knew who to turn to with questions when I started."),
+      Q("The role matched what I was told during hiring."),
+    ]},
+    { topic: "Role clarity", questions: [
+      Q("I understood what was expected of me early on.", "scale5", "Role clarity"),
+      Q("My responsibilities were explained clearly.", "scale5", "Role clarity"),
+      Q("I knew how my success would be measured."),
+      Q("I understood how my role fits into the team."),
+      Q("Goals for my first months were clear."),
+    ]},
+    { topic: "Tools & access", questions: [
+      Q("I had the equipment I needed from day one."),
+      Q("I got access to the systems I needed quickly."),
+      Q("I had a suitable place to do my work."),
+      Q("Getting set up was a smooth experience."),
+      Q("I had the information I needed to get started."),
+    ]},
+    { topic: "Learning & growth", questions: [
+      Q("I received enough training to start contributing."),
+      Q("I was given time to learn in my first weeks."),
+      Q("I understood the development opportunities available."),
+      Q("I felt encouraged to ask questions while learning."),
+      Q("I knew where to find resources to learn on my own."),
+    ]},
+    { topic: "Manager support", questions: [
+      Q("My manager checked in with me regularly at first.", "scale5", "Leadership"),
+      Q("My manager set me up for success.", "scale5", "Leadership"),
+      Q("I received useful feedback early in my role."),
+      Q("I felt supported by my manager during onboarding."),
+    ]},
+  ],
 };
-export const TEMPLATE_META = {"sos":{"count":38,"minutes":19},"tds":{"count":27,"minutes":14},"sfm":{"count":28,"minutes":14},"wcwp":{"count":14,"minutes":7},"dei":{"count":21,"minutes":11},"onb":{"count":26,"minutes":13}};
+
+// Counts/minutes derived from the actual content above.
+export const TEMPLATE_META = Object.fromEntries(Object.entries(TEMPLATE_PREVIEWS).map(([k, gs]) => {
+  const count = gs.reduce((a, g) => a + g.questions.length, 0);
+  return [k, { count, minutes: Math.max(3, Math.round(count * 0.5)) }];
+}));
+
+// A broad shared question bank — the rest of the "library" beyond any single
+// template. Added (unselected) to every survey's pool so there's a realistic
+// amount to choose from in Add questions. Original, generic wording only.
+const EXTRA_LIBRARY = [
+  { topic: "Engagement & motivation", questions: [
+    Q("I feel motivated to do my best work.", "scale5", "Engagement"),
+    Q("I look forward to coming to work most days.", "scale5", "Engagement"),
+    Q("I find my work genuinely interesting."),
+    Q("I feel a strong personal commitment to my work."),
+    Q("Time tends to fly when I'm working."),
+    Q("I feel inspired by the goals we're working towards."),
+  ]},
+  { topic: "Leadership & management", questions: [
+    Q("My manager is someone I can rely on.", "scale5", "Leadership"),
+    Q("Leaders here listen to what employees have to say.", "scale5", "Leadership"),
+    Q("My manager helps remove obstacles in my way."),
+    Q("I trust my manager to act in the team's interest."),
+    Q("Leadership sets a good example through their actions."),
+    Q("Decisions from leadership are communicated in good time."),
+  ]},
+  { topic: "Collaboration & teamwork", questions: [
+    Q("My team works well together.", "scale5", "Collaboration"),
+    Q("People here are willing to share knowledge.", "scale5", "Collaboration"),
+    Q("We can count on each other to follow through."),
+    Q("Cross-team cooperation works smoothly."),
+    Q("Conflicts get resolved in a healthy way."),
+    Q("I feel comfortable asking colleagues for help."),
+  ]},
+  { topic: "Communication", questions: [
+    Q("Important information reaches me in good time."),
+    Q("I understand the reasons behind major decisions."),
+    Q("Communication flows well between teams."),
+    Q("I know where to find the information I need."),
+    Q("Feedback flows in both directions here."),
+  ]},
+  { topic: "Wellbeing & balance", questions: [
+    Q("I can switch off from work in my free time.", "scale5", "Wellbeing"),
+    Q("My job allows for a reasonable work-life balance.", "scale5", "Wellbeing"),
+    Q("I feel my wellbeing matters to the organisation.", "scale5", "Wellbeing"),
+    Q("I can take breaks when I need them."),
+    Q("I rarely feel overwhelmed by my work."),
+    Q("Support is available if I'm struggling."),
+  ]},
+  { topic: "Workload & resources", questions: [
+    Q("The amount of work I'm given is reasonable."),
+    Q("I have enough time to do my work properly."),
+    Q("Deadlines here are realistic."),
+    Q("I have the equipment I need to work effectively."),
+    Q("Staffing levels in my team are about right."),
+  ]},
+  { topic: "Growth & development", questions: [
+    Q("I have opportunities to learn and grow here.", "scale5", "Development"),
+    Q("I can develop the skills that matter for my career.", "scale5", "Development"),
+    Q("My development is taken seriously."),
+    Q("I receive useful coaching or mentoring."),
+    Q("There are clear opportunities to advance."),
+    Q("I'm encouraged to take on new challenges."),
+  ]},
+  { topic: "Recognition & reward", questions: [
+    Q("Good work is recognised here."),
+    Q("I feel appreciated for my contributions."),
+    Q("Recognition is given fairly."),
+    Q("My pay is fair for the work I do."),
+    Q("The benefits on offer meet my needs."),
+  ]},
+  { topic: "Autonomy & empowerment", questions: [
+    Q("I have freedom in how I do my work."),
+    Q("I'm trusted to make decisions in my role."),
+    Q("I'm encouraged to use my own judgement."),
+    Q("I can influence things that affect my work."),
+    Q("Micromanagement is rare here."),
+  ]},
+  { topic: "Strategy & direction", questions: [
+    Q("I understand the organisation's priorities.", "scale5", "Strategic alignment"),
+    Q("Our goals are clear and well communicated.", "scale5", "Strategic alignment"),
+    Q("I believe in the direction we're taking."),
+    Q("My day-to-day work aligns with our strategy."),
+    Q("I'm confident about the organisation's future."),
+  ]},
+  { topic: "Inclusion & belonging", questions: [
+    Q("I feel respected for who I am.", "scale5", "Inclusion"),
+    Q("Everyone here has a voice.", "scale5", "Inclusion"),
+    Q("Differences are valued in my team."),
+    Q("I feel a sense of belonging at work."),
+    Q("People are treated fairly regardless of background."),
+  ]},
+  { topic: "Customer & quality focus", questions: [
+    Q("We keep the customer in mind in what we do."),
+    Q("Quality is a priority in my team."),
+    Q("We act on the feedback we receive."),
+    Q("I'm empowered to do what's right for the customer."),
+    Q("We take pride in the quality of our work."),
+  ]},
+  { topic: "Change & innovation", questions: [
+    Q("New ideas are welcomed here."),
+    Q("We adapt well to change."),
+    Q("I feel comfortable suggesting improvements."),
+    Q("We're willing to try new ways of working."),
+    Q("Change is managed well in my team."),
+  ]},
+  { topic: "Trust & integrity", questions: [
+    Q("People here act with integrity."),
+    Q("I can trust what I'm told by the organisation."),
+    Q("Promises made to employees are kept."),
+    Q("There's a high level of trust in my team."),
+    Q("Ethical concerns are taken seriously."),
+  ]},
+];
+
+// The shared bank as ready-to-use pool question objects (stable ids).
+export function libraryPool() {
+  const out = [];
+  EXTRA_LIBRARY.forEach((g, gi) => g.questions.forEach((q, qi) => {
+    out.push({ id: `lib-${gi}-${qi}`, topic: g.topic, theme: q.theme || null,
+      type: q.type, bench: true, custom: false, text: q.text, options: q.options });
+  }));
+  return out;
+}

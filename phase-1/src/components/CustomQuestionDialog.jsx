@@ -87,14 +87,17 @@ function OptionList({ opts, setOpt, addOpt, delOpt, invalid }) {
   );
 }
 
-export function CustomQuestionDialog({ question, onCancel, onAdd, onSubmit, onDelete }) {
+export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubmit, onDelete }) {
   const editing = !!question;
   const submitFn = onSubmit || onAdd;
+  // Only offer topics that actually exist in this survey; fall back to the
+  // library topics if none were passed.
+  const topicList = (topics && topics.length) ? topics : TOPICS;
   const [text, setText] = useState(question ? question.text : "");
   const [desc, setDesc] = useState(question && question.desc ? question.desc : "");
   const [type, setType] = useState(question ? question.type : "scale5");
   // A custom question always belongs to an existing topic — default to the first.
-  const [topic, setTopic] = useState(question && question.topic ? question.topic : TOPICS[0]);
+  const [topic, setTopic] = useState(question && question.topic ? question.topic : topicList[0]);
   const [opts, setOpts] = useState(question && question.options ? [...question.options] : [...DEFAULT_MC]);
   const [attempted, setAttempted] = useState(false);
 
@@ -122,7 +125,7 @@ export function CustomQuestionDialog({ question, onCancel, onAdd, onSubmit, onDe
   const typeItems = Object.entries(QTYPES).filter(([, m]) => m.creatable).map(([k, m]) => ({
     value: k, label: m.label, lead: <QTypeIcon type={k} size={24} />,
   }));
-  const topicItems = TOPICS.map(t => ({ value: t, label: t }));
+  const topicItems = topicList.map(t => ({ value: t, label: t }));
 
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 60 }}
