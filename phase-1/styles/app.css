@@ -1,0 +1,244 @@
+/* app.css — LAYOUT ONLY. All values come from Engage DS tokens.
+   Components themselves use components.css classes. This file only
+   positions things and defines the few token-driven patterns the DS
+   builds ad-hoc (tags, the type-tile, list rows). The overlay/dialog
+   chrome and animations come from the DS (components.css). */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Poppins', sans-serif;
+  background: var(--bg-interface-body);
+  color: var(--content-base);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--bg-brand-subtle); }
+
+/* ---- app shell ---- */
+.app { height: 100vh; display: flex; overflow: hidden; background: var(--bg-secondary); }
+.col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* ---- generic card / surface ---- */
+.card { background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-lg); box-shadow: var(--sh-card); }
+.scroll-y { overflow: auto; }
+.scroll-y::-webkit-scrollbar { width: 10px; height: 10px; }
+.scroll-y::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: var(--radius-base); border: 2px solid transparent; background-clip: padding-box; }
+.scroll-y::-webkit-scrollbar-track { background: transparent; }
+
+/* ---- tag (DS pattern: 24px, radius-sm, 12/600) ---- */
+.tag { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px;
+  border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; line-height: 16px; white-space: nowrap; }
+.tag i { display: flex; width: 14px; height: 14px; flex: none; }
+.tag-neutral { background: var(--bg-secondary); color: var(--content-secondary); }
+.tag-count { background: var(--bg-secondary); color: var(--content-secondary); border-radius: var(--radius-full); min-width: 22px; justify-content: center; padding: 0 7px; }
+.tag-benchmark { background: var(--bg-accent-turquoise-subtle); color: var(--content-accent-turquoise-base); }
+.tag-theme { background: var(--bg-brand-subtle); color: var(--content-brand-base); }
+.tag-theme-broken { background: var(--bg-warning-subtle); color: var(--content-warning-base); }
+/* Custom = blue accent. Shares a min-width with Benchmark so the two badges
+   occupy the same footprint in the question-list meta column. */
+.tag-custom { background: var(--bg-accent-blue-subtle); color: var(--content-accent-blue-base); }
+.tag-standard { background: var(--bg-accent-turquoise-subtle); color: var(--content-accent-turquoise-base); }
+.tag-benchmark, .tag-custom { min-width: 92px; justify-content: center; }
+.tag-draft { background: var(--bg-tertiary); color: var(--content-secondary); }
+
+/* ---- DS correction: components.css resets only the border on a disabled
+   primary/danger button, leaving low-contrast disabled text on the saturated
+   brand fill. Apply the standard disabled surface, as secondary/tertiary do.
+   (Flag upstream: btn-primary/btn-danger disabled state lacks a bg rule.) ---- */
+.btn-primary.is-disabled, .btn-primary:disabled,
+.btn-danger.is-disabled, .btn-danger:disabled { background: var(--bg-disabled) !important; }
+
+/* ---- Create-a-custom-question dialog ---- */
+.cq-dialog { width: 680px; }
+.cq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-loose); }
+.cq-lbl { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600;
+  color: var(--content-base); margin-bottom: 6px; }
+.cq-lbl .cq-info { display: inline-flex; color: var(--content-subtle); cursor: help; }
+.cq-lbl .cq-info i { display: flex; width: 16px; height: 16px; }
+.cq-sel { width: 100%; justify-content: space-between; height: 40px; }
+button.sel-btn.cq-sel { font-size: 14px; }
+.cq-sel-placeholder { color: var(--content-placeholder); font-weight: 400; }
+.cq-menu-wrap { position: relative; }
+.cq-menu-pop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 2; }
+.cq-menu-scrim { position: fixed; inset: 0; z-index: 1; }
+
+/* Fixed default height: 5-point scale, text answer, and 2-option multiple
+   choice all render at the same dialog height. Content is top-aligned, so the
+   shorter states leave empty preview space below. Adding multiple-choice
+   options past the default grows the card (and the dialog) taller. */
+.cq-preview { background: var(--bg-secondary); border-radius: var(--radius-lg);
+  padding: var(--spacing-loose); display: flex; flex-direction: column;
+  gap: var(--spacing-base-tight); min-height: 360px; }
+.cq-qfield, .cq-descfield { width: 100%; text-align: center; font-family: inherit;
+  border: 1px solid var(--border-base); border-radius: var(--radius-md); background: var(--bg-base);
+  color: var(--content-base); resize: none; transition: border-color .12s, box-shadow .12s, background .12s; }
+.cq-qfield { font-size: 16px; font-weight: 600; padding: 15px 18px; min-height: 54px; line-height: 1.4; }
+.cq-qfield::placeholder { color: var(--content-placeholder); font-weight: 600; }
+.cq-descfield { font-size: 14px; font-weight: 400; padding: 11px 18px; min-height: 44px; }
+.cq-descfield::placeholder { color: var(--content-subtle); }
+.cq-qfield:hover, .cq-descfield:hover { background: var(--bg-input-hover); }
+.cq-qfield:focus, .cq-descfield:focus { outline: none;
+  border-color: var(--border-brand-base); box-shadow: 0 0 0 3px var(--bg-brand-subtle); background: var(--bg-base); }
+.cq-qfield.is-error, .cq-descfield.is-error { border-color: var(--border-negative-base); }
+.cq-qfield.is-error:focus, .cq-descfield.is-error:focus { border-color: var(--border-negative-base); box-shadow: 0 0 0 3px var(--bg-negative-subtle); }
+.cq-preview .tf-err { margin-top: 2px; }
+
+/* ---- template preview (full takeover inside the template dialog) ---- */
+.tpv-topbar { display: flex; align-items: center; justify-content: space-between; }
+.tpv-hero { display: flex; align-items: center; gap: var(--spacing-base); }
+.tpv-illus { width: 96px; height: 96px; border-radius: var(--radius-full); flex: none; display: grid; place-items: center; }
+.tpv-meta { font-size: 14px; color: var(--content-secondary); margin-top: 4px; }
+.tpv-section-title { font-size: 16px; font-weight: 600; color: var(--content-base); margin: 0 0 var(--spacing-base-tight); }
+.tpv-why { display: inline; }
+.tpv-showmore { background: none; border: none; padding: 0; margin-left: 6px; cursor: pointer;
+  color: var(--content-brand-base); font: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.tpv-count { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 8px;
+  border-radius: var(--radius-full); background: var(--bg-tertiary); color: var(--content-secondary); font-size: 12px; font-weight: 600; }
+
+/* questionnaire block — grey container holding the topic sections (Figma) */
+.tpv-qbox { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: var(--spacing-loose); }
+.tpv-qbox > section + section { margin-top: var(--spacing-loose); }
+.tpv-seclabel { display: flex; align-items: center; gap: 10px; margin-bottom: var(--spacing-base-tight); padding: 0 2px; }
+.tpv-seclabel h4 { margin: 0; }
+.tpv-trow { display: flex; align-items: stretch; min-height: 60px; }
+.tpv-trow .qrow-main { flex: 1; min-width: 0; display: flex; align-items: center; padding: var(--spacing-base-tight) var(--spacing-base); }
+.tpv-tcell { display: grid; place-items: center; width: 72px; flex: none; border-left: 1px solid var(--border-base); }
+.tpv-tcell.is-tag { width: 116px; }
+.tpv-tcell .tag { margin: 0; }
+
+.cq-answercard { background: var(--bg-base); border: 1px solid var(--border-base);
+  border-radius: var(--radius-md); padding: var(--spacing-loose); }
+.cq-opt-row { display: flex; align-items: center; gap: 8px; }
+.cq-drag { display: flex; flex: none; color: var(--content-subtle); cursor: grab; }
+.cq-drag i { display: flex; width: 16px; height: 16px; }
+
+.cq-scale { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: var(--spacing-base) 0; }
+.cq-scale-row { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+.cq-scale-end { font-size: 14px; font-weight: 500; color: var(--content-secondary); white-space: nowrap; }
+.cq-dots { display: flex; align-items: center; gap: 12px; }
+.cq-dot { width: 26px; height: 26px; border-radius: var(--radius-full); border: 3px solid var(--dot, var(--border-base)); background: transparent; flex: none; }
+.cq-idk { font-size: 14px; color: var(--content-secondary); }
+
+/* ---- question-type tile ---- */
+.qtile { width: 24px; height: 24px; border-radius: var(--radius-sm); display: grid; place-items: center; flex: none; }
+.qtile i { display: flex; width: 16px; height: 16px; }
+
+/* ---- theme-keep dialog: positive results preview ---- */
+.dialog-header-icon.is-brand { color: var(--content-brand-base); }
+.tc-preview { background: var(--bg-brand-subtle); border-radius: var(--radius-lg); padding: var(--spacing-base);
+  display: flex; flex-direction: column; gap: var(--spacing-base-tight); }
+.tc-preview-head { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .04em; color: var(--content-brand-base); }
+.tc-score-row { display: flex; align-items: baseline; gap: 8px; }
+.tc-score-num { font-size: 42px; font-weight: 700; line-height: 1; color: var(--content-base); font-variant-numeric: tabular-nums; }
+.tc-score-max { font-size: 16px; font-weight: 500; color: var(--content-secondary); }
+.tc-score-lbl { margin-left: auto; font-size: 14px; font-weight: 600; color: var(--content-base); }
+.tc-bar { position: relative; height: 10px; border-radius: var(--radius-full); background: var(--bg-base); overflow: hidden; }
+.tc-bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: var(--radius-full); background: var(--bg-distribution-agree); }
+.tc-bar-bench { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--content-base); }
+.tc-bench-row { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--content-secondary); }
+.tc-delta { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; color: var(--content-positive-base); }
+.tc-delta i { display: flex; width: 16px; height: 16px; }
+
+/* ---- builder row kebab menu ---- */
+.qrow-menu-wrap { position: relative; }
+
+/* ---- questionnaire page: draggable sections (matches Figma _question-toptic) ---- */
+.qsec { position: relative; background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-lg);
+  box-shadow: var(--sh-card); padding: var(--spacing-base) var(--spacing-loose);
+  display: flex; flex-direction: column; transition: box-shadow var(--motion-base) var(--ease-standard), opacity var(--motion-base) var(--ease-standard); }
+.qsec + .qsec { margin-top: var(--spacing-extra-loose); }
+.qsec-head { display: flex; align-items: center; gap: var(--spacing-base); min-height: 44px; cursor: grab; }
+.qsec-head:active { cursor: grabbing; }
+.qsec-grip, .qrow-grip { display: grid; place-items: center; width: 24px; flex: none; color: var(--content-subtle);
+  border-radius: var(--radius-sm); transition: color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard); }
+.qsec-grip i, .qrow-grip i { display: flex; width: 18px; height: 18px; }
+.qrow-grip { cursor: grab; align-self: center; height: 36px; }
+.qrow-grip:active { cursor: grabbing; }
+/* the grip lights up on hover so the drag affordance is obvious */
+.qsec-head:hover .qsec-grip, .qsec-body .qrow:hover .qrow-grip { color: var(--content-secondary); }
+.qsec-title { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.5; color: var(--content-base); }
+.qsec-count { font-size: 14px; font-weight: 500; color: var(--content-secondary); white-space: nowrap; }
+.qsec-menu-wrap { position: relative; flex: none; }
+/* Questions: only a top divider, no surrounding box — the left drag column
+   keeps the header grip and every row grip vertically aligned. */
+.qsec-list { display: flex; flex-direction: column; padding-bottom: var(--spacing-base); }
+.qsec-body { margin-top: var(--spacing-tight); }
+.qsec-body .qrow { position: relative; border-top: 1px solid var(--border-base); border-bottom: none;
+  padding: var(--spacing-base) 0; gap: var(--spacing-base); }
+
+/* ---- drag & drop feedback ----
+   The lifted item dims + scales down slightly; a clear brand insertion line
+   (with a leading dot) marks exactly where the drop will land. Items slide to
+   their new positions via a FLIP animation wired up in Builder.jsx. */
+.qsec.is-dragging, .qsec-body .qrow.is-dragging { opacity: .45; }
+.qsec.is-dragging { box-shadow: var(--sh-card-hover); transform: scale(.99); }
+
+/* insertion line — sections (sits centred in the 32px gap between cards) */
+.qsec.is-drop-before::after, .qsec.is-drop-after::after,
+.qrow.is-drop-before::after, .qrow.is-drop-after::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 3px; z-index: 5;
+  background: var(--content-brand-secondary); border-radius: var(--radius-full);
+  transform-origin: left center; animation: drop-line-in var(--motion-fast) var(--ease-out); }
+.qsec.is-drop-before::before, .qsec.is-drop-after::before,
+.qrow.is-drop-before::before, .qrow.is-drop-after::before {
+  content: ""; position: absolute; width: 10px; height: 10px; left: -4px; z-index: 6;
+  background: var(--content-brand-secondary); border-radius: var(--radius-full);
+  box-shadow: 0 0 0 2px var(--bg-base); animation: drop-dot-in var(--motion-base) var(--ease-out); }
+.qsec.is-drop-before::after  { top: calc(-1 * var(--spacing-base) - 1.5px); }
+.qsec.is-drop-after::after   { bottom: calc(-1 * var(--spacing-base) - 1.5px); }
+.qsec.is-drop-before::before { top: calc(-1 * var(--spacing-base) - 5px); box-shadow: 0 0 0 2px var(--bg-secondary); }
+.qsec.is-drop-after::before  { bottom: calc(-1 * var(--spacing-base) - 5px); box-shadow: 0 0 0 2px var(--bg-secondary); }
+/* insertion line — question rows (sits on the row's top / bottom border) */
+.qrow.is-drop-before::after  { top: -2px; }
+.qrow.is-drop-after::after   { bottom: -2px; }
+.qrow.is-drop-before::before { top: -5.5px; }
+.qrow.is-drop-after::before  { bottom: -5.5px; }
+@keyframes drop-line-in { from { opacity: 0; transform: scaleX(.85); } to { opacity: 1; transform: scaleX(1); } }
+@keyframes drop-dot-in  { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .qsec.is-drop-before::after, .qsec.is-drop-after::after, .qrow.is-drop-before::after, .qrow.is-drop-after::after,
+  .qsec.is-drop-before::before, .qsec.is-drop-after::before, .qrow.is-drop-before::before, .qrow.is-drop-after::before { animation: none; } }
+
+/* ---- dialog: card chrome, scrim and enter-animation come from the DS
+   (.overlay + .dialog in components.css — 32px padding, 24px gaps).
+   Layout-only additions: viewport clamp + a tall working dialog whose body
+   scrolls between a fixed header & footer, keeping the DS spacing intact. ---- */
+.dialog { max-height: calc(100vh - 96px); }
+.dialog.dialog-worksurface .dialog-body { flex: 1; min-height: 0; overflow: auto; }
+
+/* ---- list rows (question list) ---- */
+.qrow { display: flex; align-items: center; gap: var(--spacing-base-tight); padding: var(--spacing-base-tight) var(--spacing-base);
+  border-bottom: 1px solid var(--border-base); background: var(--bg-base); }
+.qrow:last-child { border-bottom: none; }
+.qrow-main { flex: 1; min-width: 0; }
+.qrow-meta { display: flex; align-items: center; gap: var(--spacing-base-tight); flex: none; }
+/* Tags inside a question row carry a 1px surface-coloured ring so they read
+   cleanly against both white and brand-tinted (selected) row backgrounds. */
+.qrow-meta .tag, .tpv-trow .tag { border: 1px solid var(--bg-base); }
+/* Add-questions dialog: selected rows use the brand selection colour,
+   unselected rows stay white. */
+.qrow-pick { background: var(--bg-base); transition: background .12s; }
+.qrow-pick:hover { background: var(--bg-base-hover); }
+.qrow-pick.is-picked { background: var(--bg-brand-subtle-selected); }
+.qrow-pick.is-picked:hover { background: var(--bg-brand-subtle-selected); }
+
+/* ---- surveys list: clickable rows ---- */
+.survey-row { cursor: pointer; transition: background var(--motion-fast) var(--ease-standard); }
+.survey-row:hover { background: var(--bg-base-hover); }
+.survey-row:focus-visible { outline: 2px solid var(--border-brand-base); outline-offset: -2px; }
+
+/* ---- icon-button tooltips: DS .tooltip bubble, revealed on hover/focus ---- */
+.tt-demo > .tooltip { opacity: 0; pointer-events: none; transition: opacity var(--motion-fast) var(--ease-out); }
+.tt-demo:hover > .tooltip, .tt-demo:focus-within > .tooltip { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .tt-demo > .tooltip { transition: none; } }
+/* The DS close button is absolutely positioned; hand that position to the
+   tooltip wrapper so the bubble anchors correctly and the button sits inside. */
+.dialog-close-tt { position: absolute; top: 15px; right: 15px; z-index: 2; }
+.dialog-close-tt .dialog-close { position: static; }
+
+/* ---- misc layout ---- */
+.row { display: flex; align-items: center; }
+.gap-t { gap: var(--spacing-tight); } .gap-bt { gap: var(--spacing-base-tight); } .gap-b { gap: var(--spacing-base); }
+.spacer { flex: 1; }
+.divider { height: 1px; background: var(--border-base); }
