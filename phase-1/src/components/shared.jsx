@@ -57,14 +57,14 @@ export function rowSubtext(q, sort) {
 // ---- type tile ---------------------------------------------------------
 // `tip` wraps the (label-less) tile in a DS tooltip naming the question type —
 // used where the icon stands alone, e.g. the Add questions dialog rows.
-export function QTypeIcon({ type, size = 24, tip = false }) {
+export function QTypeIcon({ type, size = 24, tip = false, pos = "is-above" }) {
   const m = QTYPES[type];
   const tile = (
     <span className="qtile" style={{ background: m.bg, color: m.fg, width: size, height: size }} title={tip ? undefined : m.label}>
       <Icon name={m.icon} size={size === 24 ? 16 : Math.round(size * 0.66)} />
     </span>
   );
-  return tip ? <Tooltip label={m.label} pos="is-above">{tile}</Tooltip> : tile;
+  return tip ? <Tooltip label={m.label} pos={pos}>{tile}</Tooltip> : tile;
 }
 
 // ---- tooltip -----------------------------------------------------------
@@ -86,14 +86,72 @@ export function Tag({ kind, icon, children }) {
   return <span className={"tag tag-" + kind}>{icon && <Icon name={icon} size={14} />}{children}</span>;
 }
 
+// A 10px ring showing how far along a theme is (added / total questions).
+function ProgressRing({ pct }) {
+  const r = 4, c = 2 * Math.PI * r;
+  const p = Math.max(0, Math.min(1, pct));
+  return (
+    <svg className="tag-ring" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+      <circle cx="5" cy="5" r={r} fill="none" stroke="currentColor" strokeOpacity=".3" strokeWidth="1.5" />
+      <circle cx="5" cy="5" r={r} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+        strokeDasharray={c} strokeDashoffset={c * (1 - p)} transform="rotate(-90 5 5)" />
+    </svg>
+  );
+}
+
+// Theme tag whose look tracks how much of the theme is in the questionnaire:
+//   neutral (grey)      — no questions of the theme added yet
+//   in progress (light) — some added; a ring shows the fraction
+//   complete (filled)   — every question added; a check replaces the ring
+// Interactivity handlers shared by the clickable tags (open a dialog on click,
+// keyboard-accessible, and stop the click from also toggling the row it sits in).
+function tagActivate(onOpen) {
+  if (!onOpen) return {};
+  return {
+    role: "button", tabIndex: 0,
+    onClick: (e) => { e.stopPropagation(); onOpen(); },
+    onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onOpen(); } },
+  };
+}
+
+export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", onOpen }) {
+  const complete = total > 0 && kept >= total;
+  const partial = kept > 0 && !complete;
+  const state = complete ? "is-complete" : partial ? "is-progress" : "is-neutral";
+  // Short, scannable status (theme name on line 1, status on line 2).
+  const status = complete ? `All ${total} questions added`
+    : partial ? `Add ${total - kept} more to complete`
+      : `Add ${total} questions to complete`;
+  return (
+    <Tooltip label={<><span className="tt-title">{theme}</span>{status}</>} pos={pos}>
+      <span className={"tag tag-thm " + state + (onOpen ? " is-interactive" : "")} {...tagActivate(onOpen)}>
+        {complete ? <span className="tag-ic"><Icon name="check" size={10} /></span>
+          : partial ? <ProgressRing pct={kept / total} /> : null}
+        <span className="tag-ellip">{theme}</span>
+      </span>
+    </Tooltip>
+  );
+}
+
+// Custom-question tag. Interactive (with an edit tooltip) when `onOpen` is given.
+export function CustomTag({ label = "Custom", pos = "is-left", onOpen }) {
+  return (
+    <Tooltip label={onOpen ? "Edit custom question" : "Custom question"} pos={pos}>
+      <span className={"tag tag-custom-q" + (onOpen ? " is-interactive" : "")} {...tagActivate(onOpen)}>
+        <Icon name="edit-inline" size={10} /><span className="tag-ellip">{label}</span>
+      </span>
+    </Tooltip>
+  );
+}
+
 // ---- DS checkbox -------------------------------------------------------
 // Visual checkbox using the DS .cb pattern. Non-native (click handled by parent row).
-export function Checkbox({ on, indeterminate, large, onClick }) {
+export function Checkbox({ on, indeterminate, large, subtle, onClick }) {
   const ref = useRef(null);
   useEffect(() => { if (ref.current) ref.current.indeterminate = !!indeterminate && !on; }, [indeterminate, on]);
   return (
     <span className="cb-wrap" onClick={onClick} style={{ cursor: "pointer" }}>
-      <input ref={ref} type="checkbox" className={"cb" + (large ? " cb-lg" : "")} checked={on}
+      <input ref={ref} type="checkbox" className={"cb" + (large ? " cb-lg" : "") + (subtle ? " cb-subtle" : "")} checked={on}
         readOnly tabIndex={-1} style={{ pointerEvents: "none" }} />
     </span>
   );

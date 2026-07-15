@@ -26,25 +26,35 @@ from a separate public repo; redeploy with `./deploy-demo.sh`).
   scratch), *Back* returns to template selection, and an empty name surfaces a DS
   error state (no disabled button).
 - **Questionnaire builder** — full-width (no sidebar), wizard stepper, template
-  card, draggable topic sections (grip-aligned, border-top rows), drag-and-drop
-  for questions (within/across sections) and whole sections (including gaps
-  between cards), topic kebab menu (*Rename topic*, *Remove topic from
-  questionnaire*), survey rename, footer bar.
-- **Drag-and-drop polish** — the lifted item dims + its grip lights up on hover; a
-  clear brand insertion line (with a leading dot) marks the drop point between
-  rows or in the gap between section cards; on drop, every affected row/section
-  slides to its new spot via a FLIP animation (forced-reflow, no rAF, so the end
-  state is always correct; respects `prefers-reduced-motion`).
-- **Add questions dialog** — library-order topics + a distinct **Theme** sort view
-  (themes selectable as a whole, composite-score status), search, per-topic
-  Select all, selected rows in brand colour, *Add custom question* in the toolbar.
-- **Custom question dialog** — answer type + *Add to topic* selects, editable
-  respondent-style preview (5-point scale with distribution-colour dots,
-  multiple-choice option editor, text answer), DS error states (never a disabled
-  button), and the same dialog prefilled for **editing** a custom question
-  (kebab menu on custom rows) with delete. On add, a DS system notification
-  (top-right) confirms the question and names the topic it landed in, and the new
-  row flashes + scrolls into view with a "Just added" tag so the location is clear.
+  card, and one bordered **topic card** per section (header band + question rows
+  with full-width dividers, matching the Unified-survey-page frame). Each row:
+  grip · text · theme/custom **tag** · type-icon tile · kebab. Theme = turquoise
+  tag ("From the {theme} theme" on hover); custom = grey "Custom question" tag.
+  Topic kebab: Move up/down + *Remove topic from questionnaire* (warns, with a
+  don't-show-again option, when the topic has questions). Survey rename, footer bar.
+- **Drag-and-drop** — live preview: items reflow to show the new order as you
+  drag, committed on drop, reverted on cancel (FLIP animation, scroll-independent,
+  skips the dragged element). **Sections** reorder as a whole. **Standard
+  questions** reorder only within their topic — dragging one over another topic
+  dims that card and shows a light-blue info pill ("You can reorder standard
+  questions within their topic only"). **Custom questions** may change topic:
+  dragging one highlights the target topic (no lock) and drops into it, and its
+  kebab has a "For custom questions only" group with *Edit question* and a
+  *Move to topic ›* submenu (back-navigable topic picker).
+- **Add question from library dialog** (Unified-survey-page frame) — **Questions**
+  / **Themes** tabs (Themes is a placeholder for now), search + a **Show:** filter
+  (All / Selected / Not selected) + **Create custom question**. Rows are plain,
+  divided; selection lives in the checkbox — a **solid** teal check = added this
+  session, a **subtle** light check = already in from the template — each with a
+  hover tooltip ("Add / Just added / Added from template"). Per-topic select-all
+  header shows "N of M questions selected"; footer shows selected-question count.
+- **Custom question dialog** — answer type + *Add to topic* (survey's current
+  topics only) selects, editable respondent-style preview (5-point scale with
+  distribution-colour dots, multiple-choice option editor, text answer), DS error
+  states (never a disabled button), and the same dialog prefilled for **editing**
+  a custom question (kebab menu on custom rows) with delete. On add, a DS system
+  notification (top-right) names the topic it landed in and the new row scrolls
+  into view.
 - **Theme soft-lock** — removing the last question of a complete theme shows the
   positive "Keep the theme complete" dialog with a results preview.
 - **Icon-button tooltips** — every icon-only button (kebabs, close, remove, etc.)

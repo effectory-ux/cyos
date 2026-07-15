@@ -18,6 +18,9 @@ const TWEAKS = { integrity: "lock", customEntry: "toolbar" };
 export function App() {
   const [screen, setScreen] = useState("surveys");
   const [modal, setModal] = useState(false);
+  // True when the template modal was opened from the builder to CHANGE the
+  // template of the current survey (which resets its questionnaire).
+  const [changing, setChanging] = useState(false);
   const [editing, setEditing] = useState(false);
   const [survey, setSurvey] = useState(null);
   const [removeConfirm, setRemoveConfirm] = useState(null);
@@ -33,22 +36,27 @@ export function App() {
   // out-of-scope dialog pointing at a separate prototype.
   const [outOfScope, setOutOfScope] = useState(null);
 
+  // When changing a template from the builder, keep the same survey id so it
+  // updates in place (a fresh id is minted only for a brand-new survey).
+  const keepId = () => (changing && survey ? { id: survey.id } : {});
   const useTemplate = (tmpl) => {
     // Template's curated questions are pre-selected; the rest of the shared
     // library comes along (unselected) so there's plenty more to add.
     const pool = [...POOL.map(q => ({ ...q })), ...libraryPool()];
     const selectedIds = pool.filter(q => q.tmpl).map(q => q.id);
-    setPending({ suggested: tmpl.name, survey: { templateName: tmpl.name, isTemplate: true, selectedIds, pool } });
+    setPending({ suggested: tmpl.name, survey: { ...keepId(), templateName: tmpl.name, isTemplate: true, selectedIds, pool } });
     setModal(false);
   };
   const startScratch = () => {
-    setPending({ suggested: "", survey: { templateName: null, isTemplate: false, selectedIds: [], pool: [...POOL.map(q => ({ ...q })), ...libraryPool()] } });
+    setPending({ suggested: "", survey: { ...keepId(), templateName: null, isTemplate: false, selectedIds: [], pool: [...POOL.map(q => ({ ...q })), ...libraryPool()] } });
     setModal(false);
   };
-  // Commit the named survey (with a stable id) and open the builder.
-  const confirmName = (name) => { setSurvey({ ...pending.survey, id: "d" + Date.now(), name }); setPending(null); setEditing(false); setScreen("builder"); };
+  // Commit the named survey and open the builder (reusing the id when changing).
+  const confirmName = (name) => { setSurvey({ ...pending.survey, id: pending.survey.id || "d" + Date.now(), name }); setPending(null); setChanging(false); setEditing(false); setScreen("builder"); };
   // Back out of naming → return to template selection.
   const cancelName = () => { setPending(null); setModal(true); };
+  // Close the modal without changing anything (also cancels a change-in-progress).
+  const closeModal = () => { setModal(false); setChanging(false); };
 
   // Save & close: upsert the current survey into the list, then return to the
   // Surveys landing page. New surveys are saved as Drafts; editing an existing
@@ -79,6 +87,11 @@ export function App() {
   };
 
   const saveQuestions = (ids, pool) => { setSurvey(s => ({ ...s, selectedIds: ids, pool })); setEditing(false); };
+  // Add/remove a theme's questions from the builder's "View details" dialog.
+  const toggleQuestion = (id) => setSurvey(s => ({ ...s, selectedIds: s.selectedIds.includes(id) ? s.selectedIds.filter(x => x !== id) : [...s.selectedIds, id] }));
+  const setManyQuestions = (ids, on) => setSurvey(s => { const set = new Set(s.selectedIds); ids.forEach(id => on ? set.add(id) : set.delete(id)); return { ...s, selectedIds: [...set] }; });
+  // Custom questions may be reassigned to another topic (via drag or their menu).
+  const moveCustomTopic = (id, topic) => setSurvey(s => ({ ...s, pool: s.pool.map(p => p.id === id ? { ...p, topic } : p) }));
 
   // Remove a question from THIS questionnaire (library questions are only
   // deselected; custom questions are deleted from the pool entirely).
@@ -111,11 +124,13 @@ export function App() {
         ? <SurveysPage rows={surveysList} onCreate={() => setModal(true)} onDeleteDraft={deleteSurvey} onOpen={openSurvey} />
         : <Builder survey={survey} onEditQuestions={() => setEditing(true)} onExit={() => { setScreen("surveys"); }}
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
-            onRename={renameSurvey} onRemoveTopic={removeTopic} />}
+            onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveCustomTopic}
+            onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
+            onChangeTemplate={() => { setChanging(true); setModal(true); }} />}
 
-      {modal && <TemplateModal onClose={() => setModal(false)} onUse={useTemplate} onScratch={startScratch} />}
+      {modal && <TemplateModal changing={changing} onClose={closeModal} onUse={useTemplate} onScratch={startScratch} />}
       {pending && <NameSurveyDialog suggested={pending.suggested} isTemplate={pending.survey.isTemplate}
-        templateName={pending.survey.templateName} onBack={cancelName} onConfirm={confirmName} />}
+        templateName={pending.survey.templateName} changing={changing} onBack={cancelName} onConfirm={confirmName} />}
       {editing && survey && (
         <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds} tweaks={TWEAKS}
           onClose={() => setEditing(false)} onSave={saveQuestions} />

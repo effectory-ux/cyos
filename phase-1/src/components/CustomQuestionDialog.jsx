@@ -4,14 +4,14 @@
 import { useState } from "react";
 import { Icon } from "./Icon.jsx";
 import { QTypeIcon, Tooltip } from "./shared.jsx";
-import { QTYPES, TOPICS, DEFAULT_MC } from "../data/data.js";
+import { QTYPES, TOPICS } from "../data/data.js";
 
 // ---- compact DS select (sel-btn trigger + .menu popover) ----------------
-function MiniSelect({ value, placeholder, items, onChange, ariaLabel }) {
+function MiniSelect({ value, placeholder, items, onChange, ariaLabel, block }) {
   const [open, setOpen] = useState(false);
   const sel = items.find(it => it.value === value);
   return (
-    <div className="cq-menu-wrap">
+    <div className={"cq-menu-wrap" + (block ? " is-block" : "")}>
       <button type="button" className={"sel-btn cq-sel" + (open ? " is-pressed" : "")}
         aria-haspopup="listbox" aria-expanded={open} aria-label={ariaLabel}
         onClick={() => setOpen(o => !o)}>
@@ -67,26 +67,6 @@ function ScalePreview() {
   );
 }
 
-// ---- multiple-choice option editor --------------------------------------
-function OptionList({ opts, setOpt, addOpt, delOpt, invalid }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {opts.map((o, i) => (
-        <div key={i} className="cq-opt-row">
-          <span className="cq-drag" aria-hidden="true"><Icon name="drag-drop" size={16} /></span>
-          <input className={"tf" + (invalid && !o.trim() ? " is-error" : "")} type="text" value={o} placeholder={"Option " + (i + 1)}
-            onChange={e => setOpt(i, e.target.value)} />
-          <Tooltip label="Remove option" pos="is-left"><button className={"ib ib-36 ib-tertiary" + (opts.length <= 2 ? " is-disabled" : "")}
-            aria-label="Remove option" disabled={opts.length <= 2} onClick={() => delOpt(i)}>
-            <Icon name="trash" size={16} /></button></Tooltip>
-        </div>
-      ))}
-      <button className="btn btn-link" style={{ alignSelf: "center", padding: "4px 6px" }} onClick={addOpt}>
-        <Icon name="plus" size={16} />Add option</button>
-    </div>
-  );
-}
-
 export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubmit, onDelete }) {
   const editing = !!question;
   const submitFn = onSubmit || onAdd;
@@ -98,31 +78,25 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
   const [type, setType] = useState(question ? question.type : "scale5");
   // A custom question always belongs to an existing topic — default to the first.
   const [topic, setTopic] = useState(question && question.topic ? question.topic : topicList[0]);
-  const [opts, setOpts] = useState(question && question.options ? [...question.options] : [...DEFAULT_MC]);
   const [attempted, setAttempted] = useState(false);
-
-  const setOpt = (i, v) => setOpts(o => o.map((x, j) => j === i ? v : x));
-  const addOpt = () => setOpts(o => [...o, ""]);
-  const delOpt = (i) => setOpts(o => o.filter((_, j) => j !== i));
+  const [tipsOpen, setTipsOpen] = useState(true);
 
   const textErr = text.trim().length <= 2;
-  const optsErr = type === "multiple" && opts.filter(o => o.trim()).length < 2;
   const showTextErr = attempted && textErr;
-  const showOptsErr = attempted && optsErr;
 
   const submit = () => {
     setAttempted(true);
-    if (textErr || optsErr) return;
+    if (textErr) return;
     submitFn({
       ...(question || {}),
       id: question ? question.id : "c" + Date.now(),
       topic, theme: question ? question.theme : null, bench: false, type, custom: true,
       text: text.trim(), desc: desc.trim() || undefined,
-      options: type === "multiple" ? opts.filter(o => o.trim()) : undefined,
     });
   };
 
-  const typeItems = Object.entries(QTYPES).filter(([, m]) => m.creatable).map(([k, m]) => ({
+  // Multiple choice is no longer offered for custom questions.
+  const typeItems = Object.entries(QTYPES).filter(([k, m]) => m.creatable && k !== "multiple").map(([k, m]) => ({
     value: k, label: m.label, lead: <QTypeIcon type={k} size={24} />,
   }));
   const topicItems = topicList.map(t => ({ value: t, label: t }));
@@ -136,40 +110,56 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-          <h2 className="dialog-title" id="cq-title">{editing ? "Edit custom question" : "Create a custom question"}</h2>
-          <p className="dialog-subtitle">Write your own question and choose how people answer it.</p>
+          <h2 className="dialog-title" id="cq-title">{editing ? "Edit custom question" : "Custom question"}</h2>
+          <p className="dialog-subtitle">Write your own question and choose how people answer it. Use this for specific questions that are only valid for your context.</p>
         </div>
 
         <div className="dialog-body scroll-y" style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-loose)" }}>
-          <div className="cq-grid">
-            <div>
-              <span className="cq-lbl">Answer type</span>
-              <MiniSelect ariaLabel="Answer type" value={type} items={typeItems} onChange={setType} />
+          {tipsOpen && (
+            <div className="cq-gtk">
+              <div className="cq-gtk-title">Good to know</div>
+              <div className="cq-gtk-row">
+                <span className="cq-gtk-ic"><Icon name="lightbulb" size={16} /></span>
+                <span className="cq-gtk-txt">Avoid phrasing your questions negatively. Learn more about <a className="cq-tip-link" href="#" onClick={e => e.preventDefault()}>how to form a question<Icon name="external-link" size={14} /></a></span>
+              </div>
+              <div className="cq-gtk-row">
+                <span className="cq-gtk-ic"><Icon name="language" size={16} /></span>
+                <span className="cq-gtk-txt">Translations will be done automatically and can be reviewed later</span>
+              </div>
+              <div className="cq-gtk-row">
+                <span className="cq-gtk-ic"><Icon name="barchart-2" size={16} /></span>
+                <span className="cq-gtk-txt">No benchmark comparisons available for custom questions</span>
+              </div>
+              <button className="cq-gtk-close" aria-label="Dismiss" onClick={() => setTipsOpen(false)}><Icon name="cross" size={16} /></button>
             </div>
-            <div>
+          )}
+
+          <div className="cq-selects">
+            <div className="cq-field">
               <span className="cq-lbl">Add to topic
                 <span className="cq-info" title="Topics organise questions in your questionnaire. They don't affect benchmarks.">
                   <Icon name="info" size={16} /></span>
               </span>
-              <MiniSelect ariaLabel="Add to topic" value={topic} items={topicItems} onChange={setTopic} />
+              <MiniSelect ariaLabel="Add to topic" value={topic} items={topicItems} onChange={setTopic} block />
+            </div>
+            <div className="cq-field">
+              <span className="cq-lbl">Answer type</span>
+              <MiniSelect ariaLabel="Answer type" value={type} items={typeItems} onChange={setType} block />
             </div>
           </div>
 
-          <div className="cq-preview">
+          <div className="cq-panel">
             <textarea className={"cq-qfield" + (showTextErr ? " is-error" : "")} rows={1} autoFocus value={text}
               onChange={e => setText(e.target.value)} placeholder="Type question text" />
             {showTextErr && <div className="tf-err"><Icon name="alert-circle" size={14} />Write a question of at least a few words.</div>}
             <textarea className="cq-descfield" rows={1} value={desc}
               onChange={e => setDesc(e.target.value)} placeholder="Add description" />
             <div className="cq-answercard">
-              {type === "multiple"
-                ? <OptionList opts={opts} setOpt={setOpt} addOpt={addOpt} delOpt={delOpt} invalid={showOptsErr} />
-                : type === "text"
-                  ? <textarea className="ta" rows={4} disabled placeholder="Share your thoughts…"
-                      style={{ background: "var(--bg-secondary)", resize: "none", minHeight: 96 }} />
-                  : <ScalePreview />}
+              {type === "text"
+                ? <textarea className="ta" rows={4} disabled placeholder="Share your thoughts…"
+                    style={{ background: "var(--bg-secondary)", resize: "none", minHeight: 96 }} />
+                : <ScalePreview />}
             </div>
-            {showOptsErr && <div className="tf-err"><Icon name="alert-circle" size={14} />Add at least two answer options.</div>}
           </div>
         </div>
 
@@ -179,9 +169,9 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
               <Icon name="trash" size={16} />Delete question</button>
           )}
           <div className="spacer" />
-          <button className="btn btn-tertiary" onClick={onCancel}>Cancel</button>
+          <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
           <button className="btn btn-primary" onClick={submit}>
-            {editing ? "Save changes" : <><Icon name="plus" size={16} />Create question</>}</button>
+            {editing ? "Save changes" : "Create"}</button>
         </div>
       </div>
     </div>

@@ -101,7 +101,7 @@ function TemplatePreviewView({ t, onBack, onUse }) {
   );
 }
 
-export function TemplateModal({ onClose, onUse, onScratch }) {
+export function TemplateModal({ changing, onClose, onUse, onScratch }) {
   const [q, setQ] = useState("");
   const [preview, setPreview] = useState(null);
   const list = TEMPLATES.filter(t => t.name.toLowerCase().includes(q.toLowerCase()));
@@ -122,6 +122,17 @@ export function TemplateModal({ onClose, onUse, onScratch }) {
               <h2 className="dialog-title" id="tpl-title">Choose a survey template</h2>
               <p className="dialog-subtitle">Save time with pre-made survey templates crafted by our experts</p>
             </div>
+            {changing && (
+              <div className="inline-notif is-warn">
+                <img className="inline-notif-icon" alt="" width="24" height="24" src="assets/icons/notification-warning.svg" />
+                <div className="inline-notif-content">
+                  <div className="inline-notif-text">
+                    <span className="inline-notif-title">This resets your questionnaire</span>
+                    <span className="inline-notif-msg">Selecting another template or starting from scratch replaces the questions you've added so far.</span>
+                  </div>
+                </div>
+              </div>
+            )}
             <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
               <div className="search-wrap" style={{ flex: 1 }}>
                 <span className="search-icon"><Icon name="search" size={16} /></span>

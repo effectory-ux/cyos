@@ -23,8 +23,38 @@ export const TOPICS = [
 // Themes carry a composite score + an explanation shown in the Theme view.
 // Only ~30% of library questions belong to a theme.
 export const THEMES = {
-  "Onboarding experience": { desc: "How well new joiners are welcomed and set up to succeed in their first weeks.", score: 8.1, benchmark: 7.6 },
-  "Leadership":            { desc: "Trust in — and support from — direct managers and senior leadership.", score: 7.7, benchmark: 7.3 },
+  "Onboarding experience": {
+    desc: "How well new joiners are welcomed and set up to succeed in their first weeks.",
+    about: "Onboarding experience looks at how confident and connected new joiners feel in their first weeks — whether they were made welcome, got up to speed quickly, and had what they needed to do their job. It's an early signal of how well people will settle in and stay. Keep all its questions together to read it as one score.",
+    score: 8.1, benchmark: 7.6 },
+  "Leadership": {
+    desc: "Trust in — and support from — direct managers and senior leadership.",
+    about: "Leadership measures how much people trust and feel supported by their managers and senior leaders — from everyday feedback and development to confidence in the decisions being made. It's one of the clearest drivers of how engaged people are and whether they stay. Keep all its questions together to read it as one score.",
+    score: 7.7, benchmark: 7.3 },
+  "Engagement": {
+    desc: "How inspired, energized and committed people feel about their work.",
+    about: "Engagement captures how much energy and commitment people bring to their work, and how connected they feel to where the organization is going. It's one of the strongest signals of motivation and whether people intend to stay. Keep all its questions together to read it as one score.",
+    score: 7.9, benchmark: 7.5 },
+  "Collaboration": {
+    desc: "How well people and teams work together and share what they know.",
+    about: "Collaboration looks at how smoothly people work across teams — sharing information, handling disagreements well, and helping each other get things done. Strong collaboration shows up in faster decisions and less friction. Keep all its questions together to read it as one score.",
+    score: 7.4, benchmark: 7.2 },
+  "Wellbeing": {
+    desc: "Whether people can sustain their energy, workload and balance over time.",
+    about: "Wellbeing looks at whether workload and pace are sustainable and whether people can balance work with the rest of life. It's an early warning sign for burnout and drop-off in performance. Keep all its questions together to read it as one score.",
+    score: 7.1, benchmark: 6.9 },
+  "Development": {
+    desc: "Whether people can grow, learn and progress in their role.",
+    about: "Development measures whether people see room to learn, grow and move forward in their work. It's closely tied to motivation and to whether people picture a future with the organization. Keep all its questions together to read it as one score.",
+    score: 7.3, benchmark: 7.0 },
+  "Strategic alignment": {
+    desc: "How clearly people understand the direction and how their work fits in.",
+    about: "Strategic alignment looks at whether people understand where the organization is heading and can see how their own work contributes. When it's strong, effort points in the same direction. Keep all its questions together to read it as one score.",
+    score: 7.2, benchmark: 7.1 },
+  "Inclusion": {
+    desc: "Whether people feel respected, heard and able to be themselves at work.",
+    about: "Inclusion looks at whether people feel respected, safe to speak up, and able to be themselves at work. It underpins trust, collaboration and engagement across every group. Keep all its questions together to read it as one score.",
+    score: 7.6, benchmark: 7.3 },
 };
 export const CUSTOM_GROUP = "Your custom questions";
 

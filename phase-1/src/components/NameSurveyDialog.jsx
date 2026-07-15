@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Icon } from "./Icon.jsx";
 import { Tooltip } from "./shared.jsx";
 
-export function NameSurveyDialog({ suggested, isTemplate, templateName, onBack, onConfirm }) {
+export function NameSurveyDialog({ suggested, isTemplate, templateName, changing, onBack, onConfirm }) {
   const [name, setName] = useState(suggested || "");
   const [attempted, setAttempted] = useState(false);
   const ref = useRef(null);
@@ -36,6 +36,17 @@ export function NameSurveyDialog({ suggested, isTemplate, templateName, onBack, 
           <p className="dialog-subtitle">{subtitle}</p>
         </div>
         <div className="dialog-body">
+          {changing && (
+            <div className="inline-notif is-warn" style={{ marginBottom: "var(--spacing-base)" }}>
+              <img className="inline-notif-icon" alt="" width="24" height="24" src="assets/icons/notification-warning.svg" />
+              <div className="inline-notif-content">
+                <div className="inline-notif-text">
+                  <span className="inline-notif-title">This resets your questionnaire</span>
+                  <span className="inline-notif-msg">Confirming replaces the questions you've added so far.</span>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="tf-wrap">
             <label className="tf-lbl" htmlFor="ns-input">Survey name <span className="tf-required">*</span></label>
             <div className="tf-field">
@@ -50,7 +61,7 @@ export function NameSurveyDialog({ suggested, isTemplate, templateName, onBack, 
         <div className="dialog-footer">
           <button className="btn btn-secondary" onClick={onBack}><Icon name="arrow-left" size={16} />Back</button>
           <div className="spacer" />
-          <button className="btn btn-primary" onClick={confirm}>Create survey<Icon name="arrow-right" size={16} /></button>
+          <button className="btn btn-primary" onClick={confirm}>{changing ? "Confirm" : "Create survey"}<Icon name="arrow-right" size={16} /></button>
         </div>
       </div>
     </div>
