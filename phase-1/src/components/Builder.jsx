@@ -4,6 +4,7 @@ import { Icon } from "./Icon.jsx";
 import { themeStatus, groupQuestions, QTypeIcon, Tag, ThemeTag, CustomTag, Tooltip } from "./shared.jsx";
 import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { TEMPLATES, BADGE_COLORS, THEMES } from "../data/data.js";
+import { templatePoolQuestions } from "../data/qlib.js";
 
 // Small rename dialog — used for the survey name and for a topic's
 // questionnaire-specific label.
@@ -216,8 +217,8 @@ function reconcileLayout(prev, groups) {
   return next;
 }
 
-export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onChangeTemplate }) {
-  const { name, templateName, isTemplate, selectedIds, pool } = survey;
+export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates }) {
+  const { name, isTemplate, selectedIds, pool } = survey;
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
   const [topicWarn, setTopicWarn] = useState(null); // section pending removal confirmation
@@ -245,7 +246,13 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   const broken = status.filter(t => t.touched && !t.complete);
   const customized = isTemplate && broken.length > 0;
   const groups = groupQuestions(chosen, "library");
-  const badge = isTemplate ? (BADGE_COLORS[(TEMPLATES.find(t => t.name === templateName) || {}).badge || "teal"]) : null;
+  // Header meta: a theme is "active" when every one of its questions is selected
+  // (a scored theme); a template is "active" when its whole question set is in.
+  const activeThemes = themeGroups.filter(t => t.total > 0 && t.kept >= t.total).length;
+  const activeTemplates = TEMPLATES.filter(t => {
+    const qs = templatePoolQuestions(t.id);
+    return qs.length > 0 && qs.every(qq => sel.has(qq.id));
+  });
 
   // On-page ordering the user can drag-reorder. Lives only here — the Add
   // questions dialog always works from the library order, never this one.
@@ -429,25 +436,47 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
           <h1 className="text-l2" style={{ margin: "0 0 4px" }}>Questions</h1>
           <p style={{ margin: "0 0 var(--spacing-loose)", fontSize: 14, lineHeight: 1.6, color: "var(--content-secondary)" }}>Select the question sets and single questions that you want to include in this survey.</p>
 
-          <div className="card ov-card" style={{ padding: "var(--spacing-loose)", display: "flex", alignItems: "center", gap: "var(--spacing-base)" }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 16, fontWeight: 600, lineHeight: "24px", color: "var(--content-base)" }}>{chosen.length} {chosen.length === 1 ? "question" : "questions"} selected</span>
-                {customized && <Tag kind="theme-broken">Customized</Tag>}
+          <div className="card ov-card">
+            <div className="ov-top">
+              <div className="ov-content">
+                {chosen.length === 0 ? (
+                  <>
+                    <span className="ov-count">Start adding your questions</span>
+                    <div className="ov-meta"><span>A short summary of your selection will show here</span></div>
+                  </>
+                ) : (
+                  <>
+                    <div className="ov-count-row">
+                      <span className="ov-count">{chosen.length} {chosen.length === 1 ? "question" : "questions"} selected</span>
+                      {customized && <Tag kind="theme-broken">Customized</Tag>}
+                    </div>
+                    <div className="ov-meta">
+                      {activeThemes > 0 && <>
+                        <span>{activeThemes} active {activeThemes === 1 ? "theme" : "themes"}</span>
+                        <span className="ov-dot" aria-hidden="true" />
+                      </>}
+                      <span>{estMinutes} {estMinutes === 1 ? "minute" : "minutes"} completion time</span>
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="ov-meta">
-                <span>{estMinutes} {estMinutes === 1 ? "minute" : "minutes"} completion time</span>
-                <span className="ov-dot" aria-hidden="true">·</span>
-                <Tooltip label="Select a different template" pos="is-below">
-                  <button className="btn btn-tertiary ov-tmpl-btn" onClick={onChangeTemplate}>
-                    {isTemplate && badge && <span className="ov-badge" style={{ background: badge.bg, color: badge.fg }}><Icon name={badge.icon} size={12} /></span>}
-                    {isTemplate ? templateName : "Start from a template"}
-                    <Icon name="edit" size={16} />
-                  </button>
-                </Tooltip>
-              </div>
+              <button className="btn btn-primary" style={{ flex: "none" }} onClick={onEditQuestions}><Icon name="plus" size={16} />Add questions</button>
             </div>
-            <button className="btn btn-primary" style={{ flex: "none" }} onClick={onEditQuestions}><Icon name="plus" size={16} />Add questions</button>
+            {chosen.length > 0 && activeTemplates.length > 0 && (
+              <div className="ov-tags">
+                {activeTemplates.map(t => {
+                  const b = BADGE_COLORS[t.badge] || {};
+                  return (
+                    <Tooltip key={t.id} label="View in Templates" pos="is-below">
+                      <button className="ov-tmpl-tag" style={{ background: b.bg }} onClick={onOpenTemplates}>
+                        <Icon name={b.icon} size={16} style={{ color: b.fg }} />
+                        {t.name}
+                      </button>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="qsec-list">
@@ -511,8 +540,8 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
                   )}
                 </div>
               </div>
+              {locked && <div className="qsec-lock-msg"><span><Icon name="lock" size={16} />You can reorder standard questions within their topic only</span></div>}
               <div className="qsec-body" onDragOver={questionBodyDragOver(s.key)} onDrop={questionBodyDrop(s.key)}>
-                {locked && <div className="qsec-lock-msg"><span><Icon name="lock" size={16} />You can reorder standard questions within their topic only</span></div>}
                 {previewItems(s).map((qq) => {
                   const i = s.items.findIndex(x => x.id === qq.id);
                   return <BuilderRow key={qq.id} q={qq}
@@ -536,20 +565,22 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
             <div style={{ marginTop: "var(--spacing-extra-loose)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "var(--spacing-loose)", textAlign: "center" }}>
               <div className="text-l5" style={{ color: "var(--content-secondary)" }}>Want to add or remove questions?</div>
               <div className="text-medium text-subdued">Open the question editor to select questions or write your own.</div>
-              <button className="btn btn-secondary" onClick={onEditQuestions}><Icon name="edit" size={16} />Add questions</button>
+              <button className="btn btn-secondary" onClick={onEditQuestions}><Icon name="plus" size={16} />Add questions</button>
             </div>
           )}
 
           {chosen.length === 0 && (
-            <div className="card" style={{ marginTop: "var(--spacing-loose)", border: "1px dashed var(--border-action)", boxShadow: "none",
-              padding: "var(--spacing-super-extra-loose) var(--spacing-super-loose)", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--spacing-loose)", textAlign: "center" }}>
-              <span style={{ width: 96, height: 96, borderRadius: "50%", background: "var(--bg-brand-subtle)", color: "var(--content-brand-base)", display: "grid", placeItems: "center" }}><Icon name="book-open" size={44} /></span>
-              <div>
-                <h2 className="text-l4" style={{ margin: 0 }}>Your questionnaire is empty</h2>
-                <p className="text-large" style={{ margin: "10px auto 0", color: "var(--content-secondary)", maxWidth: 440 }}>
-                  Pick from Effectory’s validated question library — grouped by topic — or write your own custom questions.</p>
+            <div className="qb-empty">
+              <div className="qb-empty-title">Added questions will show here</div>
+              <div className="qb-empty-sub">After adding questions you can easily change the order to fit your needs.</div>
+              <div className="qb-empty-rows" aria-hidden="true">
+                {[105, 164, 134].map((w, i) => (
+                  <div key={i} className="qb-empty-row">
+                    <Icon name="drag-drop" size={12} />
+                    <span className="qb-empty-bar" style={{ width: w }} />
+                  </div>
+                ))}
               </div>
-              <button className="btn btn-primary" onClick={onEditQuestions}><Icon name="plus" size={16} />Add questions</button>
             </div>
           )}
         </div>

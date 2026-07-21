@@ -1,5 +1,6 @@
 // shared.jsx — small reusable pieces built on the Engage DS.
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 import { POOL, THEMES, CUSTOM_GROUP, QTYPES } from "../data/data.js";
 
@@ -57,14 +58,14 @@ export function rowSubtext(q, sort) {
 // ---- type tile ---------------------------------------------------------
 // `tip` wraps the (label-less) tile in a DS tooltip naming the question type —
 // used where the icon stands alone, e.g. the Add questions dialog rows.
-export function QTypeIcon({ type, size = 24, tip = false, pos = "is-above" }) {
+export function QTypeIcon({ type, size = 24, tip = false, pos = "is-above", float = false }) {
   const m = QTYPES[type];
   const tile = (
     <span className="qtile" style={{ background: m.bg, color: m.fg, width: size, height: size }} title={tip ? undefined : m.label}>
       <Icon name={m.icon} size={size === 24 ? 16 : Math.round(size * 0.66)} />
     </span>
   );
-  return tip ? <Tooltip label={m.label} pos={pos}>{tile}</Tooltip> : tile;
+  return tip ? <Tooltip label={m.label} pos={pos} float={float}>{tile}</Tooltip> : tile;
 }
 
 // ---- tooltip -----------------------------------------------------------
@@ -72,11 +73,33 @@ export function QTypeIcon({ type, size = 24, tip = false, pos = "is-above" }) {
 // DS .tt-demo/.tooltip pattern, revealed on hover/focus (CSS in app.css).
 // `wrapClass` lets an absolutely-positioned target (e.g. .dialog-close) hand its
 // positioning to the wrapper — see `.dialog-close-tt`.
-export function Tooltip({ label, pos = "is-below", wrapClass, children }) {
+// `float` renders the bubble in a portal with fixed positioning so it escapes
+// any `overflow` clipping on ancestor containers (e.g. a scrolling dialog body).
+// Non-float keeps the pure-CSS absolute bubble (used in the builder, where drag
+// handles rely on the CSS :hover / tips-off behaviour).
+export function Tooltip({ label, pos = "is-below", wrapClass, float, children }) {
+  const [show, setShow] = useState(false);
+  const [xy, setXY] = useState(null);
+  const ref = useRef(null);
+  const measure = () => {
+    const el = ref.current; if (!el) return;
+    const r = el.getBoundingClientRect(), gap = 10;
+    if (pos === "is-below") setXY({ left: r.left + r.width / 2, top: r.bottom + gap });
+    else if (pos === "is-left") setXY({ left: r.left - gap, top: r.top + r.height / 2 });
+    else if (pos === "is-right") setXY({ left: r.right + gap, top: r.top + r.height / 2 });
+    else setXY({ left: r.left + r.width / 2, top: r.top - gap }); // is-above (default)
+  };
+  const open = () => { measure(); setShow(true); };
+  const close = () => setShow(false);
   return (
-    <span className={"tt-demo" + (wrapClass ? " " + wrapClass : "")}>
+    <span ref={ref} className={"tt-demo" + (wrapClass ? " " + wrapClass : "")}
+      onMouseEnter={float ? open : undefined} onMouseLeave={float ? close : undefined}
+      onFocus={float ? open : undefined} onBlur={float ? close : undefined}>
       {children}
-      <span className={"tooltip " + pos} role="tooltip">{label}</span>
+      {!float && <span className={"tooltip " + pos} role="tooltip">{label}</span>}
+      {float && show && xy && createPortal(
+        <span className={"tooltip tooltip-float " + pos} role="tooltip" style={{ left: xy.left, top: xy.top }}>{label}</span>,
+        document.body)}
     </span>
   );
 }
@@ -114,7 +137,7 @@ function tagActivate(onOpen) {
   };
 }
 
-export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", onOpen }) {
+export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", float = false, onOpen }) {
   const complete = total > 0 && kept >= total;
   const partial = kept > 0 && !complete;
   const state = complete ? "is-complete" : partial ? "is-progress" : "is-neutral";
@@ -123,7 +146,7 @@ export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", onOpen }
     : partial ? `Add ${total - kept} more to complete`
       : `Add ${total} questions to complete`;
   return (
-    <Tooltip label={<><span className="tt-title">{theme}</span>{status}</>} pos={pos}>
+    <Tooltip label={<><span className="tt-title">{theme}</span>{status}</>} pos={pos} float={float}>
       <span className={"tag tag-thm " + state + (onOpen ? " is-interactive" : "")} {...tagActivate(onOpen)}>
         {complete ? <span className="tag-ic"><Icon name="check" size={10} /></span>
           : partial ? <ProgressRing pct={kept / total} /> : null}
@@ -134,9 +157,9 @@ export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", onOpen }
 }
 
 // Custom-question tag. Interactive (with an edit tooltip) when `onOpen` is given.
-export function CustomTag({ label = "Custom", pos = "is-left", onOpen }) {
+export function CustomTag({ label = "Custom", pos = "is-left", float = false, onOpen }) {
   return (
-    <Tooltip label={onOpen ? "Edit custom question" : "Custom question"} pos={pos}>
+    <Tooltip label={onOpen ? "Edit custom question" : "Custom question"} pos={pos} float={float}>
       <span className={"tag tag-custom-q" + (onOpen ? " is-interactive" : "")} {...tagActivate(onOpen)}>
         <Icon name="edit-inline" size={10} /><span className="tag-ellip">{label}</span>
       </span>

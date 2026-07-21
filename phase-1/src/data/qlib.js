@@ -225,6 +225,20 @@ export const TEMPLATE_META = Object.fromEntries(Object.entries(TEMPLATE_PREVIEWS
   return [k, { count, minutes: Math.max(3, Math.round(count * 0.5)) }];
 }));
 
+// A single template's own question set as pool-shaped objects. Ids follow the
+// same scheme as surveyFromTemplate (`${templateId}-${groupIndex}-${qIndex}`),
+// so a Templates-tab card and a survey built from that template share ids — a
+// template reads as "active" when all of these ids are selected.
+export function templatePoolQuestions(templateId) {
+  const groups = TEMPLATE_PREVIEWS[templateId] || [];
+  const out = [];
+  groups.forEach((g, gi) => g.questions.forEach((q, qi) => {
+    out.push({ id: `${templateId}-${gi}-${qi}`, topic: g.topic, theme: q.theme || null,
+      type: q.type, bench: true, custom: false, tmplId: templateId, text: q.text, options: q.options });
+  }));
+  return out;
+}
+
 // A broad shared question bank — the rest of the "library" beyond any single
 // template. Added (unselected) to every survey's pool so there's a realistic
 // amount to choose from in Add questions. Original, generic wording only.

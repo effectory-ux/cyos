@@ -7,7 +7,7 @@ import { EditQuestionsDialog, ThemeConfirm } from "./components/EditQuestionsDia
 import { CustomQuestionDialog } from "./components/CustomQuestionDialog.jsx";
 import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus } from "./components/shared.jsx";
-import { POOL, SEED_SURVEYS } from "./data/data.js";
+import { POOL, SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
 import { libraryPool } from "./data/qlib.js";
 
 // Behaviour the design iterations landed on: removing the last question of a
@@ -22,6 +22,9 @@ export function App() {
   // template of the current survey (which resets its questionnaire).
   const [changing, setChanging] = useState(false);
   const [editing, setEditing] = useState(false);
+  // Which tab the Add-questions dialog opens on ("questions" default; a builder
+  // template tag opens it on "templates").
+  const [editTab, setEditTab] = useState("questions");
   const [survey, setSurvey] = useState(null);
   const [removeConfirm, setRemoveConfirm] = useState(null);
   const [editCustom, setEditCustom] = useState(null);
@@ -40,11 +43,11 @@ export function App() {
   // updates in place (a fresh id is minted only for a brand-new survey).
   const keepId = () => (changing && survey ? { id: survey.id } : {});
   const useTemplate = (tmpl) => {
-    // Template's curated questions are pre-selected; the rest of the shared
-    // library comes along (unselected) so there's plenty more to add.
-    const pool = [...POOL.map(q => ({ ...q })), ...libraryPool()];
-    const selectedIds = pool.filter(q => q.tmpl).map(q => q.id);
-    setPending({ suggested: tmpl.name, survey: { ...keepId(), templateName: tmpl.name, isTemplate: true, selectedIds, pool } });
+    // Build the survey from the template's own question set — all selected, so
+    // the template reads as "active" in the builder + Templates tab. The rest of
+    // the shared library rides along (unselected) so there's plenty more to add.
+    const base = surveyFromTemplate(tmpl.id, null, tmpl.name);
+    setPending({ suggested: tmpl.name, survey: { ...base, ...keepId() } });
     setModal(false);
   };
   const startScratch = () => {
@@ -122,18 +125,18 @@ export function App() {
       {screen === "surveys" && <Sidebar />}
       {screen === "surveys"
         ? <SurveysPage rows={surveysList} onCreate={() => setModal(true)} onDeleteDraft={deleteSurvey} onOpen={openSurvey} />
-        : <Builder survey={survey} onEditQuestions={() => setEditing(true)} onExit={() => { setScreen("surveys"); }}
+        : <Builder survey={survey} onEditQuestions={() => { setEditTab("questions"); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveCustomTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
-            onChangeTemplate={() => { setChanging(true); setModal(true); }} />}
+            onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }} />}
 
       {modal && <TemplateModal changing={changing} onClose={closeModal} onUse={useTemplate} onScratch={startScratch} />}
       {pending && <NameSurveyDialog suggested={pending.suggested} isTemplate={pending.survey.isTemplate}
         templateName={pending.survey.templateName} changing={changing} onBack={cancelName} onConfirm={confirmName} />}
       {editing && survey && (
         <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds} tweaks={TWEAKS}
-          onClose={() => setEditing(false)} onSave={saveQuestions} />
+          initialTab={editTab} onClose={() => setEditing(false)} onSave={saveQuestions} />
       )}
       {removeConfirm && <ThemeConfirm q={removeConfirm}
         onKeep={() => setRemoveConfirm(null)}

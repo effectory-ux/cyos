@@ -3,7 +3,7 @@
 // THEME = research-based construct with a COMPOSITE SCORE. Only ~30–50% of
 //         questions belong to a theme. A theme's score appears in results only
 //         if ALL of its questions are kept — breaking it is a deliberate problem.
-import { TEMPLATE_PREVIEWS, libraryPool } from "./qlib.js";
+import { libraryPool, templatePoolQuestions } from "./qlib.js";
 
 export const QTYPES = {
   scale5:   { label: "5-point scale",   icon: "point-scale",  bg: "var(--bg-accent-turquoise-subtle)", fg: "var(--content-accent-turquoise-base)", creatable: true },
@@ -141,15 +141,16 @@ export const SCALE_LABELS = ["Strongly disagree", "Disagree", "Neutral", "Agree"
 // question set in the library export — so each template loads its own questions.
 // `preselectPerTopic` controls how many questions per topic start selected — the
 // rest stay in the library, unselected, so there are plenty more to add.
-export function surveyFromTemplate(templateId, id, name, preselectPerTopic = 3) {
-  const groups = TEMPLATE_PREVIEWS[templateId] || [];
-  const pool = [], selectedIds = [];
-  groups.forEach((g, gi) => g.questions.forEach((q, qi) => {
-    const qid = `${templateId}-${gi}-${qi}`;
-    pool.push({ id: qid, topic: g.topic, theme: q.theme || null,
-      type: q.type, bench: true, custom: false, text: q.text, options: q.options });
-    if (qi < preselectPerTopic) selectedIds.push(qid);
-  }));
+export function surveyFromTemplate(templateId, id, name, preselectPerTopic = Infinity) {
+  const tqs = templatePoolQuestions(templateId);
+  const pool = [...tqs], selectedIds = [];
+  // Pre-select the first N questions of each topic; the rest start unselected.
+  const perTopic = {};
+  tqs.forEach(q => {
+    const n = perTopic[q.topic] || 0;
+    if (n < preselectPerTopic) selectedIds.push(q.id);
+    perTopic[q.topic] = n + 1;
+  });
   // Add the rest of the shared library (unselected) so there's plenty more to
   // choose from in "Add questions" beyond the template's own picks.
   libraryPool().forEach(q => pool.push(q));

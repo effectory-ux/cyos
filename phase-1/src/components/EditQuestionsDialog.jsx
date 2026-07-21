@@ -7,7 +7,17 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { Icon } from "./Icon.jsx";
 import { themeStatus, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag } from "./shared.jsx";
 import { CustomQuestionDialog } from "./CustomQuestionDialog.jsx";
-import { THEMES, POOL } from "../data/data.js";
+import { THEMES, POOL, TEMPLATES, BADGE_COLORS } from "../data/data.js";
+import { templatePoolQuestions, TEMPLATE_META } from "../data/qlib.js";
+
+// Two-line tooltip for a "select the whole subject" checkbox — names the current
+// state and the action a click performs (select the rest, or clear them).
+function selectAllTip(nSel, total) {
+  if (total === 0) return "Select all";
+  if (nSel === 0) return "Select all questions";
+  if (nSel >= total) return <><span className="tt-title">All {total} selected</span>Deselect all questions</>;
+  return <><span className="tt-title">{nSel} of {total} selected</span>Select all questions</>;
+}
 
 // Checkbox + tooltip for one question row. State semantics (per the frame):
 //   empty  → "Add to questionnaire"
@@ -17,7 +27,7 @@ function RowCheckbox({ on, fromTemplate, onClick }) {
   const label = !on ? "Add to questionnaire"
     : fromTemplate ? "Added to questionnaire from template" : "Just added to questionnaire";
   return (
-    <Tooltip label={label} pos="is-right">
+    <Tooltip label={label} pos="is-above" float>
       <Checkbox on={on} large subtle={on && fromTemplate} onClick={onClick} />
     </Tooltip>
   );
@@ -29,10 +39,10 @@ function QRow({ q, on, fromTemplate, onToggle, rowRef, leaving, themeInfo, onOpe
       <RowCheckbox on={on} fromTemplate={fromTemplate} onClick={(e) => { e.stopPropagation(); onToggle(); }} />
       <div className="aql-text">{q.text}</div>
       {q.theme
-        ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-left"
+        ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-above" float
             onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
-        : q.custom ? <CustomTag label="Custom question" pos="is-left" onOpen={onEditCustom ? () => onEditCustom(q) : undefined} /> : null}
-      <QTypeIcon type={q.type} size={24} tip pos="is-left" />
+        : q.custom ? <CustomTag label="Custom question" pos="is-above" float onOpen={onEditCustom ? () => onEditCustom(q) : undefined} /> : null}
+      <QTypeIcon type={q.type} size={24} tip pos="is-above" float />
     </div>
   );
 }
@@ -40,28 +50,43 @@ function QRow({ q, on, fromTemplate, onToggle, rowRef, leaving, themeInfo, onOpe
 // A theme card (Themes tab). Clicking the card adds/removes the whole theme; a
 // progress bar shows how far the theme is toward complete, and a composite-score
 // line explains that a complete theme becomes one benchmarked score in results.
-function ThemeCard({ theme, onToggleAll, onDetails }) {
-  const { name, desc, kept, total } = theme;
-  const allOn = total > 0 && kept >= total;
-  const pct = total ? Math.round((kept / total) * 100) : 0;
-  const countText = kept === 0 ? `${total} ${total === 1 ? "question" : "questions"}`
-    : allOn ? `All questions selected (${total})`
-      : `${kept} of ${total} questions selected`;
+// A theme / template card share one shape: title · description · a count (+
+// progress bar for themes) · a Select/Active toggle button and a View details
+// link. "Active" (all questions selected) highlights the card and turns the
+// button into a filled "✓ Active"; clicking it again clears the selection.
+function ChoiceCard({ variant, title, desc, illus, selCount, total, onToggle, onDetails }) {
+  const isTemplate = variant === "template";
+  const allOn = total > 0 && selCount >= total;
+  const pct = total ? Math.round((selCount / total) * 100) : 0;
+  // Once every question is in, the button already reads "Active", so the count
+  // drops the "All questions selected" phrasing back to a plain question total.
+  const countText = (allOn || selCount === 0) ? `${total} ${total === 1 ? "question" : "questions"}`
+    : `${selCount} of ${total} questions selected`;
+  // Clicking the card body opens View details; only the Select/Active button
+  // toggles it into the questionnaire.
   return (
-    <div className={"thm-card" + (allOn ? " is-complete" : "")} role="button" tabIndex={0}
-      aria-pressed={allOn} onClick={onToggleAll}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleAll(); } }}>
-      <div className="thm-card-head">
-        <Checkbox on={allOn} large onClick={(e) => { e.stopPropagation(); onToggleAll(); }} />
-        <span className="thm-card-title">{name}</span>
+    <div className={"cc-card " + (isTemplate ? "cc-template" : "cc-theme") + (allOn ? " is-active" : "")}
+      role="button" tabIndex={0} onClick={onDetails}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onDetails(); } }}>
+      <div className="cc-head">
+        {illus && <span className="cc-illus" style={{ background: illus.bg, color: illus.fg }}><Icon name={illus.icon} size={30} /></span>}
+        <span className="cc-title">{title}</span>
+        <p className="cc-desc">{desc}</p>
       </div>
-      <p className="thm-card-desc">{desc}</p>
-      <div className="thm-progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-        {pct > 0 && <div className="thm-progress-fill" style={{ width: pct + "%" }} />}
-      </div>
-      <div className="thm-card-foot">
-        <span className="thm-card-count">{countText}</span>
-        <button className="btn btn-tertiary" onClick={(e) => { e.stopPropagation(); onDetails(); }}>View details<Icon name="info" size={16} /></button>
+      {isTemplate ? (
+        <span className="cc-count">{countText}</span>
+      ) : (
+        <div className="cc-meter">
+          <span className="cc-count">{countText}</span>
+          <div className="cc-progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+            {pct > 0 && <div className="cc-progress-fill" style={{ width: pct + "%" }} />}
+          </div>
+        </div>
+      )}
+      <div className="cc-foot">
+        <button className={"btn " + (allOn ? "btn-primary" : "btn-secondary")} onClick={(e) => { e.stopPropagation(); onToggle(); }}>
+          {allOn ? <><Icon name="check" size={16} />Active</> : "Select"}</button>
+        <button className="btn btn-tertiary" onClick={(e) => { e.stopPropagation(); onDetails(); }}>View details</button>
       </div>
     </div>
   );
@@ -110,21 +135,23 @@ export function ThemeDetailsDialog({ theme, sel, onToggle, onToggleAll, onClose 
         </div>
         <div className="dialog-body scroll-y">
           <div className="aql-sechead" style={{ paddingTop: 0 }}>
-            <Checkbox on={complete} indeterminate={kept > 0 && !complete} large onClick={() => onToggleAll(kept < total)} />
+            <Tooltip label={selectAllTip(kept, total)} pos="is-above" float>
+              <Checkbox on={complete} indeterminate={kept > 0 && !complete} large onClick={() => onToggleAll(kept < total)} />
+            </Tooltip>
             <h3>Theme questions</h3>
             <div className="spacer" />
             <span className="aql-count">{count}</span>
           </div>
           {questions.map(qq => (
             <div key={qq.id} className="aql-row" onClick={() => onToggle(qq.id)}>
-              <Tooltip label={sel.has(qq.id) ? "Remove from questionnaire" : "Add to questionnaire"} pos="is-right">
+              <Tooltip label={sel.has(qq.id) ? "Remove from questionnaire" : "Add to questionnaire"} pos="is-above" float>
                 <Checkbox on={sel.has(qq.id)} large onClick={(e) => { e.stopPropagation(); onToggle(qq.id); }} />
               </Tooltip>
               <div className="aql-text">
                 <span className="thm-q-text">{qq.text}</span>
                 {qq.topic && <span className="thm-q-topic">Found under {qq.topic}</span>}
               </div>
-              <QTypeIcon type={qq.type} size={24} tip pos="is-left" />
+              <QTypeIcon type={qq.type} size={24} tip pos="is-above" float />
             </div>
           ))}
         </div>
@@ -210,6 +237,11 @@ const THEME_SHOW_OPTIONS = [
   { value: "complete", label: "Complete" },
   { value: "incomplete", label: "Incomplete" },
 ];
+const TEMPLATE_SHOW_OPTIONS = [
+  { value: "all", label: "All templates" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Not active" },
+];
 function ShowFilter({ value, onChange, options = SHOW_OPTIONS }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -241,21 +273,94 @@ function ShowFilter({ value, onChange, options = SHOW_OPTIONS }) {
   );
 }
 
-export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onClose, onSave }) {
+// Templates tab → "View details": a full-takeover view (replaces the tabs +
+// toolbar + list) showing a template's questionnaire, with per-question
+// checkboxes and a "Select all questions" toggle. Selecting here is the same
+// action as the card's Select button — it just works question by question.
+function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
+  const b = BADGE_COLORS[t.badge] || {};
+  const meta = TEMPLATE_META[t.id] || {};
+  const groups = groupQuestions(t.questions, "library");
+  const allOn = t.total > 0 && t.selCount >= t.total;
+  return (
+    <>
+      <div className="dialog-header" style={{ paddingRight: 48 }}>
+        <div className="tpv-topbar">
+          <button className="btn btn-secondary" onClick={onBack}><Icon name="arrow-left" size={16} />Back to templates</button>
+        </div>
+      </div>
+      <div className="dialog-body scroll-y" style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-loose)" }}>
+        <div className="tpv-hero">
+          <span className="tpv-illus tpv-illus-fit" style={{ background: b.bg, color: b.fg }}><Icon name={b.icon} size={28} /></span>
+          <div style={{ minWidth: 0 }}>
+            <h2 className="dialog-title" id="tpv-title">{t.name}</h2>
+            <div className="tpv-meta">Standard template · {t.total} questions · {meta.minutes || Math.max(3, Math.round(t.total * 0.5))} minutes</div>
+          </div>
+        </div>
+        <p className="text-medium" style={{ margin: 0, color: "var(--content-secondary)", lineHeight: 1.6 }}>{t.desc}</p>
+        {t.why && (
+          <div>
+            <h3 className="tpv-section-title">Why is it valuable?</h3>
+            <p className="text-medium" style={{ margin: 0, color: "var(--content-secondary)", lineHeight: 1.6 }}>{t.why}{t.why2 ? " " + t.why2 : ""}</p>
+          </div>
+        )}
+        <div className="tmpl-qpanel">
+          <div className="tmpl-qpanel-head">
+            <h3 className="tpv-section-title" style={{ fontSize: 20, margin: 0 }}>Questionnaire</h3>
+            <button className="btn btn-secondary" onClick={() => onSelectAll(!allOn)}>{allOn ? "Deselect all questions" : "Select all questions"}</button>
+          </div>
+          {groups.map(g => {
+            const ids = g.items.map(x => x.id);
+            const gAll = ids.every(id => sel.has(id));
+            const gSome = ids.some(id => sel.has(id));
+            const nSel = g.items.filter(x => sel.has(x.id)).length;
+            return (
+              <section key={g.key} className="tmpl-qsec">
+                <div className="aql-sechead tmpl-qsec-head">
+                  <Tooltip label={selectAllTip(nSel, ids.length)} pos="is-above" float>
+                    <Checkbox on={gAll} indeterminate={gSome && !gAll} large onClick={() => ids.forEach(id => { if (gAll ? sel.has(id) : !sel.has(id)) onToggleQuestion(id); })} />
+                  </Tooltip>
+                  <h3>{g.label}</h3>
+                  <div className="spacer" />
+                  <span className="aql-count">{gSome ? `${nSel} of ${ids.length} questions selected` : `${ids.length} questions`}</span>
+                </div>
+                {g.items.map(qq => (
+                  <div key={qq.id} className="aql-row" onClick={() => onToggleQuestion(qq.id)}>
+                    <Tooltip label={sel.has(qq.id) ? "Remove from questionnaire" : "Add to questionnaire"} pos="is-above" float>
+                      <Checkbox on={sel.has(qq.id)} large onClick={(e) => { e.stopPropagation(); onToggleQuestion(qq.id); }} />
+                    </Tooltip>
+                    <div className="aql-text">{qq.text}</div>
+                    <QTypeIcon type={qq.type} size={24} tip pos="is-above" float />
+                  </div>
+                ))}
+              </section>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", onClose, onSave }) {
   const [pool, setPool] = useState(initialPool);
   const [sel, setSel] = useState(() => new Set(initialSelected));
   const initial = useMemo(() => new Set(initialSelected), []); // selection when the dialog opened
   const [q, setQ] = useState("");
-  const [tab, setTab] = useState("questions");
+  const [tab, setTab] = useState(initialTab);
   const [show, setShow] = useState("all");
   const [themeQ, setThemeQ] = useState("");       // Themes tab search
   const [themeShow, setThemeShow] = useState("all"); // Themes tab completion filter
+  const [tmplQ, setTmplQ] = useState("");         // Templates tab search
+  const [tmplShow, setTmplShow] = useState("all"); // Templates tab active filter
+  const [templateDetail, setTemplateDetail] = useState(null); // template id whose detail takeover is open
   const [customOpen, setCustomOpen] = useState(false);
   const [confirm, setConfirm] = useState(null);
   const [justAdded, setJustAdded] = useState(null); // scroll target right after adding a custom question
   const [toast, setToast] = useState(null);         // { topic }
   const [themeDetails, setThemeDetails] = useState(null); // theme name whose details dialog is open
   const [editCustomQ, setEditCustomQ] = useState(null);   // custom question being edited (via its tag)
+  const [collapsed, setCollapsed] = useState(() => new Set()); // collapsed Question-tab section keys
   // Rows the active filter is about to hide (a question toggled under the
   // Selected / Not-selected filter): kept in view briefly so they ease out
   // instead of vanishing.
@@ -293,6 +398,37 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
     const matchesShow = themeShow === "all" || (themeShow === "complete" ? done : !done);
     return matchesText && matchesShow;
   });
+  // Templates tab: every template with its own question set + how much of it is
+  // currently selected. "active" = the template is fully in the questionnaire
+  // (all its questions selected) — i.e. used as a starting point.
+  const templateCards = useMemo(() => TEMPLATES.map(t => {
+    const questions = templatePoolQuestions(t.id);
+    const selCount = questions.filter(qq => sel.has(qq.id)).length;
+    return { ...t, questions, total: questions.length, selCount, active: questions.length > 0 && selCount === questions.length };
+  }), [sel]);
+  const detailTemplate = templateCards.find(t => t.id === templateDetail) || null;
+  const visibleTemplates = templateCards.filter(t => {
+    const matchesText = [t.name, t.desc].some(v => (v || "").toLowerCase().includes(tmplQ.toLowerCase()));
+    const matchesShow = tmplShow === "all" || (tmplShow === "active" ? t.active : !t.active);
+    return matchesText && matchesShow;
+  });
+  // Selecting a template adds any of its questions missing from the pool, then
+  // selects (or clears) the whole set — several templates can be active at once.
+  const mergeIntoPool = (qs) => setPool(p => {
+    const have = new Set(p.map(x => x.id));
+    const add = qs.filter(qq => !have.has(qq.id));
+    return add.length ? [...p, ...add] : p;
+  });
+  const setTemplate = (t, on) => {
+    const ids = t.questions.map(qq => qq.id);
+    if (on) mergeIntoPool(t.questions);
+    setSel(s => { const n = new Set(s); ids.forEach(id => on ? n.add(id) : n.delete(id)); return n; });
+  };
+  const toggleTemplateQuestion = (t, id) => {
+    mergeIntoPool(t.questions.filter(qq => qq.id === id));
+    setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+
   // Editing a custom question from its tag: update / delete it in the pool.
   const saveCustomEdit = (nq) => { setPool(p => p.map(x => x.id === nq.id ? nq : x)); setEditCustomQ(null); };
   const deleteCustomQ = (nq) => {
@@ -322,8 +458,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
     if (show === "selected") easeOut(qq.id);
   };
   // Closing always drops the dialog back to the default (unfiltered) view.
-  const close = () => { setShow("all"); setThemeShow("all"); onClose(); };
-  const apply = () => { setShow("all"); setThemeShow("all"); onSave([...sel], pool); };
+  const close = () => { setShow("all"); setThemeShow("all"); setTmplShow("all"); onClose(); };
+  const apply = () => { setShow("all"); setThemeShow("all"); setTmplShow("all"); onSave([...sel], pool); };
   const setMany = (ids, on) => setSel(s => { const n = new Set(s); ids.forEach(id => on ? n.add(id) : n.delete(id)); return n; });
   const addCustom = (nq) => {
     setPool(p => [...p, nq]); setSel(s => new Set([...s, nq.id])); setCustomOpen(false);
@@ -342,6 +478,12 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
     .filter(x => (show === "all" ? true : show === "selected" ? sel.has(x.id) : !sel.has(x.id)) || leaving.has(x.id));
   const groups = groupQuestions(visible, "library");
   const selCount = [...sel].length;
+  // Per-section collapse (Questions tab): a chevron per header, plus a
+  // collapse-all / expand-all toolbar toggle over the currently visible groups.
+  const secKeys = groups.map(g => g.key);
+  const allCollapsed = secKeys.length > 0 && secKeys.every(k => collapsed.has(k));
+  const toggleSec = (k) => setCollapsed(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const toggleAllSecs = () => setCollapsed(allCollapsed ? new Set() : new Set(secKeys));
 
   return (
     <div className="overlay" onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
@@ -350,6 +492,12 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
         <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
           <button className="dialog-close" aria-label="Close" onClick={close}><Icon name="cross" /></button>
         </Tooltip>
+        {templateDetail && detailTemplate ? (
+          <TemplateDetailView t={detailTemplate} sel={sel} onBack={() => setTemplateDetail(null)}
+            onToggleQuestion={(id) => toggleTemplateQuestion(detailTemplate, id)}
+            onSelectAll={(on) => setTemplate(detailTemplate, on)} />
+        ) : (
+        <>
         <div className="dialog-header" style={{ paddingRight: 24 }}>
           <h2 className="dialog-title" id="eq-title" style={{ fontSize: 20, lineHeight: "28px" }}>Add question from library</h2>
         </div>
@@ -359,6 +507,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
             onClick={() => setTab("questions")}><Icon name="list-unordered" size={16} />Questions</button>
           <button className={"tab" + (tab === "themes" ? " is-active" : "")} role="tab" aria-selected={tab === "themes"}
             onClick={() => setTab("themes")}><Icon name="themes" size={16} />Themes</button>
+          <button className={"tab" + (tab === "templates" ? " is-active" : "")} role="tab" aria-selected={tab === "templates"}
+            onClick={() => setTab("templates")}><Icon name="layout" size={16} />Templates</button>
         </div>
 
         {tab === "questions" && (
@@ -368,8 +518,11 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
               <input type="search" className="srch" placeholder="Search" value={q} onChange={e => setQ(e.target.value)} />
             </div>
             <ShowFilter value={show} onChange={setShow} />
+            <button className={"btn btn-secondary" + (secKeys.length === 0 ? " is-disabled" : "")} disabled={secKeys.length === 0}
+              style={{ flex: "none" }} onClick={toggleAllSecs}>
+              <Icon name={allCollapsed ? "double-chevron-down" : "double-chevron-up"} size={16} />{allCollapsed ? "Expand all" : "Collapse all"}</button>
             <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
-              <Icon name="plus" size={16} />Create custom question</button>
+              <Icon name="plus" size={16} />Create question</button>
           </div>
         )}
 
@@ -380,6 +533,16 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
               <input type="search" className="srch" placeholder="Search themes" value={themeQ} onChange={e => setThemeQ(e.target.value)} />
             </div>
             <ShowFilter value={themeShow} onChange={setThemeShow} options={THEME_SHOW_OPTIONS} />
+          </div>
+        )}
+
+        {tab === "templates" && (
+          <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
+            <div className="search-wrap" style={{ flex: 1 }}>
+              <span className="search-icon"><Icon name="search" size={16} /></span>
+              <input type="search" className="srch" placeholder="Search templates" value={tmplQ} onChange={e => setTmplQ(e.target.value)} />
+            </div>
+            <ShowFilter value={tmplShow} onChange={setTmplShow} options={TEMPLATE_SHOW_OPTIONS} />
           </div>
         )}
 
@@ -397,12 +560,24 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
                   <div className="aql-themes-empty"><div className="text-medium">No themes match your search or filter.</div></div>
                 ) : (
                   <div className="thm-grid">
-                    {visibleThemes.map(t => <ThemeCard key={t.name} theme={t}
-                      onToggleAll={() => setMany(t.questions.map(x => x.id), t.kept < t.total)}
+                    {visibleThemes.map(t => <ChoiceCard key={t.name} variant="theme"
+                      title={t.name} desc={t.desc} selCount={t.kept} total={t.total}
+                      onToggle={() => setMany(t.questions.map(x => x.id), t.kept < t.total)}
                       onDetails={() => setThemeDetails(t.name)} />)}
                   </div>
                 )}
               </>
+            )
+          ) : tab === "templates" ? (
+            visibleTemplates.length === 0 ? (
+              <div className="aql-themes-empty"><div className="text-medium">No templates match your search or filter.</div></div>
+            ) : (
+              <div className="thm-grid">
+                {visibleTemplates.map(t => <ChoiceCard key={t.id} variant="template"
+                  title={t.name} desc={t.desc} illus={BADGE_COLORS[t.badge]} selCount={t.selCount} total={t.total}
+                  onToggle={() => setTemplate(t, !t.active)}
+                  onDetails={() => setTemplateDetail(t.id)} />)}
+              </div>
             )
           ) : (
             <>
@@ -411,15 +586,24 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
                 const allOn = ids.every(id => sel.has(id));
                 const someOn = ids.some(id => sel.has(id));
                 const nSel = g.items.filter(x => sel.has(x.id)).length;
+                const isColl = collapsed.has(g.key);
                 return (
-                  <section key={g.key} className="aql-sec">
+                  <section key={g.key} className={"aql-sec" + (isColl ? " is-collapsed" : "")}>
                     <div className="aql-sechead">
-                      <Checkbox on={allOn} indeterminate={someOn && !allOn} large onClick={() => setMany(ids, !allOn)} />
+                      <Tooltip label={selectAllTip(nSel, ids.length)} pos="is-above" float>
+                        <Checkbox on={allOn} indeterminate={someOn && !allOn} large onClick={() => setMany(ids, !allOn)} />
+                      </Tooltip>
                       <h3>{g.label}</h3>
                       <div className="spacer" />
                       <span className="aql-count">{someOn ? `${nSel} of ${ids.length} questions selected` : `${ids.length} questions`}</span>
+                      <Tooltip label={isColl ? "Expand" : "Collapse"} pos="is-above" float>
+                        <button className="ib ib-tertiary aql-sec-toggle" aria-label={isColl ? "Expand questions" : "Collapse questions"}
+                          aria-expanded={!isColl} onClick={() => toggleSec(g.key)}>
+                          <Icon name="chevron-down" size={16} className={"aql-chevron" + (isColl ? "" : " is-expanded")} />
+                        </button>
+                      </Tooltip>
                     </div>
-                    {g.items.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} fromTemplate={initial.has(qq.id)}
+                    {!isColl && g.items.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} fromTemplate={initial.has(qq.id)}
                       leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
                       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
                       onToggle={() => toggle(qq)} rowRef={qq.id === justAdded ? addedRef : null} />)}
@@ -432,6 +616,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, onCl
             </>
           )}
         </div>
+        </>
+        )}
 
         <div className="dialog-footer">
           <span className="text-medium text-w500" style={{ color: "var(--content-base)" }}>{selCount} total {selCount === 1 ? "question" : "questions"} selected</span>
