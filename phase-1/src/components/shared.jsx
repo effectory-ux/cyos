@@ -6,10 +6,13 @@ import { POOL, THEMES, CUSTOM_GROUP, QTYPES } from "../data/data.js";
 
 // ---- theme integrity --------------------------------------------------
 // A theme's composite score shows only if ALL its pool questions are kept.
-export function themeStatus(selectedIds) {
+// Computes over the given `pool` (defaults to the shared POOL) — pass the
+// survey's own pool so template-built surveys (whose ids aren't in POOL) still
+// register their themes as complete for the soft-lock.
+export function themeStatus(selectedIds, pool = POOL) {
   const sel = new Set(selectedIds);
   const map = {};
-  POOL.forEach(q => {
+  pool.forEach(q => {
     if (!q.theme) return;
     map[q.theme] = map[q.theme] || { total: 0, kept: 0, name: q.theme };
     map[q.theme].total++;
@@ -69,36 +72,34 @@ export function QTypeIcon({ type, size = 24, tip = false, pos = "is-above", floa
 }
 
 // ---- tooltip -----------------------------------------------------------
-// Wraps an icon-only button (which must still carry its own aria-label) in the
-// DS .tt-demo/.tooltip pattern, revealed on hover/focus (CSS in app.css).
+// Wraps a trigger (icon-only buttons must still carry their own aria-label).
+// The bubble ALWAYS renders in a portal with fixed positioning (so it escapes
+// any `overflow` clipping) and ALWAYS sits ABOVE or BELOW the trigger — never on
+// the sides — flipping below only when there isn't room above near the viewport
+// top. `pos`/`float` props are accepted but ignored (legacy call sites).
 // `wrapClass` lets an absolutely-positioned target (e.g. .dialog-close) hand its
 // positioning to the wrapper — see `.dialog-close-tt`.
-// `float` renders the bubble in a portal with fixed positioning so it escapes
-// any `overflow` clipping on ancestor containers (e.g. a scrolling dialog body).
-// Non-float keeps the pure-CSS absolute bubble (used in the builder, where drag
-// handles rely on the CSS :hover / tips-off behaviour).
-export function Tooltip({ label, pos = "is-below", wrapClass, float, children }) {
+export function Tooltip({ label, wrapClass, children }) {
   const [show, setShow] = useState(false);
   const [xy, setXY] = useState(null);
   const ref = useRef(null);
   const measure = () => {
     const el = ref.current; if (!el) return;
     const r = el.getBoundingClientRect(), gap = 10;
-    if (pos === "is-below") setXY({ left: r.left + r.width / 2, top: r.bottom + gap });
-    else if (pos === "is-left") setXY({ left: r.left - gap, top: r.top + r.height / 2 });
-    else if (pos === "is-right") setXY({ left: r.right + gap, top: r.top + r.height / 2 });
-    else setXY({ left: r.left + r.width / 2, top: r.top - gap }); // is-above (default)
+    // Prefer above; flip below when the trigger is too close to the viewport top
+    // for a (possibly two-line) bubble to fit.
+    const below = r.top < 96;
+    setXY({ side: below ? "is-below" : "is-above",
+      left: r.left + r.width / 2, top: below ? r.bottom + gap : r.top - gap });
   };
   const open = () => { measure(); setShow(true); };
   const close = () => setShow(false);
   return (
     <span ref={ref} className={"tt-demo" + (wrapClass ? " " + wrapClass : "")}
-      onMouseEnter={float ? open : undefined} onMouseLeave={float ? close : undefined}
-      onFocus={float ? open : undefined} onBlur={float ? close : undefined}>
+      onMouseEnter={open} onMouseLeave={close} onMouseDown={close} onFocus={open} onBlur={close}>
       {children}
-      {!float && <span className={"tooltip " + pos} role="tooltip">{label}</span>}
-      {float && show && xy && createPortal(
-        <span className={"tooltip tooltip-float " + pos} role="tooltip" style={{ left: xy.left, top: xy.top }}>{label}</span>,
+      {show && xy && createPortal(
+        <span className={"tooltip tooltip-float " + xy.side} role="tooltip" style={{ left: xy.left, top: xy.top }}>{label}</span>,
         document.body)}
     </span>
   );

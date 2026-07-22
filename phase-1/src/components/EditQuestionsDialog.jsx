@@ -179,13 +179,14 @@ function AddedToast({ topic, onClose }) {
   );
 }
 
-export function ThemeConfirm({ q, onKeep, onRemove }) {
+export function ThemeConfirm({ q, pool, onKeep, onRemove }) {
   const th = THEMES[q.theme] || {};
   const desc = th.desc || "";
   const score = th.score ?? 8.1, bench = th.benchmark ?? 7.6;
   const groupPct = Math.round(score * 10);
   const benchPct = Math.round(bench * 10);
-  const count = POOL.filter(p => p.theme === q.theme).length;
+  // Count the theme's questions in the survey's own pool (falls back to POOL).
+  const count = (pool || POOL).filter(p => p.theme === q.theme).length;
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 70 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onKeep(); }}>
@@ -372,7 +373,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     timers.current.push(setTimeout(() => setLeaving(s => { const n = new Set(s); n.delete(id); return n; }), 260));
   };
 
-  const status = useMemo(() => themeStatus([...sel]), [sel]);
+  const status = useMemo(() => themeStatus([...sel], pool), [sel, pool]);
   const statusFor = (name) => status.find(t => t.name === name);
 
   // Themes present in this pool, with their questions and selection progress.
@@ -632,7 +633,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       {editCustomQ && <CustomQuestionDialog question={editCustomQ}
         topics={[...new Set(pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))]}
         onCancel={() => setEditCustomQ(null)} onSubmit={saveCustomEdit} onDelete={deleteCustomQ} />}
-      {confirm && <ThemeConfirm q={confirm} onKeep={() => setConfirm(null)} onRemove={() => doRemove(confirm)} />}
+      {confirm && <ThemeConfirm q={confirm} pool={pool} onKeep={() => setConfirm(null)} onRemove={() => doRemove(confirm)} />}
       {detailTheme && <ThemeDetailsDialog theme={detailTheme} sel={sel}
         onToggle={plainToggle} onToggleAll={(on) => setMany(detailTheme.questions.map(x => x.id), on)}
         onClose={() => setThemeDetails(null)} />}

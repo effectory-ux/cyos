@@ -162,10 +162,16 @@ export function surveyFromTemplate(templateId, id, name, preselectPerTopic = Inf
 // prepended to this list; any Draft (seed or created) can be deleted. The
 // editable rows (Draft/Planned) carry their template's own questionnaire.
 export const SEED_SURVEYS = [
-  { id: "s1", name: "Employee Engagement 2025", proj: "Company-wide", status: "Live", resp: "72%", date: "Closes 14 Jun" },
-  { id: "s2", name: "Onboarding pulse — Q2", proj: "People & Culture", status: "Planned", resp: "—", date: "Starts 9 Jun",
+  { id: "s1", name: "Employee Engagement 2025", proj: "Central Employee Listening", status: "Live", resp: "72%", date: "Closes 14 Jun", mine: true },
+  { id: "s2", name: "Onboarding pulse — Q2", proj: "Employee lifecycle", status: "Planned", resp: "—", date: "Starts 9 Jun", mine: true,
     survey: surveyFromTemplate("onb", "s2", "Onboarding pulse — Q2") },
-  { id: "s3", name: "Smart Organization Scan", proj: "Company-wide", status: "Draft", resp: "—", date: "Edited 3 min ago",
+  { id: "s3", name: "Smart Organization Scan", proj: "Central Employee Listening", status: "Draft", resp: "—", date: "Edited 3 min ago", mine: true,
     survey: surveyFromTemplate("sos", "s3", "Smart Organization Scan") },
-  { id: "s4", name: "DEI baseline", proj: "Company-wide", status: "Closed", resp: "81%", date: "Closed 2 May" },
+  { id: "s4", name: "DEI baseline", proj: "Central Employee Listening", status: "Closed", resp: "81%", date: "Closed 2 May", mine: false },
+  { id: "s5", name: "Onboarding experience 2026", proj: "Employee lifecycle", status: "Closed", resp: "92%", date: "Closed 14 Mar", mine: true },
+  { id: "s6", name: "Customer Support team check-in", proj: "Team pulses", status: "Live", resp: "79%", date: "Closes 7 Jul", mine: false },
+  { id: "s7", name: "Exit interviews 2026", proj: "Employee lifecycle", status: "Live", resp: "41%", date: "Closes 30 Sep", mine: true },
+  { id: "s8", name: "Leadership 360 pilot", proj: "Example projects", status: "Planned", resp: "—", date: "Starts 3 Aug", mine: false },
+  { id: "s9", name: "Wellbeing check-in Q1", proj: "Team pulses", status: "Closed", resp: "68%", date: "Closed 5 Feb", mine: false },
+  { id: "s10", name: "UX research screener", proj: "Example projects", status: "Draft", resp: "—", date: "Edited 2 days ago", mine: true },
 ];

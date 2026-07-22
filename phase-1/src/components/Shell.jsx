@@ -1,15 +1,18 @@
 // Shell.jsx — sidebar + Surveys landing page (Engage DS)
-// Sidebar uses the DS Main Navigation component (.mainnav / .mn-*) and Avatar (.av).
-import { useState, useEffect, useRef } from "react";
+// The Surveys page is a port of the DS "All surveys" reference prototype:
+// a .ph page header, a Latest-projects carousel, and an elevated list card with
+// a working filter bar (search + my-only + Sort + Status) over .srow rows with
+// status pills + response-rate bars. Sidebar uses the DS Main Navigation.
+import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
 import { Icon } from "./Icon.jsx";
 import { Tooltip } from "./shared.jsx";
 
 export function Sidebar() {
   const nav = [
     { icon: "home", label: "Home" },
-    { icon: "book-open", label: "Surveys", open: true, children: ["All surveys", "Projects"] },
-    { icon: "refresh", label: "360 feedback" },
-    { icon: "globe", label: "Organization", chevron: true },
+    { icon: "clipboard", label: "Surveys", open: true, children: ["All surveys", "Projects"] },
+    { icon: "refresh", label: "360° Feedback" },
+    { icon: "structure", label: "Organization", chevron: true },
   ];
   return (
     <div className="mainnav">
@@ -39,27 +42,16 @@ export function Sidebar() {
         <a className="mn-item"><Icon name="help" /><span>Help &amp; learn</span></a>
         <div className="mn-foot-divider" />
         <div className="mn-user">
-          <div className="av av-36 av-blue">MJ</div>
+          <div className="av av-36 av-blue">JR</div>
           <div className="mn-meta">
-            <div className="mn-name">Mariëlle de Jong</div>
+            <div className="mn-name">Jamal van Rooijen</div>
             <div className="mn-org">Effectory B.V.</div>
           </div>
-          <Icon name="chevron-down" />
+          <Icon name="chevron-up" />
         </div>
       </div>
     </div>
   );
-}
-
-function StatusTag({ s }) {
-  const map = {
-    Live:    { cls: "tag", bg: "var(--bg-positive-subtle)", fg: "var(--content-positive-base)" },
-    Planned: { cls: "tag", bg: "var(--bg-highlight-subtle)", fg: "var(--content-highlight-base)" },
-    Draft:   { cls: "tag tag-draft" },
-    Closed:  { cls: "tag", bg: "var(--bg-info-subtle)", fg: "var(--content-info-base)" },
-  };
-  const c = map[s];
-  return <span className={c.cls} style={c.bg ? { background: c.bg, color: c.fg } : undefined}>{s}</span>;
 }
 
 // Per-row actions menu. Drafts can be deleted; other statuses show the action
@@ -74,9 +66,9 @@ function SurveyRowMenu({ row, onDeleteDraft }) {
   }, [open]);
   const isDraft = row.status === "Draft";
   return (
-    <div ref={ref} style={{ position: "relative", justifySelf: "center" }} onClick={(e) => e.stopPropagation()}>
-      <Tooltip label="Survey actions" pos="is-left">
-        <button className="ib ib-36 ib-tertiary" aria-label="Survey actions" aria-haspopup="menu" aria-expanded={open}
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+      <Tooltip label="More options">
+        <button className="ib ib-36 ib-tertiary" aria-label="More options" aria-haspopup="menu" aria-expanded={open}
           onClick={() => setOpen(o => !o)}><Icon name="more-vertical" size={16} /></button>
       </Tooltip>
       {open && (
@@ -112,7 +104,7 @@ export function OutOfScopeDialog({ row, onClose }) {
   return (
     <div className="overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="dialog dialog-s" role="dialog" aria-modal="true" aria-labelledby="oos-title">
-        <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
+        <Tooltip label="Close" wrapClass="dialog-close-tt">
           <button className="dialog-close" aria-label="Close" onClick={onClose}><Icon name="cross" /></button>
         </Tooltip>
         <div className="dialog-header is-sm">
@@ -137,47 +129,217 @@ export function OutOfScopeDialog({ row, onClose }) {
 // Draft & Planned surveys are editable here; others open an out-of-scope prototype.
 const EDITABLE = new Set(["Draft", "Planned"]);
 
-export function SurveysPage({ rows, onCreate, onDeleteDraft, onOpen }) {
-  const cols = "2.4fr 1.4fr 1fr .8fr 1.2fr 40px";
+// Each app status → a DS status pill + contextual text. The pill's canonical
+// name (In Progress, Completed…) is what the Status filter lists — matching the
+// live app, where the row text is contextual ("Running until…") but the filter
+// uses the formal name.
+const STATUS_META = {
+  Live:    { canon: "In Progress", cls: "spill-running",   text: (r) => <><b>Running</b> until {r.date.replace(/^Closes\s*/i, "")}</> },
+  Planned: { canon: "Planned",     cls: "spill-starts",    text: (r) => <><b>Starts</b> on {r.date.replace(/^Starts\s*/i, "")}</> },
+  Closed:  { canon: "Completed",   cls: "spill-completed", text: (r) => <><b>Completed</b> on {r.date.replace(/^Closed\s*/i, "")}</> },
+  Draft:   { canon: "Draft",       cls: "spill-draft",     text: () => <b>Draft</b> },
+};
+const STATUS_FILTERS = [
+  { canon: "Draft", cls: "spill-draft" },
+  { canon: "Planned", cls: "spill-starts" },
+  { canon: "In Progress", cls: "spill-running" },
+  { canon: "Completed", cls: "spill-completed" },
+];
+const SORT_OPTIONS = ["Created last", "Created first", "A-Z", "Z-A"];
+const canonOf = (r) => (STATUS_META[r.status] || STATUS_META.Draft).canon;
+const respPct = (r) => { const n = parseInt((r.resp || "").replace(/[^0-9]/g, ""), 10); return isNaN(n) ? 0 : n; };
+
+// A filter-bar dropdown (Sort / Status). The popover is position:fixed and
+// anchored to its trigger by JS, so the list card's overflow:hidden never clips
+// it — right-aligned, flipping up when it wouldn't fit below.
+function FilterDropdown({ icon, name, value, sort, children }) {
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState(null);
+  const btnRef = useRef(null), menuRef = useRef(null);
+  const position = () => {
+    const b = btnRef.current?.getBoundingClientRect(), m = menuRef.current;
+    if (!b || !m) return;
+    const mh = m.offsetHeight, mw = m.offsetWidth;
+    let top = b.bottom + 4;
+    if (top + mh > window.innerHeight - 8) top = Math.max(8, b.top - 4 - mh);
+    setCoords({ top, left: Math.max(8, b.right - mw) });
+  };
+  useLayoutEffect(() => { if (open) position(); }, [open]); // eslint-disable-line
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (!menuRef.current?.contains(e.target) && !btnRef.current?.contains(e.target)) setOpen(false); };
+    const onMove = () => position();
+    document.addEventListener("mousedown", onDoc);
+    window.addEventListener("resize", onMove);
+    document.addEventListener("scroll", onMove, true);
+    return () => { document.removeEventListener("mousedown", onDoc); window.removeEventListener("resize", onMove); document.removeEventListener("scroll", onMove, true); };
+  }, [open]); // eslint-disable-line
   return (
-    <div className="scroll-y" style={{ flex: 1, padding: "var(--spacing-super-loose) var(--spacing-super-extra-loose)" }}>
-      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 36 }}>
-          <div style={{ flex: 1 }}>
-            <h1 className="text-l2" style={{ margin: 0 }}>Surveys</h1>
-            <p className="text-large text-subdued" style={{ margin: "6px 0 0" }}>See your most recent surveys and projects</p>
+    <div className="flt-ctl">
+      <button ref={btnRef} className="sel-btn sel-btn-inline" aria-haspopup="listbox" aria-expanded={open}
+        onClick={() => setOpen(o => !o)}>
+        <Icon name={icon} size={16} />
+        <span className="sel-btn-name">{name}:</span>
+        <span className="sel-btn-value">{value}</span>
+      </button>
+      {open && (
+        <div ref={menuRef} className={"menu flt-menu" + (sort ? " flt-sort" : "")} role="listbox"
+          style={{ top: coords ? coords.top : -9999, left: coords ? coords.left : -9999 }}>
+          {children(() => setOpen(false))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Latest projects — up to 3 cards fill the row, the rest page in via the arrows.
+function ProjectsCarousel({ projects }) {
+  const PER = 3, GAP = 16;
+  const [page, setPage] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const trackRef = useRef(null);
+  const pages = Math.max(1, Math.ceil(projects.length / PER));
+  const pageWidth = () => {
+    const first = trackRef.current && trackRef.current.children[0];
+    return first ? PER * (first.getBoundingClientRect().width + GAP) : 0;
+  };
+  useLayoutEffect(() => { setOffset(page * pageWidth()); }, [page, projects.length]);
+  useEffect(() => {
+    const onResize = () => setOffset(page * pageWidth());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [page]);
+  const atStart = page <= 0, atEnd = page >= pages - 1;
+  return (
+    <section>
+      <div className="sec-head">
+        <h2 className="text-l4">Latest projects</h2>
+        <button className="btn btn-tertiary">Go to projects</button>
+        <Tooltip label="Previous projects">
+          <button className={"ib ib-36 ib-secondary" + (atStart ? " is-disabled" : "")} disabled={atStart}
+            aria-label="Previous projects" onClick={() => setPage(p => Math.max(0, p - 1))}><Icon name="arrow-left" size={16} /></button>
+        </Tooltip>
+        <Tooltip label="Next projects">
+          <button className={"ib ib-36 ib-secondary" + (atEnd ? " is-disabled" : "")} disabled={atEnd}
+            aria-label="Next projects" onClick={() => setPage(p => Math.min(pages - 1, p + 1))}><Icon name="arrow-right" size={16} /></button>
+        </Tooltip>
+      </div>
+      <div className="proj-viewport">
+        <div className="proj-track" ref={trackRef} style={{ transform: `translateX(-${offset}px)` }}>
+          {projects.map((p, i) => (
+            <a key={p.name + i} className="card card-elevated is-interactive proj-card">
+              <div className="proj-title">{p.name}</div>
+              <div className="proj-meta"><Icon name="clipboard" size={16} />{p.count} {p.count === 1 ? "survey" : "surveys"}</div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function SurveysPage({ rows, onCreate, onDeleteDraft, onOpen }) {
+  const [q, setQ] = useState("");
+  const [mine, setMine] = useState(false);
+  const [sort, setSort] = useState("Created last");
+  const [statuses, setStatuses] = useState(() => new Set(STATUS_FILTERS.map(s => s.canon)));
+  const toggleStatus = (c) => setStatuses(s => { const n = new Set(s); n.has(c) ? n.delete(c) : n.add(c); return n; });
+
+  // Latest-projects cards derived from the surveys (grouped by project).
+  const projects = useMemo(() => {
+    const m = new Map();
+    rows.forEach(r => m.set(r.proj, (m.get(r.proj) || 0) + 1));
+    return [...m.entries()].map(([name, count]) => ({ name, count }));
+  }, [rows]);
+
+  // Filters (status ∩ mine ∩ search) then sort — one pass, live.
+  const visible = useMemo(() => {
+    let list = rows.filter(r => statuses.has(canonOf(r)) && (!mine || r.mine) && (!q || r.name.toLowerCase().includes(q.toLowerCase())));
+    if (sort === "Created first") list = [...list].reverse();
+    else if (sort === "A-Z") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === "Z-A") list = [...list].sort((a, b) => b.name.localeCompare(a.name));
+    return list;
+  }, [rows, statuses, mine, q, sort]);
+
+  const statusLabel = statuses.size === STATUS_FILTERS.length ? `All (${STATUS_FILTERS.length})`
+    : statuses.size === 0 ? "None" : `${statuses.size} selected`;
+
+  return (
+    <div className="surveys-page scroll-y">
+      <div className="surveys-inner">
+
+        <div className="ph">
+          <div className="ph-row">
+            <div className="ph-left">
+              <h1 className="ph-title">Surveys</h1>
+              <div className="ph-meta">See your most recent surveys and projects</div>
+            </div>
+            <div className="ph-controls">
+              <button className="btn btn-primary" onClick={onCreate}><Icon name="plus" size={16} />Create survey</button>
+            </div>
           </div>
-          <button className="btn btn-primary" onClick={onCreate}><Icon name="plus" size={16} />Create survey</button>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-          <h2 className="text-l5" style={{ margin: 0 }}>All surveys</h2>
-          <span className="tag tag-count">{rows.length}</span>
-        </div>
-        <div className="card" style={{ overflow: "visible" }}>
-          <div style={{ display: "grid", gridTemplateColumns: cols, padding: "14px 24px", fontSize: 12, fontWeight: 600,
-            color: "var(--content-subtle)", textTransform: "uppercase", letterSpacing: ".06em", borderBottom: "1px solid var(--border-base)" }}>
-            <div>Survey</div><div>Project</div><div>Status</div><div>Response</div><div>Timeline</div><div />
-          </div>
-          {rows.map((r, i) => (
-            <div key={r.id} className="survey-row" role="button" tabIndex={0}
-              aria-label={`Open ${r.name}${EDITABLE.has(r.status) ? "" : " (opens a separate prototype)"}`}
-              onClick={() => onOpen(r)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(r); } }}
-              style={{ display: "grid", gridTemplateColumns: cols, alignItems: "center", padding: "18px 24px",
-              fontSize: 14, borderBottom: i < rows.length - 1 ? "1px solid var(--border-base)" : "none" }}>
-              <div style={{ fontWeight: 600 }}>{r.name}</div>
-              <div style={{ color: "var(--content-secondary)" }}>{r.proj}</div>
-              <div><StatusTag s={r.status} /></div>
-              <div style={{ color: "var(--content-secondary)" }}>{r.resp}</div>
-              <div style={{ color: "var(--content-subtle)" }}>{r.date}</div>
-              <SurveyRowMenu row={r} onDeleteDraft={onDeleteDraft} />
+        <ProjectsCarousel projects={projects} />
+
+        <section>
+          <h2 className="text-l4" style={{ margin: "0 0 var(--spacing-loose)" }}>All surveys</h2>
+          <div className="card card-elevated surveys-list">
+
+            <div className="flt-bar">
+              <div className="search-wrap">
+                <span className="search-icon"><Icon name="search" size={16} /></span>
+                <input type="search" className="srch" placeholder="Search" aria-label="Search surveys" value={q} onChange={e => setQ(e.target.value)} />
+              </div>
+              <label className="flt-cb">
+                <span className="cb-wrap"><input type="checkbox" className="cb" checked={mine} onChange={e => setMine(e.target.checked)} /></span>
+                Show only my surveys
+              </label>
+              <FilterDropdown icon="sort-descending" name="Sort by" value={sort} sort>
+                {(close) => SORT_OPTIONS.map(o => (
+                  <div key={o} className={"menu-item" + (o === sort ? " is-selected" : "")} role="option" aria-selected={o === sort}
+                    onClick={() => { setSort(o); close(); }}>
+                    <span className="menu-item-body"><span className="menu-item-title">{o}</span></span>
+                    <Icon name="check" size={16} className="menu-item-check" />
+                  </div>
+                ))}
+              </FilterDropdown>
+              <FilterDropdown icon="filter" name="Status" value={statusLabel}>
+                {() => STATUS_FILTERS.map(s => (
+                  <div key={s.canon} className={"menu-item" + (statuses.has(s.canon) ? " is-selected" : "")} role="option" aria-selected={statuses.has(s.canon)}
+                    onClick={() => toggleStatus(s.canon)}>
+                    <span className="menu-cb"><Icon name="check" size={14} /></span>
+                    <span className="menu-item-body"><span className={"spill " + s.cls}><b>{s.canon}</b></span></span>
+                  </div>
+                ))}
+              </FilterDropdown>
             </div>
-          ))}
-          {rows.length === 0 && (
-            <div className="text-medium text-subdued" style={{ padding: "48px 0", textAlign: "center" }}>No surveys yet.</div>
-          )}
-        </div>
+
+            {visible.map(r => {
+              const meta = STATUS_META[r.status] || STATUS_META.Draft;
+              const pct = respPct(r);
+              return (
+                <div key={r.id} className="srow" role="button" tabIndex={0}
+                  aria-label={`Open ${r.name}${EDITABLE.has(r.status) ? "" : " (opens a separate prototype)"}`}
+                  onClick={() => onOpen(r)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(r); } }}>
+                  <div className="srow-info">
+                    <div className="srow-name">{r.name}</div>
+                    <div className="srow-proj"><Icon name="folder" size={12} /><span>{r.proj}</span></div>
+                  </div>
+                  <span className={"spill " + meta.cls}>{meta.text(r)}</span>
+                  <div className="srow-rr">
+                    <div className="srow-rr-top"><Icon name="user" size={14} />{pct}%</div>
+                    <div className="srow-bar"><div className="srow-bar-fill" style={{ width: pct + "%" }} /></div>
+                  </div>
+                  <SurveyRowMenu row={r} onDeleteDraft={onDeleteDraft} />
+                </div>
+              );
+            })}
+            {visible.length === 0 && <div className="srow-empty">No surveys match your filters.</div>}
+          </div>
+        </section>
+
       </div>
     </div>
   );

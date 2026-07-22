@@ -1,7 +1,7 @@
 // Builder.jsx — Questionnaire step, full-width (Engage DS)
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Icon } from "./Icon.jsx";
-import { themeStatus, groupQuestions, QTypeIcon, Tag, ThemeTag, CustomTag, Tooltip } from "./shared.jsx";
+import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, Tooltip } from "./shared.jsx";
 import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { TEMPLATES, BADGE_COLORS, THEMES } from "../data/data.js";
 import { templatePoolQuestions } from "../data/qlib.js";
@@ -227,7 +227,6 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   const chosen = pool.filter(q => sel.has(q.id));
   // Rough completion-time estimate (~20s per question) for the overview card.
   const estMinutes = Math.max(1, Math.round((chosen.length * 20) / 60));
-  const status = themeStatus(selectedIds);
   // Theme groups from THIS survey's pool (POOL + library): used for the row tags'
   // progress (real fraction added) and the "View details" dialog opened from a tag.
   const themeGroups = (() => {
@@ -243,8 +242,6 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   })();
   const themeMap = {}; themeGroups.forEach(t => { themeMap[t.name] = t; });
   const detailTheme = themeGroups.find(t => t.name === themeDetail) || null;
-  const broken = status.filter(t => t.touched && !t.complete);
-  const customized = isTemplate && broken.length > 0;
   const groups = groupQuestions(chosen, "library");
   // Header meta: a theme is "active" when every one of its questions is selected
   // (a scored theme); a template is "active" when its whole question set is in.
@@ -448,7 +445,6 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
                   <>
                     <div className="ov-count-row">
                       <span className="ov-count">{chosen.length} {chosen.length === 1 ? "question" : "questions"} selected</span>
-                      {customized && <Tag kind="theme-broken">Customized</Tag>}
                     </div>
                     <div className="ov-meta">
                       {activeThemes > 0 && <>

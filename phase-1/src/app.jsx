@@ -68,7 +68,7 @@ export function App() {
   const saveAndClose = () => {
     setSurveysList(list => {
       const existing = list.find(r => r.id === survey.id);
-      const base = existing || { id: survey.id, proj: "Company-wide", status: "Draft", resp: "—" };
+      const base = existing || { id: survey.id, proj: "Central Employee Listening", status: "Draft", resp: "—", mine: true };
       const row = { ...base, name: survey.name, date: "Edited just now", questions: survey.selectedIds.length, survey };
       return existing ? list.map(r => r.id === survey.id ? row : r) : [row, ...list];
     });
@@ -106,7 +106,7 @@ export function App() {
   // Removing the last question of a complete theme breaks its composite score —
   // surface the positive “keep it complete” dialog first (when soft-lock is on).
   const requestRemove = (q) => {
-    const complete = q.theme && TWEAKS.integrity === "lock" && themeStatus(survey.selectedIds).find(x => x.name === q.theme)?.complete;
+    const complete = q.theme && TWEAKS.integrity === "lock" && themeStatus(survey.selectedIds, survey.pool).find(x => x.name === q.theme)?.complete;
     if (complete) { setRemoveConfirm(q); return; }
     removeFromSurvey(q);
   };
@@ -138,7 +138,7 @@ export function App() {
         <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds} tweaks={TWEAKS}
           initialTab={editTab} onClose={() => setEditing(false)} onSave={saveQuestions} />
       )}
-      {removeConfirm && <ThemeConfirm q={removeConfirm}
+      {removeConfirm && <ThemeConfirm q={removeConfirm} pool={survey && survey.pool}
         onKeep={() => setRemoveConfirm(null)}
         onRemove={() => { removeFromSurvey(removeConfirm); setRemoveConfirm(null); }} />}
       {editCustom && <CustomQuestionDialog question={editCustom}
