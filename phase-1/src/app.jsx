@@ -6,7 +6,7 @@ import { TemplateModal } from "./components/TemplateModal.jsx";
 import { EditQuestionsDialog, ThemeConfirm } from "./components/EditQuestionsDialog.jsx";
 import { CustomQuestionDialog } from "./components/CustomQuestionDialog.jsx";
 import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
-import { themeStatus } from "./components/shared.jsx";
+import { themeStatus, themesOf } from "./components/shared.jsx";
 import { POOL, SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
 import { libraryPool } from "./data/qlib.js";
 
@@ -51,7 +51,10 @@ export function App() {
     setModal(false);
   };
   const startScratch = () => {
-    setPending({ suggested: "", survey: { ...keepId(), templateName: null, isTemplate: false, selectedIds: [], pool: [...POOL.map(q => ({ ...q })), ...libraryPool()] } });
+    // Start-from-scratch drops the org-required questions for THIS survey (the
+    // `required` flag is stripped) so the prototype can show a true empty state.
+    const pool = [...POOL.map(q => ({ ...q })), ...libraryPool().map(q => ({ ...q, required: false }))];
+    setPending({ suggested: "", survey: { ...keepId(), templateName: null, isTemplate: false, selectedIds: [], pool } });
     setModal(false);
   };
   // Commit the named survey and open the builder (reusing the id when changing).
@@ -81,9 +84,14 @@ export function App() {
   // rows with no saved questionnaire open with the default template selection.
   const openSurvey = (row) => {
     if (row.status === "Draft" || row.status === "Planned") {
-      setSurvey(row.survey || { id: row.id, name: row.name, templateName: null, isTemplate: false,
-        selectedIds: POOL.filter(q => q.tmpl).map(q => q.id), pool: POOL.map(q => ({ ...q })) });
-      setEditing(false); setScreen("builder");
+      let sv = row.survey;
+      if (!sv) {
+        const lib = libraryPool();
+        sv = { id: row.id, name: row.name, templateName: null, isTemplate: false,
+          selectedIds: [...POOL.filter(q => q.tmpl).map(q => q.id), ...lib.filter(q => q.required).map(q => q.id)],
+          pool: [...POOL.map(q => ({ ...q })), ...lib] };
+      }
+      setSurvey(sv); setEditing(false); setScreen("builder");
     } else {
       setOutOfScope(row);
     }
@@ -98,27 +106,38 @@ export function App() {
 
   // Remove a question from THIS questionnaire (library questions are only
   // deselected; custom questions are deleted from the pool entirely).
-  const removeFromSurvey = (q) => setSurvey(s => ({
-    ...s,
-    selectedIds: s.selectedIds.filter(id => id !== q.id),
-    pool: q.custom ? s.pool.filter(p => p.id !== q.id) : s.pool,
-  }));
+  const removeFromSurvey = (q) => {
+    if (q.required) return; // org-required questions can't be removed
+    setSurvey(s => ({
+      ...s,
+      selectedIds: s.selectedIds.filter(id => id !== q.id),
+      pool: q.custom ? s.pool.filter(p => p.id !== q.id) : s.pool,
+    }));
+  };
   // Removing the last question of a complete theme breaks its composite score —
   // surface the positive “keep it complete” dialog first (when soft-lock is on).
   const requestRemove = (q) => {
-    const complete = q.theme && TWEAKS.integrity === "lock" && themeStatus(survey.selectedIds, survey.pool).find(x => x.name === q.theme)?.complete;
-    if (complete) { setRemoveConfirm(q); return; }
+    if (TWEAKS.integrity === "lock") {
+      const status = themeStatus(survey.selectedIds, survey.pool);
+      // A question in several themes can break more than one complete theme.
+      const broken = themesOf(q).filter(name => status.find(x => x.name === name)?.complete);
+      if (broken.length) { setRemoveConfirm({ q, themes: broken }); return; }
+    }
     removeFromSurvey(q);
   };
   const saveCustomEdit = (q) => { setSurvey(s => ({ ...s, pool: s.pool.map(p => p.id === q.id ? q : p) })); setEditCustom(null); };
   const renameSurvey = (newName) => setSurvey(s => ({ ...s, name: newName }));
   // Remove a whole topic from this questionnaire: deselect all its questions
   // (and drop any custom ones from the pool). Library + benchmarks are untouched.
-  const removeTopic = (ids) => setSurvey(s => ({
-    ...s,
-    selectedIds: s.selectedIds.filter(id => !ids.includes(id)),
-    pool: s.pool.filter(p => !(p.custom && ids.includes(p.id))),
-  }));
+  const removeTopic = (ids) => setSurvey(s => {
+    const idset = new Set(ids);
+    const reqKept = new Set(s.pool.filter(p => p.required).map(p => p.id)); // required questions stay
+    return {
+      ...s,
+      selectedIds: s.selectedIds.filter(id => !idset.has(id) || reqKept.has(id)),
+      pool: s.pool.filter(p => !(p.custom && idset.has(p.id))),
+    };
+  });
 
   return (
     <div className="app">
@@ -138,9 +157,9 @@ export function App() {
         <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds} tweaks={TWEAKS}
           initialTab={editTab} onClose={() => setEditing(false)} onSave={saveQuestions} />
       )}
-      {removeConfirm && <ThemeConfirm q={removeConfirm} pool={survey && survey.pool}
+      {removeConfirm && <ThemeConfirm q={removeConfirm.q} themes={removeConfirm.themes} pool={survey && survey.pool}
         onKeep={() => setRemoveConfirm(null)}
-        onRemove={() => { removeFromSurvey(removeConfirm); setRemoveConfirm(null); }} />}
+        onRemove={() => { removeFromSurvey(removeConfirm.q); setRemoveConfirm(null); }} />}
       {editCustom && <CustomQuestionDialog question={editCustom}
         topics={survey ? [...new Set(survey.pool.filter(x => survey.selectedIds.includes(x.id) && x.topic).map(x => x.topic))] : undefined}
         onCancel={() => setEditCustom(null)} onSubmit={saveCustomEdit}

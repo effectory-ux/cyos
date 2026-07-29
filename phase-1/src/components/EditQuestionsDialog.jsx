@@ -5,7 +5,7 @@
 // from the template), each with an explanatory hover tooltip.
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Icon } from "./Icon.jsx";
-import { themeStatus, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag } from "./shared.jsx";
+import { themeStatus, themesOf, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag, RequiredMarker } from "./shared.jsx";
 import { CustomQuestionDialog } from "./CustomQuestionDialog.jsx";
 import { THEMES, POOL, TEMPLATES, BADGE_COLORS } from "../data/data.js";
 import { templatePoolQuestions, TEMPLATE_META } from "../data/qlib.js";
@@ -33,15 +33,23 @@ function RowCheckbox({ on, fromTemplate, onClick }) {
   );
 }
 
-function QRow({ q, on, fromTemplate, onToggle, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom }) {
+function QRow({ q, on, fromTemplate, onToggle, onRequiredPress, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom }) {
+  const required = q.required;
+  // Required questions keep an INTERACTIVE (checked) checkbox — pressing it can't
+  // uncheck it; instead it surfaces a live info notification explaining why. A
+  // static asterisk marker on the right is the persistent "required" cue.
   return (
-    <div ref={rowRef} className={"aql-row" + (leaving ? " is-leaving" : "")} onClick={leaving ? undefined : onToggle}>
-      <RowCheckbox on={on} fromTemplate={fromTemplate} onClick={(e) => { e.stopPropagation(); onToggle(); }} />
+    <div ref={rowRef} className={"aql-row" + (leaving ? " is-leaving" : "")}
+      onClick={leaving ? undefined : (required ? onRequiredPress : onToggle)}>
+      {required
+        ? <Checkbox on large onClick={(e) => { e.stopPropagation(); onRequiredPress(); }} />
+        : <RowCheckbox on={on} fromTemplate={fromTemplate} onClick={(e) => { e.stopPropagation(); onToggle(); }} />}
       <div className="aql-text">{q.text}</div>
       {q.theme
         ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-above" float
             onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
         : q.custom ? <CustomTag label="Custom question" pos="is-above" float onOpen={onEditCustom ? () => onEditCustom(q) : undefined} /> : null}
+      {required && <RequiredMarker size={24} />}
       <QTypeIcon type={q.type} size={24} tip pos="is-above" float />
     </div>
   );
@@ -179,43 +187,82 @@ function AddedToast({ topic, onClose }) {
   );
 }
 
-export function ThemeConfirm({ q, pool, onKeep, onRemove }) {
-  const th = THEMES[q.theme] || {};
-  const desc = th.desc || "";
-  const score = th.score ?? 8.1, bench = th.benchmark ?? 7.6;
-  const groupPct = Math.round(score * 10);
-  const benchPct = Math.round(bench * 10);
-  // Count the theme's questions in the survey's own pool (falls back to POOL).
-  const count = (pool || POOL).filter(p => p.theme === q.theme).length;
+// Info notification shown when a required question is pressed — a live region
+// (role=status + aria-live) so the reason is announced, not just seen.
+function RequiredNotice({ onClose }) {
+  return (
+    <div className="sysnotif-stack">
+      <div className="sysnotif is-info" role="status" aria-live="polite">
+        <div className="sysnotif-title">This question is required</div>
+        <div className="sysnotif-desc">It’s set up as required and is always included in this survey.</div>
+        <button className="sysnotif-close" aria-label="Dismiss" onClick={onClose}><Icon name="cross" size={16} /></button>
+      </div>
+    </div>
+  );
+}
+
+// First sentence of a description (for the multi-theme stacked cards, which cut
+// the description to one sentence instead of the usual two).
+const firstSentence = (t) => { const m = (t || "").match(/^.*?[.!?](\s|$)/); return m ? m[0].trim() : (t || ""); };
+// Join theme names as “A”, “B” and “C”.
+const joinThemes = (names) => {
+  const q = names.map(n => `“${n}”`);
+  return q.length <= 1 ? (q[0] || "") : q.slice(0, -1).join(", ") + " and " + q[q.length - 1];
+};
+
+// The soft-lock example card for one theme: name, description and the two score
+// bars. `multi` cuts the description to a single (clamped) sentence.
+function TcThemeCard({ name, multi, style }) {
+  const th = THEMES[name] || {};
+  const groupPct = Math.round((th.score ?? 8.1) * 10);
+  const benchPct = Math.round((th.benchmark ?? 7.6) * 10);
+  const desc = multi ? firstSentence(th.desc) : (th.desc || "");
+  return (
+    <div className={"tc-theme-card" + (multi ? " is-multi" : "")} style={style}>
+      <div className="tc-theme-name">{name}</div>
+      {desc && <p className="tc-theme-desc">{desc}</p>}
+      <div className="tc-bars">
+        <div className="tc-pbar">
+          <div className="tc-pbar-lbl"><span className="tc-pbar-name">Group score</span><span className="tc-pbar-val">{groupPct}%</span></div>
+          <div className="tc-track"><div className="tc-fill tc-fill-current" style={{ width: groupPct + "%" }} /></div>
+        </div>
+        <div className="tc-pbar">
+          <div className="tc-pbar-lbl"><span className="tc-pbar-name">Benchmark</span><span className="tc-pbar-val">{benchPct}%</span></div>
+          <div className="tc-track"><div className="tc-fill tc-fill-bench" style={{ width: benchPct + "%" }} /></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ThemeConfirm({ q, themes, pool, onKeep, onRemove }) {
+  const list = themes && themes.length ? themes : (q.theme ? [q.theme] : []);
+  const multi = list.length > 1;
+  const count = (pool || POOL).filter(p => themesOf(p).includes(list[0])).length;
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 70 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onKeep(); }}>
       <div className="dialog dialog-s" role="dialog" aria-modal="true" aria-labelledby="tc-title">
-        <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
+        <Tooltip label="Close" wrapClass="dialog-close-tt">
           <button className="dialog-close" aria-label="Close" onClick={onKeep}><Icon name="cross" /></button>
         </Tooltip>
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-          <h3 className="dialog-title" id="tc-title">Keep the “{q.theme}” theme complete</h3>
+          <h3 className="dialog-title" id="tc-title">{multi ? "Keep the multiple themes complete" : `Keep the “${list[0]}” theme complete`}</h3>
           <p className="dialog-subtitle">
-            This is the last question that is holding the theme “{q.theme}” complete. You need the
-            average score of all {count} questions to unlock the composite score.</p>
+            {multi
+              ? <>This is the last question that is holding the themes {joinThemes(list)} complete. You need the average score of all questions to unlock the theme scores.</>
+              : <>This is the last question that is holding the theme {joinThemes(list)} complete. You need the average score of all {count} questions to unlock the composite score.</>}
+          </p>
         </div>
         <div className="tc-example" aria-hidden="true">
-          <span className="tc-example-tag">Results example</span>
-          <div className="tc-theme-card">
-            <div className="tc-theme-name">{q.theme}</div>
-            {desc && <p className="tc-theme-desc">{desc}</p>}
-            <div className="tc-bars">
-              <div className="tc-pbar">
-                <div className="tc-pbar-lbl"><span className="tc-pbar-name">Group score</span><span className="tc-pbar-val">{groupPct}%</span></div>
-                <div className="tc-track"><div className="tc-fill tc-fill-current" style={{ width: groupPct + "%" }} /></div>
-              </div>
-              <div className="tc-pbar">
-                <div className="tc-pbar-lbl"><span className="tc-pbar-name">Benchmark</span><span className="tc-pbar-val">{benchPct}%</span></div>
-                <div className="tc-track"><div className="tc-fill tc-fill-bench" style={{ width: benchPct + "%" }} /></div>
-              </div>
+          <span className="tc-example-tag">Not real scores</span>
+          {multi ? (
+            <div className="tc-stack">
+              {list.map((name, i) => <TcThemeCard key={name} name={name} multi style={{ zIndex: i + 1 }} />)}
             </div>
-          </div>
+          ) : (
+            <TcThemeCard name={list[0]} />
+          )}
         </div>
         <div className="dialog-footer">
           <div className="spacer" />
@@ -359,6 +406,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const [confirm, setConfirm] = useState(null);
   const [justAdded, setJustAdded] = useState(null); // scroll target right after adding a custom question
   const [toast, setToast] = useState(null);         // { topic }
+  const [reqNotice, setReqNotice] = useState(0);    // key: increments each time a required question is pressed (re-announces)
   const [themeDetails, setThemeDetails] = useState(null); // theme name whose details dialog is open
   const [editCustomQ, setEditCustomQ] = useState(null);   // custom question being edited (via its tag)
   const [collapsed, setCollapsed] = useState(() => new Set()); // collapsed Question-tab section keys
@@ -375,11 +423,13 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
 
   const status = useMemo(() => themeStatus([...sel], pool), [sel, pool]);
   const statusFor = (name) => status.find(t => t.name === name);
+  // Org-required questions are always selected and can't be toggled/deselected.
+  const requiredIds = useMemo(() => new Set(pool.filter(qq => qq.required).map(qq => qq.id)), [pool]);
 
   // Themes present in this pool, with their questions and selection progress.
   const themeGroups = useMemo(() => {
     const map = {};
-    pool.forEach(qq => { if (qq.theme) (map[qq.theme] = map[qq.theme] || []).push(qq); });
+    pool.forEach(qq => themesOf(qq).forEach(nm => (map[nm] = map[nm] || []).push(qq)));
     return Object.entries(map).map(([name, questions]) => {
       const meta = THEMES[name] || {};
       return {
@@ -438,7 +488,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     setEditCustomQ(null);
   };
   // Flip one question without the theme soft-lock (used inside a theme card / details).
-  const plainToggle = (id) => setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const plainToggle = (id) => { if (requiredIds.has(id)) return; setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); };
 
   // Scroll the just-added question into view inside the dialog body.
   useEffect(() => {
@@ -446,9 +496,22 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   }, [justAdded]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
+  // Pressing a required question surfaces the info notice (re-mounted via key so
+  // it re-plays + re-announces on each press), auto-dismissing after a moment.
+  const reqTimer = useRef(null);
+  const showReqNotice = () => {
+    setReqNotice(n => n + 1);
+    if (reqTimer.current) clearTimeout(reqTimer.current);
+    reqTimer.current = setTimeout(() => setReqNotice(0), 4000);
+  };
   const toggle = (qq) => {
+    if (qq.required) return; // required questions are locked on
     const isOn = sel.has(qq.id);
-    if (isOn && qq.theme && tweaks.integrity === "lock" && statusFor(qq.theme)?.complete) { setConfirm(qq); return; }
+    if (isOn && tweaks.integrity === "lock") {
+      // Removing this question may break one OR several complete themes.
+      const broken = themesOf(qq).filter(name => statusFor(name)?.complete);
+      if (broken.length) { setConfirm({ q: qq, themes: broken }); return; }
+    }
     const willBeOn = !isOn;
     setSel(s => { const n = new Set(s); isOn ? n.delete(qq.id) : n.add(qq.id); return n; });
     // Under a Selected / Not-selected filter the row no longer matches — ease it out.
@@ -461,7 +524,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // Closing always drops the dialog back to the default (unfiltered) view.
   const close = () => { setShow("all"); setThemeShow("all"); setTmplShow("all"); onClose(); };
   const apply = () => { setShow("all"); setThemeShow("all"); setTmplShow("all"); onSave([...sel], pool); };
-  const setMany = (ids, on) => setSel(s => { const n = new Set(s); ids.forEach(id => on ? n.add(id) : n.delete(id)); return n; });
+  const setMany = (ids, on) => setSel(s => { const n = new Set(s); ids.forEach(id => { if (!on && requiredIds.has(id)) return; on ? n.add(id) : n.delete(id); }); return n; });
   const addCustom = (nq) => {
     setPool(p => [...p, nq]); setSel(s => new Set([...s, nq.id])); setCustomOpen(false);
     // Make the new question visible where it landed: clear search/filter,
@@ -607,7 +670,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                     {!isColl && g.items.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} fromTemplate={initial.has(qq.id)}
                       leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
                       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
-                      onToggle={() => toggle(qq)} rowRef={qq.id === justAdded ? addedRef : null} />)}
+                      onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
                   </section>
                 );
               })}
@@ -633,11 +696,12 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       {editCustomQ && <CustomQuestionDialog question={editCustomQ}
         topics={[...new Set(pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))]}
         onCancel={() => setEditCustomQ(null)} onSubmit={saveCustomEdit} onDelete={deleteCustomQ} />}
-      {confirm && <ThemeConfirm q={confirm} pool={pool} onKeep={() => setConfirm(null)} onRemove={() => doRemove(confirm)} />}
+      {confirm && <ThemeConfirm q={confirm.q} themes={confirm.themes} pool={pool} onKeep={() => setConfirm(null)} onRemove={() => doRemove(confirm.q)} />}
       {detailTheme && <ThemeDetailsDialog theme={detailTheme} sel={sel}
         onToggle={plainToggle} onToggleAll={(on) => setMany(detailTheme.questions.map(x => x.id), on)}
         onClose={() => setThemeDetails(null)} />}
       {toast && <AddedToast topic={toast.topic} onClose={() => setToast(null)} />}
+      {reqNotice > 0 && <RequiredNotice key={reqNotice} onClose={() => setReqNotice(0)} />}
     </div>
   );
 }

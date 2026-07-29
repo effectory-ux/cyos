@@ -151,6 +151,11 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .cq-idk { font-size: 14px; color: var(--content-secondary); }
 
 /* ---- question-type tile ---- */
+/* Required-question marker (Figma 6191:21502): a static grey tile with an
+   asterisk, shown instead of the checkbox (dialog) / as an extra tile (builder). */
+.req-mark { flex: none; display: grid; place-items: center; border-radius: var(--radius-sm);
+  background: var(--bg-tertiary); border: 1px solid var(--border-white); color: var(--content-secondary); }
+.req-mark i { display: flex; }
 .qtile { width: 24px; height: 24px; border-radius: var(--radius-sm); display: grid; place-items: center; flex: none;
   border: 1px solid var(--bg-base); }
 .qtile i { display: flex; width: 16px; height: 16px; }
@@ -177,6 +182,13 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .tc-fill { height: 8px; border-radius: 10px; border: 2px solid var(--bg-base); box-sizing: content-box; }
 .tc-fill-current { background: var(--bg-results-current); }
 .tc-fill-bench { background: var(--bg-results-benchmark); }
+/* Multiple broken themes: the example cards stack, each offset down-right and
+   overlapping the one behind (front card shows the scores; the rest peek). The
+   multi description is cut to one clamped sentence. */
+.tc-stack { display: inline-flex; flex-direction: column; align-items: flex-start; max-width: 100%; }
+.tc-stack .tc-theme-card { width: 300px; box-shadow: var(--sh-popovers); }
+.tc-stack .tc-theme-card + .tc-theme-card { margin-top: -64px; margin-left: 32px; }
+.tc-theme-card.is-multi .tc-theme-desc { -webkit-line-clamp: 1; }
 
 /* ---- builder row kebab menu ---- */
 .qrow-menu-wrap { position: relative; }
@@ -294,6 +306,10 @@ button.sel-btn.cq-sel { font-size: 14px; }
   min-height: 59px; border-bottom: 1px solid var(--border-base); cursor: pointer;
   transition: background var(--motion-fast) var(--ease-standard); }
 .aql-row:hover { background: var(--bg-base-hover); }
+/* Info variant of the DS system notification (blue left border) — used to tell
+   the user a pressed question is required. */
+.sysnotif.is-info { border-left-color: var(--border-info-base); }
+.sysnotif.is-info .sysnotif-action { color: var(--border-info-base); }
 .aql-text { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; line-height: 22.4px; color: var(--content-base); }
 /* Checkbox state: template-added questions show a subtle (light) check instead
    of the solid brand fill, per the frame. */
@@ -302,12 +318,13 @@ input[type="checkbox"].cb.cb-subtle:checked { background-color: var(--bg-brand-s
 /* Theme + custom tags (Figma 154:4080). Theme tag tracks how much of the theme
    is in the questionnaire: neutral (grey) → in-progress (light turquoise + ring)
    → complete (filled turquoise + check). Custom = light-blue with edit icon. */
-.tag-thm, .tag-custom-q { border-radius: var(--radius-base); max-width: 140px; }
+.tag-thm, .tag-custom-q { border-radius: var(--radius-base); max-width: 140px; border: 1px solid var(--border-white); }
 .tag-thm.is-neutral { background: var(--bg-tertiary); color: var(--content-secondary); }
-/* Theme tags stay in the lighter turquoise across progress + complete (complete
-   just swaps the ring for a check). Custom questions get the prominent inverted
-   blue so they stand out from the themed ones. */
-.tag-thm.is-progress, .tag-thm.is-complete { background: var(--bg-brand-subtle); color: var(--content-brand-secondary); }
+/* More visual distinction between the three states (Figma 6189:32359):
+   in-progress = light BLUE + blue ring + blue text; complete = filled DARK teal
+   + white check + white text. Custom questions = inverted blue. */
+.tag-thm.is-progress { background: var(--bg-info-subtle); color: var(--content-info-base); }
+.tag-thm.is-complete { background: var(--content-brand-secondary); color: var(--content-on-brand-base); }
 .tag-custom-q { background: var(--content-accent-blue-base); color: var(--content-inverse-base); }
 /* Interactive tags (open a dialog on click) get a hover/press + focus affordance. */
 .tag-thm.is-interactive, .tag-custom-q.is-interactive { cursor: pointer; transition: filter var(--motion-fast) var(--ease-standard); }
@@ -359,8 +376,11 @@ input[type="checkbox"].cb.cb-subtle:checked { background-color: var(--bg-brand-s
 /* Progress bar: the white ring sits OUTSIDE the fill's box (content-box) and the
    track centres + clips it, so the coloured fill keeps its full 8px height. */
 .cc-progress { height: 8px; border-radius: 10px; background: var(--bg-tertiary); overflow: hidden; display: flex; align-items: center; width: 100%; }
-.cc-progress-fill { height: 8px; box-sizing: content-box; border-radius: 10px; background: var(--bg-brand-base); border: 2px solid var(--bg-base);
-  transition: width var(--motion-base) var(--ease-out); }
+/* Partial progress is BLUE (matches the in-progress theme tag); a complete theme
+   card (.is-active) turns its full bar teal. */
+.cc-progress-fill { height: 8px; box-sizing: content-box; border-radius: 10px; background: var(--bg-info-base); border: 2px solid var(--bg-base);
+  transition: width var(--motion-base) var(--ease-out), background var(--motion-base) var(--ease-out); }
+.cc-card.is-active .cc-progress-fill { background: var(--bg-brand-base); }
 .cc-foot { display: flex; align-items: stretch; gap: 16px; width: 100%; }
 .cc-foot .btn { flex: 1 0 0; min-width: 0; justify-content: center; }
 /* Template detail (View details takeover): a grey questionnaire panel with a

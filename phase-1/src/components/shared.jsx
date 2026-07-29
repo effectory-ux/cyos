@@ -5,6 +5,12 @@ import { Icon } from "./Icon.jsx";
 import { POOL, THEMES, CUSTOM_GROUP, QTYPES } from "../data/data.js";
 
 // ---- theme integrity --------------------------------------------------
+// A question usually belongs to ONE theme (`q.theme`), but a small percentage
+// can belong to several (`q.themes`) — removing such a question can break more
+// than one theme at once. `themesOf` is the single source of truth; it defaults
+// to `[q.theme]` so single-theme questions behave exactly as before.
+export const themesOf = (q) => (q.themes && q.themes.length ? q.themes : (q.theme ? [q.theme] : []));
+
 // A theme's composite score shows only if ALL its pool questions are kept.
 // Computes over the given `pool` (defaults to the shared POOL) — pass the
 // survey's own pool so template-built surveys (whose ids aren't in POOL) still
@@ -12,12 +18,11 @@ import { POOL, THEMES, CUSTOM_GROUP, QTYPES } from "../data/data.js";
 export function themeStatus(selectedIds, pool = POOL) {
   const sel = new Set(selectedIds);
   const map = {};
-  pool.forEach(q => {
-    if (!q.theme) return;
-    map[q.theme] = map[q.theme] || { total: 0, kept: 0, name: q.theme };
-    map[q.theme].total++;
-    if (sel.has(q.id)) map[q.theme].kept++;
-  });
+  pool.forEach(q => themesOf(q).forEach(name => {
+    map[name] = map[name] || { total: 0, kept: 0, name };
+    map[name].total++;
+    if (sel.has(q.id)) map[name].kept++;
+  }));
   return Object.values(map).map(t => ({ ...t, complete: t.kept === t.total, touched: t.kept > 0 }));
 }
 
@@ -69,6 +74,18 @@ export function QTypeIcon({ type, size = 24, tip = false, pos = "is-above", floa
     </span>
   );
   return tip ? <Tooltip label={m.label} pos={pos} float={float}>{tile}</Tooltip> : tile;
+}
+
+// Marker shown in place of the checkbox (dialog) / as an extra tile (builder) for
+// an org-required question — always selected, can't be toggled or removed.
+export function RequiredMarker({ size = 20 }) {
+  return (
+    <Tooltip label="Question is set-up as required">
+      <span className="req-mark" style={{ width: size, height: size }} aria-label="Required question">
+        <Icon name="asterisk" size={size >= 24 ? 16 : 12} />
+      </span>
+    </Tooltip>
+  );
 }
 
 // ---- tooltip -----------------------------------------------------------

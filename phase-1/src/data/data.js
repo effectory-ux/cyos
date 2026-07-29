@@ -55,6 +55,12 @@ export const THEMES = {
     desc: "Whether people feel respected, heard and able to be themselves at work.",
     about: "Inclusion looks at whether people feel respected, safe to speak up, and able to be themselves at work. It underpins trust, collaboration and engagement across every group. Keep all its questions together to read it as one score.",
     score: 7.6, benchmark: 7.3 },
+  // A cross-cutting theme that shares questions with Role clarity — used to show
+  // how removing one question can break several themes at once.
+  "Goal alignment": {
+    desc: "How clearly people connect their day-to-day role to the organisation's wider goals. It's a strong signal of focus and direction.",
+    about: "Goal alignment looks at whether people understand what's expected of them and see how their work ladders up to the bigger picture. When it's strong, effort points the same way. Keep all its questions together to read it as one score.",
+    score: 7.8, benchmark: 7.4 },
 };
 export const CUSTOM_GROUP = "Your custom questions";
 
@@ -152,8 +158,10 @@ export function surveyFromTemplate(templateId, id, name, preselectPerTopic = Inf
     perTopic[q.topic] = n + 1;
   });
   // Add the rest of the shared library (unselected) so there's plenty more to
-  // choose from in "Add questions" beyond the template's own picks.
-  libraryPool().forEach(q => pool.push(q));
+  // choose from in "Add questions" beyond the template's own picks — but the
+  // org-required questions are always in + selected.
+  const lib = libraryPool();
+  lib.forEach(q => { pool.push(q); if (q.required) selectedIds.push(q.id); });
   const t = TEMPLATES.find(x => x.id === templateId);
   return { id, name, templateName: t ? t.name : templateId, isTemplate: true, selectedIds, pool };
 }

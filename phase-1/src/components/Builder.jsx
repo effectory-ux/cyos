@@ -1,7 +1,7 @@
 // Builder.jsx — Questionnaire step, full-width (Engage DS)
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Icon } from "./Icon.jsx";
-import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, Tooltip } from "./shared.jsx";
+import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, Tooltip, RequiredMarker, themesOf } from "./shared.jsx";
 import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { TEMPLATES, BADGE_COLORS, THEMES } from "../data/data.js";
 import { templatePoolQuestions } from "../data/qlib.js";
@@ -122,6 +122,7 @@ function BuilderRow({ q, onRemove, onEdit, onMoveUp, onMoveDown, canUp, canDown,
           ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-left"
               onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
           : q.custom ? <CustomTag pos="is-left" onOpen={() => onEdit && onEdit(q)} /> : null}
+        {q.required && <RequiredMarker size={24} />}
         <QTypeIcon type={q.type} size={24} tip />
         <div className="qrow-menu-wrap">
           <Tooltip label="Question actions" pos="is-right"><button className="ib ib-36 ib-tertiary" aria-label="Question actions" aria-haspopup="menu" aria-expanded={menu}
@@ -175,6 +176,14 @@ function BuilderRow({ q, onRemove, onEdit, onMoveUp, onMoveDown, canUp, canDown,
                         <div className="menu-item" role="menuitem" onClick={() => { close(); onRemove && onRemove(q); }}>
                           <span className="menu-item-icon" style={{ color: "var(--content-negative-secondary)" }}><Icon name="trash" size={16} /></span>
                           <span className="menu-item-body"><span className="menu-item-title" style={{ color: "var(--content-negative-secondary)" }}>Delete question</span></span>
+                        </div>
+                      </>
+                    ) : q.required ? (
+                      <>
+                        {hasMove && <div className="menu-divider" />}
+                        <div className="menu-item is-disabled" role="menuitem" aria-disabled="true">
+                          <span className="menu-item-icon"><Icon name="asterisk" size={16} /></span>
+                          <span className="menu-item-body"><span className="menu-item-title">Remove from questionnaire</span><span className="menu-item-sub">This question is required</span></span>
                         </div>
                       </>
                     ) : (
@@ -231,7 +240,7 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   // progress (real fraction added) and the "View details" dialog opened from a tag.
   const themeGroups = (() => {
     const m = {};
-    pool.forEach(qp => { if (qp.theme) (m[qp.theme] = m[qp.theme] || []).push(qp); });
+    pool.forEach(qp => themesOf(qp).forEach(nm => (m[nm] = m[nm] || []).push(qp)));
     return Object.entries(m).map(([nm, questions]) => {
       const meta = THEMES[nm] || {};
       return { name: nm, questions, ...meta,

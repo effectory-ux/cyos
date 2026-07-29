@@ -17,8 +17,9 @@ export const TEMPLATE_PREVIEWS = {
       Q("How would you rate your overall job satisfaction?"),
     ]},
     { topic: "Role & enablement", questions: [
-      Q("It is clear to me what is expected in my role.", "scale5", "Role clarity"),
-      Q("I understand how my work supports our wider goals.", "scale5", "Role clarity"),
+      // These two belong to TWO themes at once — removing one breaks both.
+      { ...Q("It is clear to me what is expected in my role.", "scale5", "Role clarity"), themes: ["Role clarity", "Goal alignment"] },
+      { ...Q("I understand how my work supports our wider goals.", "scale5", "Role clarity"), themes: ["Role clarity", "Goal alignment"] },
       Q("I have the tools and resources to do my job well."),
       Q("I'm able to make decisions within my area of work."),
       Q("Our day-to-day processes help rather than hinder me."),
@@ -233,7 +234,7 @@ export function templatePoolQuestions(templateId) {
   const groups = TEMPLATE_PREVIEWS[templateId] || [];
   const out = [];
   groups.forEach((g, gi) => g.questions.forEach((q, qi) => {
-    out.push({ id: `${templateId}-${gi}-${qi}`, topic: g.topic, theme: q.theme || null,
+    out.push({ id: `${templateId}-${gi}-${qi}`, topic: g.topic, theme: q.theme || null, themes: q.themes || null,
       type: q.type, bench: true, custom: false, tmplId: templateId, text: q.text, options: q.options });
   }));
   return out;
@@ -348,11 +349,17 @@ const EXTRA_LIBRARY = [
   ]},
 ];
 
+// Org-required questions: a small set configured elsewhere (not in the builder)
+// that must be in every survey and are auto-selected. Ids follow libraryPool's
+// `lib-{gi}-{qi}` scheme; kept theme-less so they read as plain required rows.
+export const REQUIRED_LIB_IDS = new Set(["lib-0-2", "lib-0-3"]);
+
 // The shared bank as ready-to-use pool question objects (stable ids).
 export function libraryPool() {
   const out = [];
   EXTRA_LIBRARY.forEach((g, gi) => g.questions.forEach((q, qi) => {
-    out.push({ id: `lib-${gi}-${qi}`, topic: g.topic, theme: q.theme || null,
+    const id = `lib-${gi}-${qi}`;
+    out.push({ id, topic: g.topic, theme: q.theme || null, required: REQUIRED_LIB_IDS.has(id),
       type: q.type, bench: true, custom: false, text: q.text, options: q.options });
   }));
   return out;
