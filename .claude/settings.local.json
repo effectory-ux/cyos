@@ -5,7 +5,13 @@
       "Bash(gh auth *)",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit -q -m 'CYOS phase 2 — survey creation flow prototype *)"
+      "Bash(git commit -q -m 'CYOS phase 2 — survey creation flow prototype *)",
+      "Bash(gh repo *)",
+      "Bash(./deploy-demo.sh)",
+      "Bash(gh api *)",
+      "Bash(git rm *)",
+      "Bash(git commit -q -m 'Deploy Pages directly from this repo via Actions; drop demo-repo split *)",
+      "Bash(git push *)"
     ]
   }
 }
