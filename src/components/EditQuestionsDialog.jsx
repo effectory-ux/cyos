@@ -691,10 +691,10 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         </div>
       </div>
 
-      {customOpen && <CustomQuestionDialog topics={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))]}
+      {customOpen && <CustomQuestionDialog topics={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
         onCancel={() => setCustomOpen(false)} onAdd={addCustom} />}
       {editCustomQ && <CustomQuestionDialog question={editCustomQ}
-        topics={[...new Set(pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))]}
+        topics={[...new Set(pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
         onCancel={() => setEditCustomQ(null)} onSubmit={saveCustomEdit} onDelete={deleteCustomQ} />}
       {confirm && <ThemeConfirm q={confirm.q} themes={confirm.themes} pool={pool} onKeep={() => setConfirm(null)} onRemove={() => doRemove(confirm.q)} />}
       {detailTheme && <ThemeDetailsDialog theme={detailTheme} sel={sel}

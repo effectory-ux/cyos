@@ -1,14 +1,16 @@
 // Builder.jsx — Questionnaire step, full-width (Engage DS)
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Icon } from "./Icon.jsx";
-import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, Tooltip, RequiredMarker, themesOf } from "./shared.jsx";
+import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, EditedTag, Tooltip, RequiredMarker, themesOf } from "./shared.jsx";
 import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
+import { QuestionSettingsPane } from "./QuestionSettingsPane.jsx";
+import { TranslationsDialog } from "./TranslationsDialog.jsx";
 import { TEMPLATES, BADGE_COLORS, THEMES } from "../data/data.js";
 import { templatePoolQuestions } from "../data/qlib.js";
 
 // Small rename dialog — used for the survey name and for a topic's
-// questionnaire-specific label.
-function RenameDialog({ title, label, value, onCancel, onSave }) {
+// questionnaire-specific label. `note` adds one quiet scope line under the field.
+function RenameDialog({ title, label, value, note, onCancel, onSave }) {
   const [v, setV] = useState(value || "");
   const valid = v.trim().length > 0;
   const save = () => { if (valid) onSave(v.trim()); };
@@ -26,6 +28,7 @@ function RenameDialog({ title, label, value, onCancel, onSave }) {
           <span className="cq-lbl">{label}</span>
           <input className="tf" autoFocus value={v} placeholder={label}
             onChange={e => setV(e.target.value)} onKeyDown={e => { if (e.key === "Enter") save(); }} />
+          {note && <div className="qsp-note" style={{ marginTop: 8 }}><Icon name="info" size={14} />{note}</div>}
         </div>
         <div className="dialog-footer">
           <div className="spacer" />
@@ -35,6 +38,70 @@ function RenameDialog({ title, label, value, onCancel, onSave }) {
       </div>
     </div>
   );
+}
+
+// Create-topic dialog. New topics are survey-scoped ("custom") — they organize
+// questions in this questionnaire and never touch the library or benchmarks.
+function AddTopicDialog({ onCancel, onAdd }) {
+  const [nm, setNm] = useState("");
+  const [ds, setDs] = useState("");
+  const valid = nm.trim().length > 0;
+  const add = () => { if (valid) onAdd({ name: nm.trim(), desc: ds.trim() || undefined }); };
+  return (
+    <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 75 }}
+      onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
+      <div className="dialog dialog-s" role="dialog" aria-modal="true" aria-labelledby="at-title">
+        <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
+          <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
+        </Tooltip>
+        <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
+          <h3 className="dialog-title" id="at-title">Add topic</h3>
+          <p className="dialog-subtitle">Topics organize the questions in this survey. They don't affect themes or benchmarks.</p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-base)" }}>
+          <div>
+            <span className="cq-lbl">Topic name</span>
+            <input className="tf" autoFocus value={nm} placeholder="Topic name"
+              onChange={e => setNm(e.target.value)} onKeyDown={e => { if (e.key === "Enter") add(); }} />
+          </div>
+          <div>
+            <span className="cq-lbl">Description (optional)</span>
+            <textarea className="qsp-desc-ta" rows={2} value={ds} placeholder="Shown to respondents above the topic's questions"
+              onChange={e => setDs(e.target.value)} />
+          </div>
+        </div>
+        <div className="dialog-footer">
+          <div className="spacer" />
+          <button className="btn btn-tertiary" onClick={onCancel}>Cancel</button>
+          <button className={"btn btn-primary" + (valid ? "" : " is-disabled")} disabled={!valid} onClick={add}>Add topic</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Inline (click-to-edit) description under a topic header. Enter or blur saves,
+// Escape cancels; an empty save removes the description.
+function TopicDesc({ desc, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [v, setV] = useState(desc || "");
+  const start = () => { setV(desc || ""); setEditing(true); };
+  const commit = () => { setEditing(false); const t = v.trim(); if (t !== (desc || "")) onSave(t || undefined); };
+  if (editing) {
+    return (
+      <textarea className="desc-edit" autoFocus rows={2} value={v}
+        onChange={e => setV(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => {
+          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); }
+          if (e.key === "Escape") { setV(desc || ""); setEditing(false); }
+        }} />
+    );
+  }
+  return desc
+    ? <div className="qsec-desc-text" role="button" tabIndex={0} onClick={start}
+        onKeyDown={e => { if (e.key === "Enter") start(); }}>{desc}</div>
+    : <button className="qsec-desc-ghost" onClick={start}><Icon name="plus" size={14} />Add description</button>;
 }
 
 // Warning shown before removing a topic that still holds questions. Offers a
@@ -69,7 +136,7 @@ function TopicRemoveWarning({ label, count, onCancel, onConfirm }) {
   );
 }
 
-function TopNav({ name, onRename }) {
+function TopNav({ name, onRename, onTranslations }) {
   const steps = [
     { n: 1, icon: "clipboard-note", label: "Questionnaire", active: true },
     { n: 2, icon: "users", label: "Participants" },
@@ -82,6 +149,7 @@ function TopNav({ name, onRename }) {
       <span className="tag tag-draft">Draft</span>
       <span style={{ fontWeight: 600, fontSize: 16 }}>{name}</span>
       <button className="btn btn-link" style={{ padding: "4px 6px" }} onClick={onRename}><Icon name="edit" size={14} />Edit name</button>
+      <button className="btn btn-link" style={{ padding: "4px 6px" }} onClick={onTranslations}><Icon name="language" size={14} />Translations</button>
       <div className="spacer" />
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         {steps.map(s => (
@@ -101,12 +169,17 @@ function TopNav({ name, onRename }) {
   );
 }
 
-function BuilderRow({ q, onRemove, onEdit, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, themeInfo, onOpenTheme, onDragStart, onDragEnd }) {
+function BuilderRow({ q, meta, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, themeInfo, onOpenTheme, onDragStart, onDragEnd }) {
   const [menu, setMenu] = useState(false);
-  const [view, setView] = useState("main"); // "main" | "move" (topic picker for custom questions)
+  const [view, setView] = useState("main"); // "main" | "move" (topic picker)
   const close = () => { setMenu(false); setView("main"); };
   const hasMove = canUp || canDown;
-  const otherTopics = (topics || []).filter(t => t !== q.topic);
+  const effTopic = (meta && meta.topic) || q.topic;
+  const otherTopics = (topics || []).filter(t => t.key !== effTopic);
+  // Survey-scoped extras on a standard question (custom questions carry their own).
+  const desc = (meta && meta.desc) || q.desc;
+  const descHidden = !!(meta && meta.descHidden);
+  const edited = !q.custom && !!(meta && meta.desc);
   return (
     <div className={"qrow" + (dragging ? " is-dragging" : "") + (entering ? " is-entering" : "")} data-qid={q.id}>
       <Tooltip label="Drag to reorder" pos="is-left">
@@ -116,8 +189,14 @@ function BuilderRow({ q, onRemove, onEdit, onMoveUp, onMoveDown, canUp, canDown,
       </Tooltip>
       <div className="qrow-main">
         <div style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{q.text}</div>
+        {showDesc && desc && !descHidden && <div className="qrow-desc">{desc}</div>}
       </div>
       <div className="qrow-meta">
+        {edited && (
+          <EditedTag title="Edited for this survey"
+            lines={["A description was added to this standard question."]}
+            resetLabel="Remove description" onReset={onResetDesc} />
+        )}
         {q.theme
           ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-left"
               onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
@@ -139,14 +218,25 @@ function BuilderRow({ q, onRemove, onEdit, onMoveUp, onMoveDown, canUp, canDown,
                     </div>
                     <div className="menu-divider" />
                     {otherTopics.map(t => (
-                      <div key={t} className="menu-item" role="menuitem" onClick={() => { close(); onMoveTopic && onMoveTopic(t); }}>
-                        <span className="menu-item-body"><span className="menu-item-title">{t}</span></span>
+                      <div key={t.key} className="menu-item" role="menuitem" onClick={() => { close(); onMoveTopic && onMoveTopic(t.key); }}>
+                        <span className="menu-item-body"><span className="menu-item-title">{t.label}</span></span>
                       </div>
                     ))}
                     {otherTopics.length === 0 && <div className="menu-item is-disabled"><span className="menu-item-body"><span className="menu-item-title">No other topics</span></span></div>}
                   </>
                 ) : (
                   <>
+                    <div className="menu-item" role="menuitem" onClick={() => { close(); onSettings && onSettings(q); }}>
+                      <span className="menu-item-icon"><Icon name="sliders" size={16} /></span>
+                      <span className="menu-item-body"><span className="menu-item-title">Question settings</span></span>
+                    </div>
+                    {q.custom && (
+                      <div className="menu-item" role="menuitem" onClick={() => { close(); onEdit && onEdit(q); }}>
+                        <span className="menu-item-icon"><Icon name="edit" size={16} /></span>
+                        <span className="menu-item-body"><span className="menu-item-title">Edit question</span></span>
+                      </div>
+                    )}
+                    <div className="menu-divider" />
                     {canUp && (
                       <div className="menu-item" role="menuitem" onClick={() => { close(); onMoveUp && onMoveUp(); }}>
                         <span className="menu-item-icon"><Icon name="arrow-up" size={16} /></span>
@@ -159,41 +249,27 @@ function BuilderRow({ q, onRemove, onEdit, onMoveUp, onMoveDown, canUp, canDown,
                         <span className="menu-item-body"><span className="menu-item-title">Move down</span></span>
                       </div>
                     )}
+                    <div className="menu-item" role="menuitem" onClick={() => setView("move")}>
+                      <span className="menu-item-icon"><Icon name="import-export" size={16} /></span>
+                      <span className="menu-item-body"><span className="menu-item-title">Move to topic</span></span>
+                      <span className="menu-chevron"><Icon name="chevron-right" size={16} /></span>
+                    </div>
+                    <div className="menu-divider" />
                     {q.custom ? (
-                      <>
-                        {hasMove && <div className="menu-divider" />}
-                        <div className="menu-group-lbl">For custom questions only</div>
-                        <div className="menu-item" role="menuitem" onClick={() => { close(); onEdit && onEdit(q); }}>
-                          <span className="menu-item-icon"><Icon name="edit" size={16} /></span>
-                          <span className="menu-item-body"><span className="menu-item-title">Edit question</span></span>
-                        </div>
-                        <div className="menu-item" role="menuitem" onClick={() => setView("move")}>
-                          <span className="menu-item-icon"><Icon name="import-export" size={16} /></span>
-                          <span className="menu-item-body"><span className="menu-item-title">Move to topic</span></span>
-                          <span className="menu-chevron"><Icon name="chevron-right" size={16} /></span>
-                        </div>
-                        <div className="menu-divider" />
-                        <div className="menu-item" role="menuitem" onClick={() => { close(); onRemove && onRemove(q); }}>
-                          <span className="menu-item-icon" style={{ color: "var(--content-negative-secondary)" }}><Icon name="trash" size={16} /></span>
-                          <span className="menu-item-body"><span className="menu-item-title" style={{ color: "var(--content-negative-secondary)" }}>Delete question</span></span>
-                        </div>
-                      </>
+                      <div className="menu-item" role="menuitem" onClick={() => { close(); onRemove && onRemove(q); }}>
+                        <span className="menu-item-icon" style={{ color: "var(--content-negative-secondary)" }}><Icon name="trash" size={16} /></span>
+                        <span className="menu-item-body"><span className="menu-item-title" style={{ color: "var(--content-negative-secondary)" }}>Delete question</span></span>
+                      </div>
                     ) : q.required ? (
-                      <>
-                        {hasMove && <div className="menu-divider" />}
-                        <div className="menu-item is-disabled" role="menuitem" aria-disabled="true">
-                          <span className="menu-item-icon"><Icon name="asterisk" size={16} /></span>
-                          <span className="menu-item-body"><span className="menu-item-title">Remove from questionnaire</span><span className="menu-item-sub">This question is required</span></span>
-                        </div>
-                      </>
+                      <div className="menu-item is-disabled" role="menuitem" aria-disabled="true">
+                        <span className="menu-item-icon"><Icon name="asterisk" size={16} /></span>
+                        <span className="menu-item-body"><span className="menu-item-title">Remove from questionnaire</span><span className="menu-item-sub">This question is required</span></span>
+                      </div>
                     ) : (
-                      <>
-                        {hasMove && <div className="menu-divider" />}
-                        <div className="menu-item" role="menuitem" onClick={() => { close(); onRemove && onRemove(q); }}>
-                          <span className="menu-item-icon" style={{ color: "var(--content-negative-secondary)" }}><Icon name="cross" size={16} /></span>
-                          <span className="menu-item-body"><span className="menu-item-title" style={{ color: "var(--content-negative-secondary)" }}>Remove from questionnaire</span></span>
-                        </div>
-                      </>
+                      <div className="menu-item" role="menuitem" onClick={() => { close(); onRemove && onRemove(q); }}>
+                        <span className="menu-item-icon" style={{ color: "var(--content-negative-secondary)" }}><Icon name="cross" size={16} /></span>
+                        <span className="menu-item-body"><span className="menu-item-title" style={{ color: "var(--content-negative-secondary)" }}>Remove from questionnaire</span></span>
+                      </div>
                     )}
                   </>
                 )}
@@ -226,13 +302,24 @@ function reconcileLayout(prev, groups) {
   return next;
 }
 
-export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates }) {
-  const { name, isTemplate, selectedIds, pool } = survey;
+export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onSaveTranslation }) {
+  const { name, isTemplate, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {} } = survey;
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
   const [topicWarn, setTopicWarn] = useState(null); // section pending removal confirmation
   const [themeDetail, setThemeDetail] = useState(null); // theme name whose details dialog is open (from a tag)
+  const [addTopicOpen, setAddTopicOpen] = useState(false);
+  const [settingsQId, setSettingsQId] = useState(null); // question whose settings pane is open
+  const [translationsOpen, setTranslationsOpen] = useState(false);
+  // View preference only — collapses/expands descriptions in this overview.
+  // It never changes what respondents see (that lives in question settings).
+  const [showDesc, setShowDesc] = useState(true);
   const sel = new Set(selectedIds);
+  const customTopicSet = new Set(customTopics);
+  // A topic's display name in THIS survey (library name is the stable key).
+  const topicName = (key) => (topicMeta[key] && topicMeta[key].name) || key;
+  // A question's effective topic: survey-scoped move override, else its own.
+  const effTopic = (q) => (qMeta[q.id] && qMeta[q.id].topic) || q.topic;
   const chosen = pool.filter(q => sel.has(q.id));
   // Rough completion-time estimate (~20s per question) for the overview card.
   const estMinutes = Math.max(1, Math.round((chosen.length * 20) / 60));
@@ -251,7 +338,11 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   })();
   const themeMap = {}; themeGroups.forEach(t => { themeMap[t.name] = t; });
   const detailTheme = themeGroups.find(t => t.name === themeDetail) || null;
-  const groups = groupQuestions(chosen, "library");
+  // Group by EFFECTIVE topic (survey-scoped moves included); the Add-questions
+  // dialog keeps grouping by the canonical library topic. Empty custom topics
+  // still render as sections so they can be filled by drag or move-to.
+  const groups = groupQuestions(chosen.map(q => effTopic(q) !== q.topic ? { ...q, topic: effTopic(q) } : q), "library");
+  customTopics.forEach(k => { if (!groups.find(g => g.key === k)) groups.push({ key: k, label: k, kind: "topic", items: [] }); });
   // Header meta: a theme is "active" when every one of its questions is selected
   // (a scored theme); a template is "active" when its whole question set is in.
   const activeThemes = themeGroups.filter(t => t.total > 0 && t.kept >= t.total).length;
@@ -263,7 +354,8 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   // On-page ordering the user can drag-reorder. Lives only here — the Add
   // questions dialog always works from the library order, never this one.
   const [layout, setLayout] = useState(() => groups.map(g => ({ key: g.key, label: g.label, items: g.items })));
-  const sig = selectedIds.join(",") + "|" + pool.map(p => p.id + ":" + (p.topic || "") + ":" + (p.text || "")).join(",");
+  const sig = selectedIds.join(",") + "|" + pool.map(p => p.id + ":" + (p.topic || "") + ":" + (p.text || "")).join(",")
+    + "|" + customTopics.join(",") + "|" + Object.entries(qMeta).map(([id, m]) => id + ">" + (m.topic || "")).join(",");
   useEffect(() => { setLayout(prev => reconcileLayout(prev, groups)); }, [sig]); // eslint-disable-line
 
   // Drag & drop via static drop targets — nothing reorders while dragging; the
@@ -354,7 +446,7 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
         if (e.clientY > r.top + r.height / 2) idx++;
       }
       setQHint(prev => (prev && prev.secKey === secKey && prev.index === idx) ? prev : { secKey, index: idx });
-    } else if (d.custom) {
+    } else {
       e.preventDefault(); e.dataTransfer.dropEffect = "move";
       if (dropTarget !== secKey) setDropTarget(secKey);
     }
@@ -364,7 +456,7 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
     e.preventDefault();
     if (d.secKey === secKey && qHint && qHint.secKey === secKey) {
       reorderQuestion(secKey, d.id, qHint.index); // qHint.index is already in without-dragged coords
-    } else if (d.custom && d.secKey !== secKey && onMoveTopic) {
+    } else if (d.secKey !== secKey && onMoveTopic) {
       onMoveTopic(d.id, secKey);
     }
     clearDrag();
@@ -402,8 +494,10 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
     clearDrag();
   };
 
-  // Visible (non-empty) sections, in order — used for up/down bounds & neighbours.
-  const visibleSections = layout.filter(s => s.items.length);
+  // Visible sections, in order — used for up/down bounds & neighbours. Custom
+  // topics stay visible while empty (so they can be filled); library topics
+  // disappear when their last question goes.
+  const visibleSections = layout.filter(s => s.items.length || customTopicSet.has(s.key));
 
   // Flag questions/sections that appeared since the last render (i.e. an Apply)
   // so they can animate in; clear the flag once the animation has run.
@@ -428,7 +522,7 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
       setEnteringSecs(prev => { const n = new Set(prev); fresh.forEach(k => n.delete(k)); return n; }), 560));
   }, [sig]); // eslint-disable-line
   const skipTopicWarn = () => { try { return localStorage.getItem("cyos.skipTopicRemoveWarn") === "1"; } catch (_) { return false; } };
-  const doRemoveTopic = (s) => { if (onRemoveTopic) onRemoveTopic(s.items.map(q => q.id)); };
+  const doRemoveTopic = (s) => { if (onRemoveTopic) onRemoveTopic(s.items.map(q => q.id), s.key); };
   const requestRemoveTopic = (s) => {
     if (s.items.length === 0 || skipTopicWarn()) { doRemoveTopic(s); return; }
     setTopicWarn(s);
@@ -436,7 +530,8 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
 
   return (
     <div className={"col" + (tipsOff ? " tips-off" : "")}>
-      <TopNav name={name} onRename={() => setRename({ kind: "survey", value: name })} />
+      <TopNav name={name} onRename={() => setRename({ kind: "survey", value: name })}
+        onTranslations={() => setTranslationsOpen(true)} />
       <div className="scroll-y" style={{ flex: 1, padding: "var(--spacing-super-loose) 0 110px", background: "var(--bg-base)" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 var(--spacing-super-loose)" }}>
           <h1 className="text-l2" style={{ margin: "0 0 4px" }}>Questions</h1>
@@ -484,14 +579,25 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
             )}
           </div>
 
+          {chosen.length > 0 && (
+            <div className="view-toggles">
+              <label className="tgl-label-wrap">
+                <span className="tgl-wrap">
+                  <input type="checkbox" className="tgl" checked={showDesc} onChange={e => setShowDesc(e.target.checked)} />
+                  <span className="tgl-track"><span className="tgl-thumb" /></span>
+                </span>
+                Show descriptions
+              </label>
+            </div>
+          )}
           <div className="qsec-list">
           {visibleSections.map((s, vi) => {
             const secUp = vi > 0, secDown = vi < visibleSections.length - 1;
             const draggingElsewhere = !!drag && drag.kind === "q" && drag.secKey !== s.key;
-            // A standard question over another topic locks it; a custom question
-            // can move there, so that topic becomes a drop target instead.
-            const locked = draggingElsewhere && !drag.custom;
-            const isDropTarget = draggingElsewhere && drag.custom && dropTarget === s.key;
+            // Any question dragged over another topic marks that topic as a
+            // move target (moves are survey-scoped and never touch benchmarks).
+            const locked = false;
+            const isDropTarget = draggingElsewhere && dropTarget === s.key;
             const secDragging = !!drag && drag.kind === "sec" && drag.key === s.key;
             const zoneArmed = (k) => !!drag && drag.kind === "sec" && !zoneIsNoop(k);
             const zone = (k) => (
@@ -512,9 +618,22 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
                     onDragStart={startSection(s.key, vi)} onDragEnd={clearDrag} onClick={e => e.preventDefault()}>
                     <Icon name="drag-drop" size={16} /></button>
                 </Tooltip>
-                <h2 className="qsec-title">{s.label}</h2>
+                <h2 className="qsec-title">{topicName(s.key)}</h2>
+                {customTopicSet.has(s.key) ? (
+                  <Tooltip label="Topic created for this survey">
+                    <span className="tag tag-custom-q"><Icon name="edit-inline" size={10} /><span className="tag-ellip">Custom</span></span>
+                  </Tooltip>
+                ) : (topicMeta[s.key] && (topicMeta[s.key].name || topicMeta[s.key].desc)) ? (
+                  <EditedTag title="Edited for this survey"
+                    lines={[
+                      ...(topicMeta[s.key].name ? [<>Original name: <b>{s.key}</b></>] : []),
+                      ...(topicMeta[s.key].desc ? ["A description was added to this topic."] : []),
+                    ]}
+                    resetLabel={topicMeta[s.key].name ? "Reset name" : "Remove description"}
+                    onReset={() => onUpdateTopicMeta && onUpdateTopicMeta(s.key, topicMeta[s.key].name ? { name: undefined } : { desc: undefined })} />
+                ) : null}
                 <div className="spacer" />
-                <span className="qsec-count">{s.items.length} questions</span>
+                <span className="qsec-count">{s.items.length} {s.items.length === 1 ? "question" : "questions"}</span>
                 <div className="qsec-menu-wrap">
                   <Tooltip label="Topic actions" pos="is-right"><button className="ib ib-36 ib-tertiary" aria-label="Topic actions" aria-haspopup="menu" aria-expanded={menuKey === s.key}
                     draggable={false} onDragStart={e => e.preventDefault()}
@@ -523,6 +642,17 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
                     <>
                       <div style={{ position: "fixed", inset: 0, zIndex: 1 }} onMouseDown={() => setMenuKey(null)} />
                       <div className="menu" role="menu" style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, width: 280, zIndex: 2 }}>
+                        <div className="menu-item" role="menuitem" onClick={() => { setMenuKey(null); setRename({ kind: "topic", key: s.key, value: topicName(s.key) }); }}>
+                          <span className="menu-item-icon"><Icon name="edit" size={16} /></span>
+                          <span className="menu-item-body"><span className="menu-item-title">Rename topic</span><span className="menu-item-sub">Applies to this survey only</span></span>
+                        </div>
+                        {!customTopicSet.has(s.key) && topicMeta[s.key] && topicMeta[s.key].name && (
+                          <div className="menu-item" role="menuitem" onClick={() => { setMenuKey(null); onUpdateTopicMeta && onUpdateTopicMeta(s.key, { name: undefined }); }}>
+                            <span className="menu-item-icon"><Icon name="refresh" size={16} /></span>
+                            <span className="menu-item-body"><span className="menu-item-title">Reset to original name</span><span className="menu-item-sub">{s.key}</span></span>
+                          </div>
+                        )}
+                        <div className="menu-divider" />
                         {secUp && (
                           <div className="menu-item" role="menuitem" onClick={() => { setMenuKey(null); reorderSection(s.key, visibleSections[vi - 1].key, false); }}>
                             <span className="menu-item-icon"><Icon name="arrow-up" size={16} /></span>
@@ -545,16 +675,26 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
                   )}
                 </div>
               </div>
-              {locked && <div className="qsec-lock-msg"><span><Icon name="lock" size={16} />You can reorder standard questions within their topic only</span></div>}
+              {showDesc && (
+                <div className="qsec-desc">
+                  <TopicDesc desc={topicMeta[s.key] && topicMeta[s.key].desc}
+                    onSave={(d) => onUpdateTopicMeta && onUpdateTopicMeta(s.key, { desc: d })} />
+                </div>
+              )}
               <div className="qsec-body" onDragOver={questionBodyDragOver(s.key)} onDrop={questionBodyDrop(s.key)}>
+                {s.items.length === 0 && (
+                  <div className="qsec-empty">No questions yet — drag questions here, or move them here from their menu</div>
+                )}
                 {previewItems(s).map((qq) => {
                   const i = s.items.findIndex(x => x.id === qq.id);
-                  return <BuilderRow key={qq.id} q={qq}
+                  return <BuilderRow key={qq.id} q={qq} meta={qMeta[qq.id]} showDesc={showDesc}
                     onRemove={onRemoveQuestion} onEdit={onEditCustom} dragging={!!drag && drag.kind === "q" && drag.id === qq.id}
+                    onSettings={(q) => setSettingsQId(q.id)}
+                    onResetDesc={() => onUpdateQMeta && onUpdateQMeta(qq.id, { desc: undefined, descHidden: undefined })}
                     canUp={i > 0} canDown={i < s.items.length - 1}
                     onMoveUp={() => reorderQuestion(s.key, qq.id, i - 1)}
                     onMoveDown={() => reorderQuestion(s.key, qq.id, i + 1)}
-                    topics={visibleSections.map(x => x.key)} onMoveTopic={(t) => onMoveTopic && onMoveTopic(qq.id, t)}
+                    topics={visibleSections.map(x => ({ key: x.key, label: topicName(x.key) }))} onMoveTopic={(t) => onMoveTopic && onMoveTopic(qq.id, t)}
                     entering={enteringIds.has(qq.id) && !enteringSecs.has(s.key)} themeInfo={themeMap[qq.theme]}
                     onOpenTheme={setThemeDetail}
                     onDragStart={startQuestion(s.key, qq.id, i, qq.custom)} onDragEnd={clearDrag} />;
@@ -565,6 +705,12 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
           </Fragment>
           ); })}
           </div>
+
+          {chosen.length > 0 && (
+            <button className="add-topic-btn" onClick={() => setAddTopicOpen(true)}>
+              <Icon name="plus" size={16} />Add topic
+            </button>
+          )}
 
           {chosen.length > 0 && (
             <div style={{ marginTop: "var(--spacing-extra-loose)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "var(--spacing-loose)", textAlign: "center" }}>
@@ -601,10 +747,29 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
         <button className="btn btn-secondary is-disabled" disabled><Icon name="send" size={16} />Plan survey</button>
       </div>
 
-      {rename && <RenameDialog title="Rename survey" label="Survey name"
+      {rename && rename.kind === "survey" && <RenameDialog title="Rename survey" label="Survey name"
         value={rename.value} onCancel={() => setRename(null)}
         onSave={(v) => { onRename && onRename(v); setRename(null); }} />}
-      {topicWarn && <TopicRemoveWarning label={topicWarn.label} count={topicWarn.items.length}
+      {rename && rename.kind === "topic" && <RenameDialog title="Rename topic" label="Topic name"
+        note={customTopicSet.has(rename.key) ? undefined : "Applies to this survey only — the library keeps the original name"}
+        value={rename.value} onCancel={() => setRename(null)}
+        onSave={(v) => { onUpdateTopicMeta && onUpdateTopicMeta(rename.key, { name: v }); setRename(null); }} />}
+      {addTopicOpen && <AddTopicDialog onCancel={() => setAddTopicOpen(false)}
+        onAdd={(t) => { onAddTopic && onAddTopic(t); setAddTopicOpen(false); }} />}
+      {settingsQId && (() => {
+        const q = pool.find(p => p.id === settingsQId);
+        return q ? (
+          <QuestionSettingsPane q={q} meta={qMeta[q.id]} themeInfo={themeMap[q.theme]}
+            onUpdate={(patch) => onUpdateQMeta && onUpdateQMeta(q.id, patch)}
+            onEditCustom={() => { setSettingsQId(null); onEditCustom && onEditCustom(q); }}
+            onOpenTranslations={() => { setSettingsQId(null); setTranslationsOpen(true); }}
+            onClose={() => setSettingsQId(null)} />
+        ) : null;
+      })()}
+      {translationsOpen && <TranslationsDialog pool={pool} selectedIds={selectedIds}
+        topicMeta={topicMeta} customTopics={customTopics} qMeta={qMeta} i18nEdits={i18nEdits}
+        onSave={onSaveTranslation} onClose={() => setTranslationsOpen(false)} />}
+      {topicWarn && <TopicRemoveWarning label={topicName(topicWarn.key)} count={topicWarn.items.length}
         onCancel={() => setTopicWarn(null)}
         onConfirm={(dontShow) => { if (dontShow) { try { localStorage.setItem("cyos.skipTopicRemoveWarn", "1"); } catch (_) {} } doRemoveTopic(topicWarn); setTopicWarn(null); }} />}
       {detailTheme && <ThemeDetailsDialog theme={detailTheme} sel={sel}

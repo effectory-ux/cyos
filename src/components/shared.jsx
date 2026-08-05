@@ -174,6 +174,51 @@ export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", float = 
   );
 }
 
+// "Edited" provenance chip — the quiet marker for anything that diverges from
+// the library in THIS survey (renamed topic, added description). Clicking it
+// opens a small popover that names the original, states the survey-only scope,
+// and offers a reset. Standard, untouched items never get a chip.
+export function EditedTag({ label = "Edited", title = "Edited for this survey", lines = [], resetLabel, onReset }) {
+  const [open, setOpen] = useState(false);
+  const [xy, setXY] = useState(null);
+  const ref = useRef(null);
+  const toggle = (e) => {
+    e.stopPropagation();
+    if (open) { setOpen(false); return; }
+    const el = ref.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    // Below the chip, left-aligned; clamped so the 280px popover stays on-screen.
+    setXY({ left: Math.min(r.left, window.innerWidth - 296), top: r.bottom + 6 });
+    setOpen(true);
+  };
+  return (
+    <span ref={ref} style={{ display: "inline-flex" }}>
+      <span className="tag tag-edited is-interactive" role="button" tabIndex={0}
+        aria-haspopup="dialog" aria-expanded={open}
+        onClick={toggle}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(e); } }}>
+        <Icon name="edit-inline" size={10} /><span className="tag-ellip">{label}</span>
+      </span>
+      {open && xy && createPortal(
+        <>
+          <div className="prov-scrim" onMouseDown={(e) => { e.stopPropagation(); setOpen(false); }} />
+          <div className="prov-pop" role="dialog" aria-label={title} style={{ left: xy.left, top: xy.top }}>
+            <div className="prov-title">{title}</div>
+            {lines.map((ln, i) => <div key={i} className="prov-line">{ln}</div>)}
+            <div className="prov-scope"><Icon name="info" size={14} />Applies to this survey only</div>
+            {onReset && (
+              <button className="btn btn-tertiary prov-reset"
+                onClick={(e) => { e.stopPropagation(); setOpen(false); onReset(); }}>
+                <Icon name="refresh" size={16} />{resetLabel || "Reset"}
+              </button>
+            )}
+          </div>
+        </>,
+        document.body)}
+    </span>
+  );
+}
+
 // Custom-question tag. Interactive (with an edit tooltip) when `onOpen` is given.
 export function CustomTag({ label = "Custom", pos = "is-left", float = false, onOpen }) {
   return (

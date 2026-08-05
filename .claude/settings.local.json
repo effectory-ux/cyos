@@ -11,7 +11,14 @@
       "Bash(gh api *)",
       "Bash(git rm *)",
       "Bash(git commit -q -m 'Deploy Pages directly from this repo via Actions; drop demo-repo split *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(gh run *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" https://n33g3k.github.io/cyos-phase-2/)",
+      "Bash(curl -s -o /dev/null -w \"old demo URL: HTTP %{http_code}\\\\n\" https://n33g3k.github.io/cyos-phase-2-demo/)",
+      "mcp__fd140b2d-1a50-41fa-a815-fbbc8b20ad01__search_screens",
+      "mcp__fd140b2d-1a50-41fa-a815-fbbc8b20ad01__search_flows",
+      "Bash(npm run *)",
+      "Bash(git commit -q -m 'Phase 2: survey-scoped customization *)"
     ]
   }
 }

@@ -39,6 +39,18 @@ export function App() {
   // out-of-scope dialog pointing at a separate prototype.
   const [outOfScope, setOutOfScope] = useState(null);
 
+  // Phase-2 customization state lives ON the survey, so it saves/reopens with
+  // it and is always survey-scoped (the library is never written to):
+  //   topicMeta:    { [topicKey]: { name?, desc?, descHidden? } } — overrides for
+  //                 library topics; name/desc for custom topics.
+  //   customTopics: [topicKey] — user-created topics (key "ct-…"; may be empty).
+  //   qMeta:        { [qId]: { desc?, descHidden?, topic? } } — survey-scoped
+  //                 extras on STANDARD questions (custom questions carry their
+  //                 own desc/topic on the pool object).
+  //   i18nEdits:    { [lang]: { [stringKey]: text } } — reviewed translations of
+  //                 user-authored strings; absence = automatic translation.
+  const normalize = (sv) => ({ topicMeta: {}, customTopics: [], qMeta: {}, i18nEdits: {}, ...sv });
+
   // When changing a template from the builder, keep the same survey id so it
   // updates in place (a fresh id is minted only for a brand-new survey).
   const keepId = () => (changing && survey ? { id: survey.id } : {});
@@ -58,7 +70,7 @@ export function App() {
     setModal(false);
   };
   // Commit the named survey and open the builder (reusing the id when changing).
-  const confirmName = (name) => { setSurvey({ ...pending.survey, id: pending.survey.id || "d" + Date.now(), name }); setPending(null); setChanging(false); setEditing(false); setScreen("builder"); };
+  const confirmName = (name) => { setSurvey(normalize({ ...pending.survey, id: pending.survey.id || "d" + Date.now(), name })); setPending(null); setChanging(false); setEditing(false); setScreen("builder"); };
   // Back out of naming → return to template selection.
   const cancelName = () => { setPending(null); setModal(true); };
   // Close the modal without changing anything (also cancels a change-in-progress).
@@ -90,7 +102,7 @@ export function App() {
         sv = { id: row.id, name: row.name, templateName: null, isTemplate: false,
           selectedIds: lib.filter(q => q.required).map(q => q.id), pool: lib };
       }
-      setSurvey(sv); setEditing(false); setScreen("builder");
+      setSurvey(normalize(sv)); setEditing(false); setScreen("builder");
     } else {
       setOutOfScope(row);
     }
@@ -100,8 +112,74 @@ export function App() {
   // Add/remove a theme's questions from the builder's "View details" dialog.
   const toggleQuestion = (id) => setSurvey(s => ({ ...s, selectedIds: s.selectedIds.includes(id) ? s.selectedIds.filter(x => x !== id) : [...s.selectedIds, id] }));
   const setManyQuestions = (ids, on) => setSurvey(s => { const set = new Set(s.selectedIds); ids.forEach(id => on ? set.add(id) : set.delete(id)); return { ...s, selectedIds: [...set] }; });
-  // Custom questions may be reassigned to another topic (via drag or their menu).
-  const moveCustomTopic = (id, topic) => setSurvey(s => ({ ...s, pool: s.pool.map(p => p.id === id ? { ...p, topic } : p) }));
+  // ---- phase-2 customization handlers (all survey-scoped) ----------------
+  // Drop empty values so overrides disappear cleanly when reset.
+  const compact = (obj) => {
+    const out = { ...obj };
+    Object.keys(out).forEach(k => { if (out[k] === undefined || out[k] === null || out[k] === "") delete out[k]; });
+    return out;
+  };
+  // Reviewed translations of a string die when its base text changes — the
+  // string reverts to a fresh automatic translation.
+  const dropI18n = (s, keys) => {
+    const edits = {};
+    Object.entries(s.i18nEdits || {}).forEach(([lang, m]) => {
+      const next = { ...m }; keys.forEach(k => delete next[k]); edits[lang] = next;
+    });
+    return edits;
+  };
+  const updateTopicMeta = (key, patch) => setSurvey(s => {
+    const prev = (s.topicMeta || {})[key] || {};
+    // Renaming a library topic back to its original name clears the override.
+    const p = { ...patch };
+    if (p.name !== undefined && p.name === key && !(s.customTopics || []).includes(key)) p.name = undefined;
+    const cur = compact({ ...prev, ...p });
+    const tm = { ...(s.topicMeta || {}) };
+    if (Object.keys(cur).length) tm[key] = cur; else delete tm[key];
+    const touched = [];
+    if ("name" in patch) touched.push(`topic:${key}:name`);
+    if ("desc" in patch) touched.push(`topic:${key}:desc`);
+    return { ...s, topicMeta: tm, i18nEdits: dropI18n(s, touched) };
+  });
+  const addTopic = ({ name, desc }) => setSurvey(s => {
+    const key = "ct-" + Date.now();
+    return { ...s, customTopics: [...(s.customTopics || []), key],
+      topicMeta: { ...(s.topicMeta || {}), [key]: compact({ name, desc }) } };
+  });
+  const updateQMeta = (id, patch) => setSurvey(s => {
+    const cur = compact({ ...((s.qMeta || {})[id] || {}), ...patch });
+    const qm = { ...(s.qMeta || {}) };
+    if (Object.keys(cur).length) qm[id] = cur; else delete qm[id];
+    return { ...s, qMeta: qm, i18nEdits: "desc" in patch ? dropI18n(s, [`q:${id}:desc`]) : s.i18nEdits };
+  });
+  // Any question may be reassigned to another topic (via drag or its menu).
+  // Custom questions carry their topic on the pool object; standard questions
+  // get a survey-scoped override in qMeta (the library topic stays canonical).
+  const moveQuestionTopic = (id, topicKey) => setSurvey(s => {
+    const q = s.pool.find(p => p.id === id);
+    if (q && q.custom) return { ...s, pool: s.pool.map(p => p.id === id ? { ...p, topic: topicKey } : p) };
+    const cur = { ...((s.qMeta || {})[id] || {}) };
+    if (q && topicKey === q.topic) delete cur.topic; else cur.topic = topicKey;
+    const qm = { ...(s.qMeta || {}) };
+    if (Object.keys(cur).length) qm[id] = cur; else delete qm[id];
+    return { ...s, qMeta: qm };
+  });
+  // Topic choices for the custom-question dialog: every topic visible in this
+  // survey (by its survey-scoped display name), including empty custom topics.
+  const surveyTopicOptions = () => {
+    if (!survey) return undefined;
+    const sel = new Set(survey.selectedIds);
+    const eff = (q) => ((survey.qMeta || {})[q.id] || {}).topic || q.topic;
+    const keys = [];
+    survey.pool.forEach(q => { if (sel.has(q.id)) { const t = eff(q); if (t && !keys.includes(t)) keys.push(t); } });
+    (survey.customTopics || []).forEach(k => { if (!keys.includes(k)) keys.push(k); });
+    return keys.map(k => ({ value: k, label: ((survey.topicMeta || {})[k] || {}).name || k }));
+  };
+  const saveTranslation = (lang, key, text) => setSurvey(s => {
+    const forLang = { ...((s.i18nEdits || {})[lang] || {}) };
+    if (text && text.trim()) forLang[key] = text.trim(); else delete forLang[key];
+    return { ...s, i18nEdits: { ...(s.i18nEdits || {}), [lang]: forLang } };
+  });
 
   // Remove a question from THIS questionnaire (library questions are only
   // deselected; custom questions are deleted from the pool entirely).
@@ -124,17 +202,37 @@ export function App() {
     }
     removeFromSurvey(q);
   };
-  const saveCustomEdit = (q) => { setSurvey(s => ({ ...s, pool: s.pool.map(p => p.id === q.id ? q : p) })); setEditCustom(null); };
+  const saveCustomEdit = (q) => {
+    setSurvey(s => ({
+      ...s,
+      pool: s.pool.map(p => p.id === q.id ? q : p),
+      // The question's own strings changed — reviewed translations go stale.
+      i18nEdits: dropI18n(s, [`q:${q.id}:text`, `q:${q.id}:desc`, ...(q.options || []).map((_, i) => `q:${q.id}:opt:${i}`)]),
+    }));
+    setEditCustom(null);
+  };
   const renameSurvey = (newName) => setSurvey(s => ({ ...s, name: newName }));
   // Remove a whole topic from this questionnaire: deselect all its questions
   // (and drop any custom ones from the pool). Library + benchmarks are untouched.
-  const removeTopic = (ids) => setSurvey(s => {
+  // For a custom topic the topic itself is deleted too; survey-scoped moves into
+  // the removed topic are cleared so those questions return to their own topic.
+  const removeTopic = (ids, key) => setSurvey(s => {
     const idset = new Set(ids);
     const reqKept = new Set(s.pool.filter(p => p.required).map(p => p.id)); // required questions stay
+    const qm = {};
+    Object.entries(s.qMeta || {}).forEach(([id, m]) => {
+      const next = m.topic === key ? { ...m, topic: undefined } : m;
+      const cur = Object.fromEntries(Object.entries(next).filter(([, v]) => v !== undefined));
+      if (Object.keys(cur).length) qm[id] = cur;
+    });
+    const tm = { ...(s.topicMeta || {}) }; delete tm[key];
     return {
       ...s,
       selectedIds: s.selectedIds.filter(id => !idset.has(id) || reqKept.has(id)),
       pool: s.pool.filter(p => !(p.custom && idset.has(p.id))),
+      qMeta: qm,
+      customTopics: (s.customTopics || []).filter(k => k !== key),
+      topicMeta: tm, // removing a topic also clears its survey-scoped overrides
     };
   });
 
@@ -145,8 +243,10 @@ export function App() {
         ? <SurveysPage rows={surveysList} onCreate={() => setModal(true)} onDeleteDraft={deleteSurvey} onOpen={openSurvey} />
         : <Builder survey={survey} onEditQuestions={() => { setEditTab("questions"); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
-            onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveCustomTopic}
+            onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveQuestionTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
+            onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta}
+            onSaveTranslation={saveTranslation}
             onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }} />}
 
       {modal && <TemplateModal changing={changing} onClose={closeModal} onUse={useTemplate} onScratch={startScratch} />}
@@ -160,7 +260,7 @@ export function App() {
         onKeep={() => setRemoveConfirm(null)}
         onRemove={() => { removeFromSurvey(removeConfirm.q); setRemoveConfirm(null); }} />}
       {editCustom && <CustomQuestionDialog question={editCustom}
-        topics={survey ? [...new Set(survey.pool.filter(x => survey.selectedIds.includes(x.id) && x.topic).map(x => x.topic))] : undefined}
+        topics={surveyTopicOptions()}
         onCancel={() => setEditCustom(null)} onSubmit={saveCustomEdit}
         onDelete={(q) => { removeFromSurvey(q); setEditCustom(null); }} />}
       {outOfScope && <OutOfScopeDialog row={outOfScope} onClose={() => setOutOfScope(null)} />}

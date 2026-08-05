@@ -70,36 +70,43 @@ function ScalePreview() {
 export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubmit, onDelete }) {
   const editing = !!question;
   const submitFn = onSubmit || onAdd;
-  // Only offer topics that actually exist in this survey; fall back to the
-  // library topics if none were passed.
-  const topicList = (topics && topics.length) ? topics : TOPICS;
+  // Only offer topics that actually exist in this survey (as {value,label} —
+  // value is the stable key, label the survey-scoped display name); fall back
+  // to the library topics if none were passed.
+  const topicList = (topics && topics.length) ? topics : TOPICS.map(t => ({ value: t, label: t }));
   const [text, setText] = useState(question ? question.text : "");
   const [desc, setDesc] = useState(question && question.desc ? question.desc : "");
   const [type, setType] = useState(question ? question.type : "scale5");
   // A custom question always belongs to an existing topic — default to the first.
-  const [topic, setTopic] = useState(question && question.topic ? question.topic : topicList[0]);
+  const [topic, setTopic] = useState(question && question.topic ? question.topic : topicList[0].value);
+  // Custom answer options (multiple choice only) — custom questions are the ONE
+  // place answers are editable; standard questions stay standard from A to Z.
+  const [opts, setOpts] = useState(question && question.options && question.options.length ? question.options : ["", ""]);
   const [attempted, setAttempted] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(true);
 
   const textErr = text.trim().length <= 2;
   const showTextErr = attempted && textErr;
+  const cleanOpts = opts.map(o => o.trim()).filter(Boolean);
+  const optsErr = type === "multiple" && cleanOpts.length < 2;
+  const showOptsErr = attempted && optsErr;
 
   const submit = () => {
     setAttempted(true);
-    if (textErr) return;
+    if (textErr || optsErr) return;
     submitFn({
       ...(question || {}),
       id: question ? question.id : "c" + Date.now(),
       topic, theme: question ? question.theme : null, bench: false, type, custom: true,
       text: text.trim(), desc: desc.trim() || undefined,
+      options: type === "multiple" ? cleanOpts : undefined,
     });
   };
 
-  // Multiple choice is no longer offered for custom questions.
-  const typeItems = Object.entries(QTYPES).filter(([k, m]) => m.creatable && k !== "multiple").map(([k, m]) => ({
+  const typeItems = Object.entries(QTYPES).filter(([, m]) => m.creatable).map(([k, m]) => ({
     value: k, label: m.label, lead: <QTypeIcon type={k} size={24} />,
   }));
-  const topicItems = topicList.map(t => ({ value: t, label: t }));
+  const topicItems = topicList;
 
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 60 }}
@@ -155,10 +162,32 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
             <textarea className="cq-descfield" rows={1} value={desc}
               onChange={e => setDesc(e.target.value)} placeholder="Add description" />
             <div className="cq-answercard">
-              {type === "text"
-                ? <textarea className="ta" rows={4} disabled placeholder="Share your thoughts…"
-                    style={{ background: "var(--bg-secondary)", resize: "none", minHeight: 96 }} />
-                : <ScalePreview />}
+              {type === "text" ? (
+                <textarea className="ta" rows={4} disabled placeholder="Share your thoughts…"
+                  style={{ background: "var(--bg-secondary)", resize: "none", minHeight: 96 }} />
+              ) : type === "multiple" ? (
+                <div className="cq-opts">
+                  {opts.map((o, i) => (
+                    <div key={i} className="cq-opt">
+                      <Icon name="single-answer" size={18} style={{ color: "var(--content-subtle)", flex: "none" }} />
+                      <input className={"cq-opt-input" + (showOptsErr && !o.trim() && i < 2 ? " is-error" : "")}
+                        value={o} placeholder={`Answer option ${i + 1}`}
+                        onChange={e => setOpts(prev => prev.map((x, k) => k === i ? e.target.value : x))} />
+                      <Tooltip label="Remove option">
+                        <button className={"ib ib-36 ib-tertiary" + (opts.length <= 2 ? " is-disabled" : "")}
+                          aria-label="Remove option" disabled={opts.length <= 2}
+                          onClick={() => setOpts(prev => prev.filter((_, k) => k !== i))}>
+                          <Icon name="cross" size={16} /></button>
+                      </Tooltip>
+                    </div>
+                  ))}
+                  {showOptsErr && <div className="tf-err"><Icon name="alert-circle" size={14} />Add at least 2 answer options.</div>}
+                  {opts.length < 8 && (
+                    <button className="btn btn-tertiary cq-add-opt" onClick={() => setOpts(prev => [...prev, ""])}>
+                      <Icon name="plus" size={16} />Add option</button>
+                  )}
+                </div>
+              ) : <ScalePreview />}
             </div>
           </div>
         </div>
