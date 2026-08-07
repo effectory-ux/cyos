@@ -27,7 +27,10 @@
       "Bash(rsync -a --exclude .git --exclude node_modules --exclude dist --exclude .claude --exclude .DS_Store \"/Users/jamal/Claude/Projects/CYOS survey creation flow/\" phase-1/)",
       "Bash(chmod +x phase-2/deploy-demo.sh phase-1/deploy-demo.sh)",
       "Bash(sed -i '' 's|#   Source repo \\(private\\):  N33G3K/cyos-survey-creation-flow|#   Source:      phase-1/ in N33G3K/cyos \\(monorepo\\)|; s|#   Demo repo   \\(public\\):   N33G3K/cyos-survey-creation-flow-demo|#   Demo repo:   N33G3K/cyos-survey-creation-flow-demo \\(public, build output only\\)|; s|#   Live URL:               |#   Live URL:    |' phase-1/deploy-demo.sh)",
-      "Bash(git commit -q -m 'Restructure as CYOS monorepo: phase-1/ + phase-2/, per-phase demo deploys *)"
+      "Bash(git commit -q -m 'Restructure as CYOS monorepo: phase-1/ + phase-2/, per-phase demo deploys *)",
+      "Bash(git remote *)",
+      "Bash(./phase-2/deploy-demo.sh)",
+      "Bash(curl -s -o /dev/null -w \"old /cyos/ pages: HTTP %{http_code}\\\\n\" https://n33g3k.github.io/cyos/)"
     ]
   }
 }
