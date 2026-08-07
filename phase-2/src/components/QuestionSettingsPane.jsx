@@ -1,4 +1,5 @@
-// QuestionSettingsPane.jsx — "View standard question" slide-in (Figma 6208:24121).
+// QuestionSettingsPane.jsx — "View standard question" dialog (Figma 6208:24121;
+// rendered as a centered dialog rather than a slide-in for now).
 // The canonical place to see a question's make-up and make the few edits a
 // standard question allows: an Effectory-approved alternative wording (Change
 // question) and a clarifying description (Add description). Edits are STAGED in
@@ -77,8 +78,9 @@ export function QuestionSettingsPane({ q, meta = {}, topicLabel, i18nEdits = {},
 
   return (
     <>
-      <div className="qsp-scrim" onMouseDown={onClose} />
-      <div className="qsp qsp2" role="dialog" aria-modal="true" aria-label="Question settings">
+      <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 70 }}
+        onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="dialog qsp2-dialog" role="dialog" aria-modal="true" aria-label="Question settings">
         <div className="qsp2-head">
           <div className="qsp2-tags">
             <span className="infotag"><QTypeIcon type={q.type} size={16} />{typeMeta.label}</span>
@@ -179,6 +181,7 @@ export function QuestionSettingsPane({ q, meta = {}, topicLabel, i18nEdits = {},
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
           <button className={"btn btn-primary" + (dirty ? "" : " is-disabled")} disabled={!dirty} onClick={save}>Save</button>
         </div>
+      </div>
       </div>
 
       {changing && (

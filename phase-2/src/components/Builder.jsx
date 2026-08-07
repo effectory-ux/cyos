@@ -186,8 +186,15 @@ function BuilderRow({ q, meta, showDesc, onRemove, onEdit, onSettings, onResetDe
     ...(variant ? [<>Alternative wording — original: <b>{q.text}</b>. Benchmark comparisons stay valid.</>] : []),
     ...(meta && meta.desc ? ["A description was added to this question."] : []),
   ];
+  // The whole row opens the question's settings — clicks on interactive
+  // children (drag handle, tags, menus, inputs) keep their own behaviour.
+  const rowClick = (e) => {
+    if (e.target.closest("button, input, textarea, a, .menu, [role='button'], [role='menu']")) return;
+    onSettings && onSettings(q);
+  };
   return (
-    <div className={"qrow" + (dragging ? " is-dragging" : "") + (entering ? " is-entering" : "")} data-qid={q.id}>
+    <div className={"qrow" + (dragging ? " is-dragging" : "") + (entering ? " is-entering" : "")} data-qid={q.id}
+      onClick={rowClick}>
       <Tooltip label="Drag to reorder" pos="is-left">
         <button className="ib ib-36 ib-tertiary drag-ib" aria-label="Drag to reorder" draggable
           onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={e => e.preventDefault()}>

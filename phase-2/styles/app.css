@@ -818,3 +818,10 @@ input[type="checkbox"].cb.cb-subtle:checked { background-color: var(--bg-brand-s
   margin-top: -12px; }
 .adq-footer { border-top: 1px solid var(--border-base); padding: 24px 40px; margin: 0; }
 .adq-dialog { gap: 0; }
+
+/* Question settings as a centered dialog (was a right slide-in) */
+.qsp2-dialog { width: 760px; max-width: 94vw; padding: 0; gap: 0; }
+.qsp2-dialog .qsp-body { flex: 1; min-height: 0; overflow-y: auto; }
+/* Whole question row opens its settings */
+.qsec-body .qrow { cursor: pointer; }
+.qsec-body .qrow:hover { background: var(--bg-base-hover); }
