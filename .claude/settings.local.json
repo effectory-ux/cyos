@@ -18,7 +18,16 @@
       "mcp__fd140b2d-1a50-41fa-a815-fbbc8b20ad01__search_screens",
       "mcp__fd140b2d-1a50-41fa-a815-fbbc8b20ad01__search_flows",
       "Bash(npm run *)",
-      "Bash(git commit -q -m 'Phase 2: survey-scoped customization *)"
+      "Bash(git commit -q -m 'Phase 2: survey-scoped customization *)",
+      "Read(//Users/jamal/Claude/Projects/**)",
+      "Bash(mkdir phase-2 *)",
+      "Bash(git mv *)",
+      "Bash(mv node_modules phase-2/node_modules)",
+      "Bash(mv .effectory-library-mode.json phase-2/)",
+      "Bash(rsync -a --exclude .git --exclude node_modules --exclude dist --exclude .claude --exclude .DS_Store \"/Users/jamal/Claude/Projects/CYOS survey creation flow/\" phase-1/)",
+      "Bash(chmod +x phase-2/deploy-demo.sh phase-1/deploy-demo.sh)",
+      "Bash(sed -i '' 's|#   Source repo \\(private\\):  N33G3K/cyos-survey-creation-flow|#   Source:      phase-1/ in N33G3K/cyos \\(monorepo\\)|; s|#   Demo repo   \\(public\\):   N33G3K/cyos-survey-creation-flow-demo|#   Demo repo:   N33G3K/cyos-survey-creation-flow-demo \\(public, build output only\\)|; s|#   Live URL:               |#   Live URL:    |' phase-1/deploy-demo.sh)",
+      "Bash(git commit -q -m 'Restructure as CYOS monorepo: phase-1/ + phase-2/, per-phase demo deploys *)"
     ]
   }
 }

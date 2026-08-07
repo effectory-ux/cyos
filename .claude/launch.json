@@ -2,10 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "cyos-flow-v2",
+      "name": "cyos-phase-2",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": ["--prefix", "phase-2", "run", "dev"],
       "port": 5181
+    },
+    {
+      "name": "cyos-phase-1",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "phase-1", "run", "dev"],
+      "port": 5180
     }
   ]
 }
