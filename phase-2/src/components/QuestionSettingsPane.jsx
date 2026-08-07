@@ -1,132 +1,197 @@
-// QuestionSettingsPane.jsx — right sidepane with everything about one question.
-// The canonical place to SEE a question's make-up and to make the few
-// survey-scoped edits a standard question allows (custom description). Standard
-// wording and answer options are read-only by design: standard is standard from
-// A to Z, which is what keeps benchmark comparisons valid. (A future "Change
-// wording" variant picker slots into this pane without redesign.)
+// QuestionSettingsPane.jsx — "View standard question" slide-in (Figma 6208:24121).
+// The canonical place to see a question's make-up and make the few edits a
+// standard question allows: an Effectory-approved alternative wording (Change
+// question) and a clarifying description (Add description). Edits are STAGED in
+// the pane and only committed with Save — Cancel or closing discards them.
+// Standard wording itself stays locked A to Z so benchmarks remain valid.
 import { useState } from "react";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, ThemeTag, CustomTag, Tooltip } from "./shared.jsx";
-import { QTYPES, SCALE_LABELS } from "../data/data.js";
+import { QTypeIcon, Tooltip } from "./shared.jsx";
+import { ChangeQuestionDialog } from "./ChangeQuestionDialog.jsx";
+import { AddDescriptionDialog } from "./AddDescriptionDialog.jsx";
+import { QTYPES, TEMPLATES } from "../data/data.js";
+import { templatePoolQuestions } from "../data/qlib.js";
+import { LANGUAGES, autoTranslation } from "../data/i18n.js";
+import { variantsOf } from "../data/variants.js";
 
-const SCALE_DOTS = [
-  "var(--bg-distribution-strongly-disagree)",
-  "var(--bg-distribution-disagree)",
-  "var(--bg-distribution-neither-agree-disagree)",
-  "var(--bg-distribution-agree)",
-  "var(--bg-distribution-strongly-agree)",
-];
+// Which question sets (templates) include this question in the library.
+function questionSetsOf(q) {
+  if (q.custom) return [];
+  return TEMPLATES.filter(t => templatePoolQuestions(t.id).some(x => x.text === q.text)).map(t => t.name);
+}
 
-export function QuestionSettingsPane({ q, meta = {}, themeInfo, onUpdate, onEditCustom, onOpenTranslations, onClose }) {
-  // Draft so typing doesn't spam survey state; committed on blur.
-  const [descDraft, setDescDraft] = useState(q.custom ? (q.desc || "") : (meta.desc || ""));
-  const commitDesc = () => {
-    if (q.custom) return; // custom questions edit their description in the edit dialog
-    const t = descDraft.trim();
-    if (t !== (meta.desc || "")) onUpdate({ desc: t || undefined, ...(t ? {} : { descHidden: undefined }) });
+export function QuestionSettingsPane({ q, meta = {}, topicLabel, i18nEdits = {}, onUpdate, onSaveTranslation, onEditCustom, onClose }) {
+  // Staged edits — nothing touches survey state until Save.
+  const [variant, setVariant] = useState(meta.variant);
+  const [desc, setDesc] = useState(() => ({
+    en: q.custom ? (q.desc || "") : (meta.desc || ""),
+    nl: (i18nEdits.nl || {})[`q:${q.id}:desc`] || "",
+    de: (i18nEdits.de || {})[`q:${q.id}:desc`] || "",
+    touched: { nl: !!(i18nEdits.nl || {})[`q:${q.id}:desc`], de: !!(i18nEdits.de || {})[`q:${q.id}:desc`] },
+  }));
+  const [menu, setMenu] = useState(false);
+  const [changing, setChanging] = useState(false);
+  const [descOpen, setDescOpen] = useState(false);
+
+  const wording = variant || q.text;
+  const variants = q.custom ? [] : variantsOf(q.text);
+  const sets = questionSetsOf(q);
+  const dirty = !q.custom && (
+    (variant || undefined) !== (meta.variant || undefined)
+    || desc.en.trim() !== (meta.desc || "")
+    || (desc.touched.nl && desc.nl.trim() !== ((i18nEdits.nl || {})[`q:${q.id}:desc`] || ""))
+    || (desc.touched.de && desc.de.trim() !== ((i18nEdits.de || {})[`q:${q.id}:desc`] || ""))
+  );
+
+  // Question text per language: custom questions use reviewed translations
+  // when present; standard questions (and variants) ship with Effectory
+  // translations — simulated here.
+  const textIn = (code) => {
+    if (code === "en") return wording;
+    if (q.custom) return (i18nEdits[code] || {})[`q:${q.id}:text`] || autoTranslation(q.text, code);
+    return autoTranslation(wording, code);
   };
-  const hasDesc = q.custom ? !!q.desc : !!(meta.desc || "").trim();
-  const hasOwnText = q.custom || !!meta.desc;
+  const descIn = (code) => {
+    if (!desc.en.trim()) return "";
+    if (code === "en") return desc.en.trim();
+    return (desc[code] || "").trim() || autoTranslation(desc.en.trim(), code);
+  };
+
+  const save = () => {
+    if (!dirty) return;
+    onUpdate({
+      variant: variant || undefined,
+      desc: desc.en.trim() || undefined,
+      ...(desc.en.trim() ? {} : { descHidden: undefined }),
+    });
+    // Reviewed description translations ride along (onUpdate cleared stale ones).
+    if (desc.en.trim()) {
+      ["nl", "de"].forEach(code => {
+        if (desc.touched[code] && desc[code].trim()) onSaveTranslation(code, `q:${q.id}:desc`, desc[code].trim());
+      });
+    }
+    onClose();
+  };
+
+  const typeMeta = QTYPES[q.type];
 
   return (
     <>
       <div className="qsp-scrim" onMouseDown={onClose} />
-      <div className="qsp" role="dialog" aria-modal="true" aria-labelledby="qsp-title">
-        <div className="qsp-head">
-          <h2 className="qsp-title" id="qsp-title">Question settings</h2>
+      <div className="qsp qsp2" role="dialog" aria-modal="true" aria-label="Question settings">
+        <div className="qsp2-head">
+          <div className="qsp2-tags">
+            <span className="infotag"><QTypeIcon type={q.type} size={16} />{typeMeta.label}</span>
+            {q.custom
+              ? <span className="infotag is-custom">Custom</span>
+              : <span className="infotag is-standard">Standard</span>}
+          </div>
           <div className="spacer" />
+          {!q.custom && (
+            <div className="qrow-menu-wrap">
+              <Tooltip label="More options">
+                <button className="ib ib-36 ib-tertiary" aria-label="More options" aria-haspopup="menu" aria-expanded={menu}
+                  onClick={() => setMenu(o => !o)}><Icon name="more-vertical" size={16} /></button>
+              </Tooltip>
+              {menu && (
+                <>
+                  <div style={{ position: "fixed", inset: 0, zIndex: 1 }} onMouseDown={() => setMenu(false)} />
+                  <div className="menu" role="menu" style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, width: 260, zIndex: 2 }}>
+                    <div className={"menu-item" + (variant ? "" : " is-disabled")} role="menuitem"
+                      onClick={() => { if (variant) { setVariant(undefined); setMenu(false); } }}>
+                      <span className="menu-item-icon"><Icon name="refresh" size={16} /></span>
+                      <span className="menu-item-body"><span className="menu-item-title">Use original wording</span></span>
+                    </div>
+                    <div className={"menu-item" + (desc.en.trim() ? "" : " is-disabled")} role="menuitem"
+                      onClick={() => { if (desc.en.trim()) { setDesc({ en: "", nl: "", de: "", touched: { nl: false, de: false } }); setMenu(false); } }}>
+                      <span className="menu-item-icon" style={{ color: "var(--content-negative-secondary)" }}><Icon name="trash" size={16} /></span>
+                      <span className="menu-item-body"><span className="menu-item-title" style={{ color: "var(--content-negative-secondary)" }}>Remove description</span></span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          <span className="qsp2-vdiv" aria-hidden="true" />
           <Tooltip label="Close">
             <button className="ib ib-36 ib-tertiary" aria-label="Close" onClick={onClose}><Icon name="cross" size={16} /></button>
           </Tooltip>
         </div>
-        <div className="qsp-body">
-          <div className="qsp-sec">
-            <span className="qsp-lbl">Question</span>
-            <div className="qsp-card">{q.text}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <QTypeIcon type={q.type} size={24} />
-              <span style={{ fontSize: 13.5, color: "var(--content-secondary)" }}>{QTYPES[q.type].label}</span>
-              {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} />}
-              {q.custom && <CustomTag />}
+
+        <div className="qsp-body qsp2-body">
+          <h2 className="qsp2-question">{wording}</h2>
+
+          <div className="qsp2-meta">
+            <div className="qsp2-meta-row">
+              <span className="qsp2-meta-lbl"><Icon name="file" size={16} />Topic</span>
+              <span className="qsp2-meta-val">{topicLabel || q.topic || "—"}</span>
             </div>
-            {q.custom ? (
-              <>
-                <div className="qsp-note"><Icon name="barchart-2" size={14} />Custom questions have no benchmark comparison in results.</div>
-                <button className="btn btn-secondary" style={{ alignSelf: "flex-start" }} onClick={onEditCustom}>
-                  <Icon name="edit" size={16} />Edit question</button>
-              </>
-            ) : (
-              <div className="qsp-note"><Icon name="lock" size={14} />
-                Standard question — the wording and answer options are set by Effectory so your results stay comparable to benchmarks.</div>
-            )}
-          </div>
-
-          <div className="qsp-sec">
-            <span className="qsp-lbl">Description</span>
-            {q.custom ? (
-              <>
-                {q.desc
-                  ? <div className="qsp-card">{q.desc}</div>
-                  : <div className="qsp-note"><Icon name="info" size={14} />No description yet — edit the question to add one.</div>}
-              </>
-            ) : (
-              <>
-                <textarea className="qsp-desc-ta" rows={2} value={descDraft}
-                  placeholder="Add extra context under the question, e.g. what you mean by a term"
-                  onChange={e => setDescDraft(e.target.value)} onBlur={commitDesc} />
-                {!!meta.desc && <div className="qsp-note"><Icon name="info" size={14} />Applies to this survey only</div>}
-              </>
-            )}
-            {hasDesc && !q.custom && (
-              <label className="tgl-label-wrap">
-                <span className="tgl-wrap">
-                  <input type="checkbox" className="tgl" checked={!meta.descHidden}
-                    onChange={e => onUpdate({ descHidden: e.target.checked ? undefined : true })} />
-                  <span className="tgl-track"><span className="tgl-thumb" /></span>
-                </span>
-                Show to respondents
-              </label>
-            )}
-          </div>
-
-          <div className="qsp-sec">
-            <span className="qsp-lbl">Answer options</span>
-            {q.type === "text" ? (
-              <div className="qsp-note"><Icon name="text-entry" size={14} />Open answer — respondents write their own text.</div>
-            ) : q.type === "multiple" ? (
-              <div className="qsp-scale">
-                {(q.options || []).map((o, i) => (
-                  <div key={i} className="qsp-scale-row"><Icon name="check-square" size={14} style={{ color: "var(--content-subtle)" }} />{o}</div>
-                ))}
-              </div>
-            ) : (
-              <div className="qsp-scale">
-                {SCALE_LABELS.map((lbl, i) => (
-                  <div key={lbl} className="qsp-scale-row">
-                    <span className="qsp-scale-dot" style={{ "--dot": SCALE_DOTS[i], background: SCALE_DOTS[i] }} />{lbl}
-                  </div>
-                ))}
-                <div className="qsp-note" style={{ marginTop: 2 }}><Icon name="info" size={14} />Respondents can also answer "I don't know"</div>
+            <div className="qsp2-meta-row">
+              <span className="qsp2-meta-lbl"><Icon name="folder" size={16} />Question sets</span>
+              <span className="qsp2-meta-val">{sets.length ? sets.join(", ") : "—"}</span>
+            </div>
+            {q.theme && (
+              <div className="qsp2-meta-row">
+                <span className="qsp2-meta-lbl"><Icon name="themes" size={16} />Theme</span>
+                <span className="qsp2-meta-val">{q.theme}</span>
               </div>
             )}
           </div>
 
-          <div className="qsp-sec">
-            <span className="qsp-lbl">Translations</span>
-            {hasOwnText ? (
-              <>
-                <div className="qsp-i18n-row"><Icon name="language" size={16} />
-                  Your own text on this question is translated automatically.</div>
-                <button className="btn btn-secondary" style={{ alignSelf: "flex-start" }} onClick={onOpenTranslations}>
-                  <Icon name="language" size={16} />Review translations</button>
-              </>
+          <div className="qsp2-divider" />
+
+          <div className="qsp2-section-head">
+            <h3 className="qsp2-section-title">Question languages</h3>
+            <div className="spacer" />
+            {q.custom ? (
+              <button className="btn btn-secondary" onClick={onEditCustom}><Icon name="edit" size={16} />Edit question</button>
             ) : (
-              <div className="qsp-i18n-row"><Icon name="language" size={16} />
-                Standard questions come with Effectory translations.</div>
+              <>
+                {variants.length > 0 && (
+                  <button className="btn btn-secondary" onClick={() => setChanging(true)}>
+                    <Icon name="edit" size={16} />Change question</button>
+                )}
+                <button className="btn btn-secondary" onClick={() => setDescOpen(true)}>
+                  <Icon name="message" size={16} />{desc.en.trim() ? "Edit description" : "Add description"}</button>
+              </>
             )}
+          </div>
+
+          <div className="qsp2-langcard">
+            <span className="qsp2-lang-lbl">English (primary language)</span>
+            <span className="qsp2-lang-text">{textIn("en")}</span>
+            {descIn("en") && <span className="qsp2-lang-desc"><Icon name="message" size={14} />{descIn("en")}</span>}
+            {variant && <span className="qsp2-lang-note">Alternative wording — original: “{q.text}”</span>}
+          </div>
+          <div className="qsp2-langstack">
+            {LANGUAGES.filter(l => !l.primary).map(l => (
+              <div key={l.code} className="qsp2-langcard is-joined">
+                <span className="qsp2-lang-lbl">{l.label}</span>
+                <span className="qsp2-lang-text">{textIn(l.code)}</span>
+                {descIn(l.code) && <span className="qsp2-lang-desc"><Icon name="message" size={14} />{descIn(l.code)}</span>}
+              </div>
+            ))}
           </div>
         </div>
+
+        <div className="qsp2-footer">
+          <span className="qsp2-footer-note">Changes apply to this survey only — your library and running surveys stay unchanged.</span>
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className={"btn btn-primary" + (dirty ? "" : " is-disabled")} disabled={!dirty} onClick={save}>Save</button>
+        </div>
       </div>
+
+      {changing && (
+        <ChangeQuestionDialog original={q.text} current={wording} variants={variants}
+          onCancel={() => setChanging(false)}
+          onConfirm={(v) => { setVariant(v); setChanging(false); }} />
+      )}
+      {descOpen && (
+        <AddDescriptionDialog questionText={wording} editing={!!desc.en.trim()}
+          initial={{ en: desc.en, nl: desc.nl, de: desc.de }}
+          onCancel={() => setDescOpen(false)}
+          onSave={({ en, nl, de, touched }) => { setDesc({ en, nl, de, touched }); setDescOpen(false); }} />
+      )}
     </>
   );
 }

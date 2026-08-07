@@ -1,0 +1,55 @@
+// variants.js — Effectory-approved ALTERNATIVE WORDINGS for standard questions.
+// Picking one keeps the benchmark valid: the construct measured stays the same,
+// only the phrasing changes (all variants are curated and pre-translated by
+// Effectory — they never create translation work for the user).
+//
+// Keyed by the question's canonical (library) text. Questions without an entry
+// simply don't offer "Change question" in their settings pane.
+
+export const VARIANTS = {
+  "Day to day, I find my work enjoyable": [
+    "I enjoy the work I do most days",
+    "My day-to-day work is something I enjoy",
+    "Overall, I find pleasure in my daily work",
+  ],
+  "I'm kitted out with the tools and systems my job calls for": [
+    "I have the tools and systems I need to do my job",
+    "The equipment and systems I work with fit my job's needs",
+  ],
+  "The information I rely on is easy to track down": [
+    "I can easily find the information I need for my work",
+    "The information my job depends on is easy to access",
+  ],
+  "What I'm asked to do plays to what I'm good at": [
+    "My tasks make good use of my strengths",
+    "The work I'm given fits my skills well",
+  ],
+  "It's clear to me what I'm meant to deliver": [
+    "I know exactly what results are expected of me",
+    "What I need to deliver in my role is clear",
+  ],
+  "My job and personal life sit in healthy balance": [
+    "I have a healthy balance between work and personal life",
+    "My work leaves enough room for my personal life",
+  ],
+  "My work leaves me energised": [
+    "I get energy from the work I do",
+    "After a day's work I still feel energised",
+  ],
+  "I trust my manager's judgement": [
+    "I have confidence in the decisions my manager makes",
+    "My manager's judgement is something I can rely on",
+  ],
+  "Being part of this organisation makes me proud": [
+    "I'm proud to be part of this organisation",
+    "I feel proud when I tell others where I work",
+  ],
+  "Would you point a friend towards us as a place to work?": [
+    "How likely are you to recommend us to a friend as a place to work?",
+    "Would you recommend working here to people you know?",
+  ],
+};
+
+export function variantsOf(text) {
+  return VARIANTS[text] || [];
+}

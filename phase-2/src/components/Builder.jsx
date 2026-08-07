@@ -176,10 +176,16 @@ function BuilderRow({ q, meta, showDesc, onRemove, onEdit, onSettings, onResetDe
   const hasMove = canUp || canDown;
   const effTopic = (meta && meta.topic) || q.topic;
   const otherTopics = (topics || []).filter(t => t.key !== effTopic);
-  // Survey-scoped extras on a standard question (custom questions carry their own).
+  // Survey-scoped extras on a standard question (custom questions carry their
+  // own): a chosen alternative wording and/or an added description.
+  const variant = !q.custom && meta ? meta.variant : undefined;
   const desc = (meta && meta.desc) || q.desc;
   const descHidden = !!(meta && meta.descHidden);
-  const edited = !q.custom && !!(meta && meta.desc);
+  const edited = !q.custom && !!((meta && meta.desc) || variant);
+  const editLines = [
+    ...(variant ? [<>Alternative wording — original: <b>{q.text}</b>. Benchmark comparisons stay valid.</>] : []),
+    ...(meta && meta.desc ? ["A description was added to this question."] : []),
+  ];
   return (
     <div className={"qrow" + (dragging ? " is-dragging" : "") + (entering ? " is-entering" : "")} data-qid={q.id}>
       <Tooltip label="Drag to reorder" pos="is-left">
@@ -188,14 +194,14 @@ function BuilderRow({ q, meta, showDesc, onRemove, onEdit, onSettings, onResetDe
           <Icon name="drag-drop" size={16} /></button>
       </Tooltip>
       <div className="qrow-main">
-        <div style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{q.text}</div>
+        <div style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{variant || q.text}</div>
         {showDesc && desc && !descHidden && <div className="qrow-desc">{desc}</div>}
       </div>
       <div className="qrow-meta">
         {edited && (
-          <EditedTag title="Edited for this survey"
-            lines={["A description was added to this standard question."]}
-            resetLabel="Remove description" onReset={onResetDesc} />
+          <EditedTag label={variant && !(meta && meta.desc) ? "Alternative" : "Edited"} title="Edited for this survey"
+            lines={editLines}
+            resetLabel="Reset to standard" onReset={onResetDesc} />
         )}
         {q.theme
           ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-left"
@@ -690,7 +696,7 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
                   return <BuilderRow key={qq.id} q={qq} meta={qMeta[qq.id]} showDesc={showDesc}
                     onRemove={onRemoveQuestion} onEdit={onEditCustom} dragging={!!drag && drag.kind === "q" && drag.id === qq.id}
                     onSettings={(q) => setSettingsQId(q.id)}
-                    onResetDesc={() => onUpdateQMeta && onUpdateQMeta(qq.id, { desc: undefined, descHidden: undefined })}
+                    onResetDesc={() => onUpdateQMeta && onUpdateQMeta(qq.id, { desc: undefined, descHidden: undefined, variant: undefined })}
                     canUp={i > 0} canDown={i < s.items.length - 1}
                     onMoveUp={() => reorderQuestion(s.key, qq.id, i - 1)}
                     onMoveDown={() => reorderQuestion(s.key, qq.id, i + 1)}
@@ -759,10 +765,10 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
       {settingsQId && (() => {
         const q = pool.find(p => p.id === settingsQId);
         return q ? (
-          <QuestionSettingsPane q={q} meta={qMeta[q.id]} themeInfo={themeMap[q.theme]}
+          <QuestionSettingsPane q={q} meta={qMeta[q.id]} topicLabel={topicName(effTopic(q))} i18nEdits={i18nEdits}
             onUpdate={(patch) => onUpdateQMeta && onUpdateQMeta(q.id, patch)}
+            onSaveTranslation={(lang, key, text) => onSaveTranslation && onSaveTranslation(lang, key, text)}
             onEditCustom={() => { setSettingsQId(null); onEditCustom && onEditCustom(q); }}
-            onOpenTranslations={() => { setSettingsQId(null); setTranslationsOpen(true); }}
             onClose={() => setSettingsQId(null)} />
         ) : null;
       })()}
