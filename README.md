@@ -5,10 +5,17 @@ Effectory Engage Design System. Each phase is a self-contained Vite app in its
 own folder with its own demo deployment — **updates are strictly scoped per
 phase**: changing or deploying one phase never touches the others' live demos.
 
+All phases are served from this repo's own GitHub Pages site, with a landing
+page at **https://n33g3k.github.io/cyos/**:
+
 | Phase | Source | Live demo | Dev port |
 |---|---|---|---|
-| Phase 1 — base survey creation flow | [`phase-1/`](phase-1/) | https://n33g3k.github.io/cyos-survey-creation-flow-demo/ | 5180 |
-| Phase 2 — survey-scoped customization | [`phase-2/`](phase-2/) | https://n33g3k.github.io/cyos-phase-2/ | 5181 |
+| Phase 1 — base survey creation flow | [`phase-1/`](phase-1/) | https://n33g3k.github.io/cyos/phase-1/ | 5180 |
+| Phase 2 — survey-scoped customization | [`phase-2/`](phase-2/) | https://n33g3k.github.io/cyos/phase-2/ | 5181 |
+
+Phase 1's original demo link, https://n33g3k.github.io/cyos-survey-creation-flow-demo/,
+keeps working — it's served from its own demo repo and only updates via
+`phase-1/deploy-demo.sh`.
 
 ## Working on a phase
 
@@ -20,19 +27,24 @@ npm install
 npm run dev
 ```
 
-## Deploying a demo
+## Deploying the demos
 
-Each phase has its own `deploy-demo.sh` that builds and force-pushes a single
-clean commit to that phase's public demo repo (GitHub Pages serves it from
-`main`). Nothing deploys automatically — a demo only changes when its script is
-run deliberately:
+Nothing deploys automatically — pushing to `main` changes no demo. The Pages
+site (landing page + all phases) is published only by manually running the
+**Deploy demos** workflow:
 
 ```sh
-./phase-2/deploy-demo.sh   # updates ONLY the phase-2 demo
-./phase-1/deploy-demo.sh   # updates ONLY the phase-1 demo
+gh workflow run "Deploy demos"
 ```
 
-Demo repos hold build output only (`cyos-survey-creation-flow-demo`,
-`cyos-phase-2`) — never edit them by hand; this repo is the single source of
-truth. See each phase's own README and NOTICE for details on what's implemented
-and which files are vendored from the design system.
+A run rebuilds every phase from `main`; phases whose source didn't change build
+to an identical app, so they stay effectively frozen. Phase 1's original demo
+repo (`cyos-survey-creation-flow-demo`, build output only — never edit by hand)
+updates only via its own script:
+
+```sh
+./phase-1/deploy-demo.sh   # updates ONLY the original phase-1 demo link
+```
+
+See each phase's own README and NOTICE for what's implemented and which files
+are vendored from the design system.

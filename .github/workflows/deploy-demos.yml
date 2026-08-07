@@ -1,0 +1,55 @@
+name: Deploy demos
+
+# Publishes ALL phases to this repo's GitHub Pages site under subpaths:
+#   https://n33g3k.github.io/cyos/            → landing page (site/index.html)
+#   https://n33g3k.github.io/cyos/phase-1/    → phase 1 build
+#   https://n33g3k.github.io/cyos/phase-2/    → phase 2 build
+#
+# MANUAL TRIGGER ONLY (workflow_dispatch) — demos never change on push; run
+# this deliberately via the Actions tab or `gh workflow run "Deploy demos"`.
+# Note: one Pages site is a single atomic artifact, so a run rebuilds every
+# phase from main. Unchanged source builds to an identical app, so untouched
+# phases stay effectively frozen. Phase 1's ORIGINAL demo link is served from
+# the separate cyos-survey-creation-flow-demo repo and is only ever updated
+# via phase-1/deploy-demo.sh.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build phase 1
+        run: npm ci --prefix phase-1 && npm run build --prefix phase-1
+      - name: Build phase 2
+        run: npm ci --prefix phase-2 && npm run build --prefix phase-2
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -R site/. _site/
+          cp -R phase-1/dist _site/phase-1
+          cp -R phase-2/dist _site/phase-2
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
