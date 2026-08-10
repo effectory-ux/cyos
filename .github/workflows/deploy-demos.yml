@@ -1,17 +1,17 @@
 name: Deploy demos
 
 # Publishes ALL phases to this repo's GitHub Pages site under subpaths:
-#   https://n33g3k.github.io/cyos/            → landing page (site/index.html)
-#   https://n33g3k.github.io/cyos/phase-1/    → phase 1 build
-#   https://n33g3k.github.io/cyos/phase-2/    → phase 2 build
+#   https://effectory-ux.github.io/cyos/            → landing page (site/index.html)
+#   https://effectory-ux.github.io/cyos/phase-1/    → phase 1 build
+#   https://effectory-ux.github.io/cyos/phase-2/    → phase 2 build
 #
 # MANUAL TRIGGER ONLY (workflow_dispatch) — demos never change on push; run
 # this deliberately via the Actions tab or `gh workflow run "Deploy demos"`.
 # Note: one Pages site is a single atomic artifact, so a run rebuilds every
 # phase from main. Unchanged source builds to an identical app, so untouched
 # phases stay effectively frozen. Phase 1's ORIGINAL demo link is served from
-# the separate cyos-survey-creation-flow-demo repo and is only ever updated
-# via phase-1/deploy-demo.sh.
+# the separate cyos-survey-creation-flow-demo repo, which now holds only a
+# static redirect to this site's phase-1/ — nothing to deploy for it.
 
 on:
   workflow_dispatch:

@@ -4,8 +4,10 @@ Implementation of the CYOS survey-creation flow from the Claude Design handoff
 bundle (`cyos-v2`), built on the **Effectory Engage Design System v1.6.0**
 (tokens, components, icons — copied verbatim from the design-system skill).
 
-**Live demo:** https://n33g3k.github.io/cyos-survey-creation-flow-demo/ (served
-from a separate public repo; redeploy with `./deploy-demo.sh`).
+**Live demo:** https://effectory-ux.github.io/cyos/phase-1/ — deployed from the
+monorepo via the **Deploy demos** GitHub Actions workflow. The original link
+https://n33g3k.github.io/cyos-survey-creation-flow-demo/ still works too (it's a
+static redirect to this demo).
 
 ## What's implemented
 
