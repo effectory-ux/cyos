@@ -53,23 +53,10 @@ body {
 .btn-danger.is-disabled, .btn-danger:disabled { background: var(--bg-disabled) !important; }
 
 /* ---- Create-a-custom-question dialog ---- */
-.cq-dialog { width: 1080px; padding: var(--spacing-super-loose); }
-/* "Good to know" info box (Figma 174:4799): header + three icon rows + dismiss. */
-.cq-gtk { position: relative; display: flex; flex-direction: column; gap: 6px; padding: var(--spacing-base);
-  background: var(--bg-info-subtle); border: 1px solid var(--border-info-subtle); border-radius: var(--radius-lg); }
-.cq-gtk-title { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
-.cq-gtk-row { display: flex; align-items: center; gap: 6px; font-size: 14px; line-height: 1.6; color: var(--content-secondary); }
-.cq-gtk-ic { display: flex; flex: none; color: var(--content-secondary); }
-.cq-gtk-ic i { display: flex; width: 16px; height: 16px; }
-.cq-gtk-txt { min-width: 0; }
-.cq-gtk-close { position: absolute; top: 13px; right: 13px; display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; padding: 4px; border: 0; background: none; border-radius: var(--radius-base); color: var(--content-secondary); cursor: pointer; }
-.cq-gtk-close:hover { background: var(--bg-base-hover); color: var(--content-base); }
-.cq-gtk-close i { display: flex; width: 16px; height: 16px; }
-.cq-tip-link { display: inline-flex; align-items: center; gap: 4px; font-weight: 500; color: var(--content-secondary);
-  text-decoration: none; border-bottom: 2px solid var(--border-action); }
-.cq-tip-link i { display: inline-flex; width: 14px; height: 14px; }
-.cq-tip-link:hover { color: var(--content-base); border-bottom-color: var(--content-base); }
+/* Figma 6238:25370 — fixed height so the language list has room to scroll. */
+.cq-dialog { width: 1080px; height: min(760px, calc(100vh - 96px)); padding: var(--spacing-extra-loose); gap: var(--spacing-loose); }
+.cq-dialog .dialog-title { font-size: 20px; line-height: 28px; }
+.cq-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--spacing-loose); }
 .cq-lbl { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600;
   color: var(--content-base); }
 .cq-lbl .cq-info { display: inline-flex; color: var(--content-subtle); cursor: help; }
@@ -96,15 +83,101 @@ button.sel-btn.cq-sel { font-size: 14px; }
 /* Selects row (Add to topic + Answer type, side by side above the panel). */
 .cq-selects { display: flex; gap: var(--spacing-base); }
 .cq-selects .cq-field { flex: 1; min-width: 0; }
-/* Body: a grey bordered panel holding the centred question/description inputs
-   directly, plus a bordered white answer-preview box (Figma 155:4342 / 155:4345). */
-.cq-panel { display: flex; flex-direction: column; gap: var(--spacing-tight); padding: var(--spacing-loose);
-  background: var(--bg-secondary); border: 1px solid var(--border-base); border-radius: var(--radius-lg); }
+/* Body frame: language list on the left, respondent-eye preview on the right. */
+.cq-frame { flex: 1; min-height: 0; display: flex; align-items: stretch; overflow: hidden;
+  background: var(--bg-tertiary); border: 1px solid var(--border-base); border-radius: var(--radius-lg); }
+
+/* ---- language list (Figma 6238:25398) ---- */
+.cq-langs { flex: none; width: 240px; display: flex; flex-direction: column; padding: var(--spacing-base);
+  background: var(--bg-base); border: 1px solid var(--border-base); overflow: hidden; }
+.cq-langs-head { display: flex; align-items: center; gap: 6px; padding: 4px var(--spacing-tight) var(--spacing-base);
+  font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
+.cq-langs-head.is-count { padding-top: var(--spacing-base); }
+/* Only the title flexes — scoping this to `span` also caught the Tooltip's
+   wrapper span, which split the row in half and wrapped the heading. */
+.cq-langs-title { flex: 1; min-width: 0; }
+/* Any trailing mark sits flush right, lining up with the rows' own markers. */
+.cq-langs-head > :last-child:not(.cq-langs-title) { margin-left: auto; }
+/* The list bleeds across the panel's full right padding so the scrollbar lives
+   in that gutter instead of eating into the rows (6px keeps content clear of it). */
+.cq-langs-scroll { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1px;
+  margin-right: calc(-1 * var(--spacing-base)); padding-right: 6px; }
+
+.cq-lang { display: flex; align-items: center; gap: var(--spacing-tight); width: 100%; padding: var(--spacing-tight);
+  border: 0; background: var(--bg-base); border-radius: var(--radius-base); font: inherit; text-align: left;
+  color: var(--content-base); cursor: pointer; }
+.cq-lang:hover { background: var(--bg-base-hover); }
+.cq-lang.is-active { background: var(--bg-brand-subtle-selected); color: var(--content-brand-base); }
+.cq-lang.is-active .cq-lang-name { font-weight: 600; }
+.cq-lang.is-active .cq-lang-country { color: inherit; }
+.cq-lang-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cq-lang-name { font-size: 14px; font-weight: 500; line-height: 22.4px; }
+.cq-lang-country { font-size: 12px; font-weight: 400; line-height: 19.2px; color: var(--content-secondary); }
+
+/* Flag: 20px box holding an 18.33 x 13.34 leaf, exactly as the DS country marks. */
+.cq-flag { flex: none; display: grid; place-items: center; width: 20px; height: 20px; }
+.cq-flag img { display: block; width: 18.33px; height: 13.34px; border-radius: 1px; object-fit: cover;
+  box-shadow: 0 0 0 1px #f5f7fa; /* neutral/N4 — the hairline the DS flags carry */ }
+
+/* Anything mid-translation pulses — quieter than a spinner, and it marks the
+   exact items that are working rather than adding a separate status icon. */
+.cq-lang.is-working, .cq-card.is-working, .menu-item.is-working { animation: cq-pulse 1.4s ease-in-out infinite; }
+@keyframes cq-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) {
+  .cq-lang.is-working, .cq-card.is-working, .menu-item.is-working { animation: none; opacity: .6; }
+}
+
+/* ---- preview side ---- */
+.cq-preview { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--spacing-base); padding: var(--spacing-loose); overflow: auto; }
+.cq-card { width: 100%; display: flex; flex-direction: column; gap: var(--spacing-base); padding: var(--spacing-loose);
+  background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-xl); }
+.cq-card-note { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;
+  font-size: 12px; line-height: 19.2px; color: var(--content-secondary); }
+/* A hand-edited translation whose source has since changed — needs a look. */
+.cq-card-note.is-stale { color: var(--content-warning-base); }
+.cq-note-action { padding: 0; border: 0; background: none; font: inherit; font-weight: 600;
+  color: inherit; text-decoration: underline; cursor: pointer; }
+.cq-lang-stale { display: flex; flex: none; color: var(--content-warning-base); }
+.cq-lang.is-active .cq-lang-stale { color: var(--content-warning-base); }
+/* Permanent marker on a hand-edited translation — informational, not a warning. */
+.cq-lang-manual { display: flex; flex: none; color: var(--content-subtle); }
+.cq-lang.is-active .cq-lang-manual { color: inherit; }
+.cq-langs-head .cq-lang-stale, .cq-lbl .cq-lang-stale { align-self: center; }
+/* Compact "Languages" label: push the mark to the right edge of the select. */
+.cq-lbl > .tt-demo { margin-left: auto; }
+.cq-answer { width: 100%; padding: var(--spacing-tight) 0 0; }
+
+/* Benchmark note sits in the footer beside Cancel/Create, so the frame stays
+   free for a long description. Regular weight — it's an aside, not a label. */
+.cq-bench-note { display: inline-flex; align-items: center; gap: 6px; margin-right: var(--spacing-tight);
+  font-size: 14px; font-weight: 400; line-height: 22.4px; color: var(--content-secondary); }
+.cq-bench-note i { color: var(--content-secondary); }
+
+/* Compact (< ~1160px): the side list becomes a "Languages" dropdown on top.
+   The dialog sizes to its content here instead of holding a fixed height —
+   with no list to scroll, a nested scroller inside the frame is just noise. */
+.cq-frame.is-compact { flex-direction: column; }
+.cq-frame.is-compact .cq-preview { justify-content: flex-start; overflow: visible; }
+.cq-langsel { width: 100%; }
+@media (max-width: 1160px) {
+  .cq-dialog { height: auto; }
+}
+
+/* Shown when a translation language is opened before the source exists. */
+.cq-empty { max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: var(--spacing-tight);
+  padding: var(--spacing-loose); text-align: center; }
+.cq-empty-ic { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 4px;
+  border-radius: var(--radius-full); background: var(--bg-base); color: var(--content-secondary); }
+.cq-empty-title { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
+.cq-empty-body { margin: 0 0 var(--spacing-tight); font-size: 14px; line-height: 1.6; color: var(--content-secondary); }
+
 /* Inputs follow the DS text field exactly: white bg, subtle action shadow, and
    only the BORDER changes on hover/focus (no background swap, no focus ring). */
+/* Height is driven by content (see AutoTextarea), so never show a scrollbar. */
 .cq-qfield, .cq-descfield { width: 100%; text-align: center; font-family: inherit; outline: none;
   border: 1px solid var(--border-action); border-radius: var(--radius-base); background: var(--bg-input);
-  box-shadow: var(--sh-action); color: var(--content-base); resize: none; transition: border-color .1s; }
+  box-shadow: var(--sh-action); color: var(--content-base); resize: none; overflow: hidden; transition: border-color .1s; }
 .cq-qfield { font-size: 16px; font-weight: 600; padding: 12px 16px; min-height: 48px; line-height: 24px; }
 .cq-qfield::placeholder { color: var(--content-placeholder); font-weight: 600; }
 .cq-descfield { font-size: 14px; font-weight: 400; padding: 8px 12px; min-height: 38px; line-height: 20px; }
@@ -137,17 +210,14 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .tpv-tcell.is-tag { width: 116px; }
 .tpv-tcell .tag { margin: 0; }
 
-.cq-answercard { width: 100%; background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-base);
-  padding: var(--spacing-loose); }
-.cq-opt-row { display: flex; align-items: center; gap: 8px; }
-.cq-drag { display: flex; flex: none; color: var(--content-subtle); cursor: grab; }
-.cq-drag i { display: flex; width: 16px; height: 16px; }
-
 .cq-scale { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: var(--spacing-base) 0; }
 .cq-scale-row { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
 .cq-scale-end { font-size: 14px; font-weight: 500; color: var(--content-secondary); white-space: nowrap; }
 .cq-dots { display: flex; align-items: center; gap: 12px; }
-.cq-dot { width: 26px; height: 26px; border-radius: var(--radius-full); border: 3px solid var(--dot, var(--border-base)); background: transparent; flex: none; }
+/* Each dot is wrapped by Tooltip's .tt-demo span — keep it out of the layout. */
+.cq-dots .tt-demo { display: flex; flex: none; }
+.cq-dot { width: 26px; height: 26px; border-radius: var(--radius-full); border: 3px solid var(--dot, var(--border-base)); background: transparent; flex: none; cursor: help; }
+.cq-dot:focus-visible { outline: 2px solid var(--border-brand-base); outline-offset: 2px; }
 .cq-idk { font-size: 14px; color: var(--content-secondary); }
 
 /* ---- question-type tile ---- */
