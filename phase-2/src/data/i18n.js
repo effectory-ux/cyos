@@ -7,11 +7,38 @@
 // plausibly machine-translated (which is exactly the story the UI tells) —
 // untranslated words pass through unchanged.
 
+// `country` + `flag` feed the custom-question dialog's language list; the flag
+// files are the DS country marks exported from the design library.
 export const LANGUAGES = [
-  { code: "en", label: "English", primary: true },
-  { code: "nl", label: "Dutch" },
-  { code: "de", label: "German" },
+  { code: "en", label: "English", country: "United Kingdom", flag: "gb.svg", primary: true },
+  { code: "nl", label: "Dutch", country: "The Netherlands", flag: "nl.svg" },
+  { code: "de", label: "German", country: "Germany", flag: "de.svg" },
 ];
+
+export const PRIMARY_LANGUAGE = LANGUAGES.find(l => l.primary);
+export const OTHER_LANGUAGES = LANGUAGES.filter(l => !l.primary);
+export const flagSrc = (flag) => `assets/flags/${flag}`;
+
+// ---- answer scale ----------------------------------------------------------
+// The labels respondents actually see. Unlike user-authored text these are
+// FIXED product strings, so they're real translations — never machine ones.
+const EN_SCALE = {
+  points: ["Strongly disagree", "Disagree", "Neither agree nor disagree", "Agree", "Strongly agree"],
+  dontKnow: "I don’t know",
+  open: "Share your thoughts…",
+};
+export const ANSWER_SCALE = {
+  en: EN_SCALE,
+  nl: {
+    points: ["Helemaal oneens", "Oneens", "Niet eens, niet oneens", "Eens", "Helemaal eens"],
+    dontKnow: "Weet ik niet", open: "Deel hier je gedachten…",
+  },
+  de: {
+    points: ["Stimme überhaupt nicht zu", "Stimme nicht zu", "Weder noch", "Stimme zu", "Stimme voll und ganz zu"],
+    dontKnow: "Weiß ich nicht", open: "Teilen Sie Ihre Gedanken…",
+  },
+};
+export const scaleFor = (code) => ANSWER_SCALE[code] || EN_SCALE;
 
 const DICT = {
   nl: {
@@ -55,16 +82,47 @@ const DICT = {
   },
 };
 
+// Everyday words the topic-flavoured tables above don't carry. Merged UNDER
+// DICT, so the survey-specific wording keeps precedence; this just stops
+// ordinary sentences coming back half in English.
+const COMMON = {
+  nl: { me: "mij", us: "ons", them: "hen", can: "kan", could: "kon", will: "zal", would: "zou", should: "zou moeten", must: "moet", may: "mag", am: "ben", was: "was", were: "waren", be: "zijn", been: "geweest", has: "heeft", had: "had", does: "doet", did: "deed", know: "weet", need: "nodig", needed: "nodig", want: "wil", give: "geeft", make: "maakt", take: "neemt", use: "gebruikt", see: "ziet", find: "vindt", think: "denkt", say: "zegt", tell: "vertelt", listen: "luistert", trust: "vertrouwt", treat: "behandelt", share: "deelt", learn: "leert", provide: "biedt", allow: "staat toe", expect: "verwacht", understand: "begrijpt", respect: "respecteert", help: "hulp", colleagues: "collega's", colleague: "collega", everyone: "iedereen", everything: "alles", someone: "iemand", nobody: "niemand", clear: "duidelijk", easy: "makkelijk", hard: "moeilijk", fair: "eerlijk", safe: "veilig", happy: "tevreden", proud: "trots", because: "omdat", but: "maar", not: "niet", very: "heel", when: "wanneer", where: "waar", why: "waarom", their: "hun", there: "er", that: "dat", it: "het", information: "informatie", resources: "middelen", training: "training", meeting: "overleg", meetings: "overleggen", change: "verandering", changes: "veranderingen", result: "resultaat", results: "resultaten" },
+  de: { me: "mich", us: "uns", them: "sie", can: "kann", could: "konnte", will: "wird", would: "würde", should: "sollte", must: "muss", may: "darf", am: "bin", was: "war", were: "waren", be: "sein", been: "gewesen", has: "hat", had: "hatte", does: "macht", did: "machte", know: "weiß", need: "brauche", needed: "benötigt", want: "will", give: "gibt", make: "macht", take: "nimmt", use: "nutzt", see: "sieht", find: "findet", think: "denkt", say: "sagt", tell: "erzählt", listen: "hört zu", trust: "vertraut", treat: "behandelt", share: "teilt", learn: "lernt", provide: "bietet", allow: "erlaubt", expect: "erwartet", understand: "versteht", respect: "respektiert", help: "Hilfe", colleagues: "Kollegen", colleague: "Kollege", everyone: "alle", everything: "alles", someone: "jemand", nobody: "niemand", clear: "klar", easy: "einfach", hard: "schwierig", fair: "fair", safe: "sicher", happy: "zufrieden", proud: "stolz", because: "weil", but: "aber", not: "nicht", very: "sehr", when: "wenn", where: "wo", why: "warum", their: "ihre", there: "dort", that: "dass", it: "es", information: "Informationen", resources: "Ressourcen", training: "Schulung", meeting: "Besprechung", meetings: "Besprechungen", change: "Veränderung", changes: "Veränderungen", result: "Ergebnis", results: "Ergebnisse" },
+};
+Object.keys(COMMON).forEach(code => { DICT[code] = { ...COMMON[code], ...DICT[code] }; });
+
+// Whole statements we can translate properly, so the common demo phrases don't
+// come back as word salad. Matched on a normalised form of the source.
+const PHRASES = {
+  "i have the tools i need to do my job well": {
+    nl: "Ik heb de middelen die ik nodig heb om mijn werk goed te doen",
+    de: "Ich habe die Mittel, die ich brauche, um meine Arbeit gut zu machen",
+  },
+  "i know what is expected of me at work": {
+    nl: "Ik weet wat er op mijn werk van mij wordt verwacht",
+    de: "Ich weiß, was bei der Arbeit von mir erwartet wird",
+  },
+  "i feel supported by my manager": {
+    nl: "Ik voel me gesteund door mijn leidinggevende",
+    de: "Ich fühle mich von meiner Führungskraft unterstützt",
+  },
+};
+const norm = (s) => s.toLowerCase().replace(/[.,!?;:'"]/g, "").replace(/\s+/g, " ").trim();
+
 // Word-level pass keeping punctuation and capitalisation of sentence starts.
 export function fakeTranslate(text, lang) {
   const dict = DICT[lang];
   if (!dict || !text) return text || "";
+  const seeded = PHRASES[norm(text)];
+  if (seeded && seeded[lang]) return seeded[lang];
   const out = text.split(/(\s+)/).map(tok => {
     if (/^\s+$/.test(tok)) return tok;
     const m = tok.match(/^([^A-Za-z']*)([A-Za-z']+)([^A-Za-z']*)$/);
     if (!m) return tok;
     const [, pre, word, post] = m;
-    const hit = dict[word.toLowerCase()];
+    const lower = word.toLowerCase();
+    // Exact match first, then the "-s" stem so plurals and third-person verbs hit.
+    const hit = dict[lower] ?? (lower.endsWith("s") ? dict[lower.slice(0, -1)] : undefined);
     if (!hit) return tok;
     const cased = word[0] === word[0].toUpperCase()
       ? hit[0].toUpperCase() + hit.slice(1) : hit;

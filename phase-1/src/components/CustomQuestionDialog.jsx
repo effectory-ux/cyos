@@ -124,12 +124,30 @@ function ScalePreview({ lang }) {
 // the whole statement, and translations often run longer than the source.
 function AutoTextarea({ value, ...rest }) {
   const ref = useRef(null);
-  useLayoutEffect(() => {
+  const lastWidth = useRef(0);
+  const fit = () => {
     const el = ref.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = el.scrollHeight + "px";
-  }, [value]);
+  };
+  useLayoutEffect(fit, [value]);
+  // A width change (crossing the compact breakpoint, resizing the window)
+  // re-wraps the text, so the height must be measured again — otherwise it
+  // keeps whatever it was when the value last changed. Guarded on width so
+  // setting the height in here can't feed back into the observer.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width;
+      if (w === lastWidth.current) return;
+      lastWidth.current = w;
+      fit();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return <textarea ref={ref} rows={1} value={value} {...rest} />;
 }
 
