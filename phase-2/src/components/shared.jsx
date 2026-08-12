@@ -232,12 +232,12 @@ export function CustomTag({ label = "Custom", pos = "is-left", float = false, on
 
 // ---- DS checkbox -------------------------------------------------------
 // Visual checkbox using the DS .cb pattern. Non-native (click handled by parent row).
-export function Checkbox({ on, indeterminate, large, subtle, onClick }) {
+export function Checkbox({ on, indeterminate, large, onClick }) {
   const ref = useRef(null);
   useEffect(() => { if (ref.current) ref.current.indeterminate = !!indeterminate && !on; }, [indeterminate, on]);
   return (
     <span className="cb-wrap" onClick={onClick} style={{ cursor: "pointer" }}>
-      <input ref={ref} type="checkbox" className={"cb" + (large ? " cb-lg" : "") + (subtle ? " cb-subtle" : "")} checked={on}
+      <input ref={ref} type="checkbox" className={"cb" + (large ? " cb-lg" : "")} checked={on}
         readOnly tabIndex={-1} style={{ pointerEvents: "none" }} />
     </span>
   );

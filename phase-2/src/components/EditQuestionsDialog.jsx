@@ -1,8 +1,7 @@
 // EditQuestionsDialog.jsx — "Add question from library" (Unified-survey-page frame)
 // Tabs (Questions | Themes placeholder), search + Show-filter + Create custom
 // question toolbar, sections with select-all checkboxes, and rows whose
-// selection state lives in the checkbox (solid = added this session, subtle =
-// from the template), each with an explanatory hover tooltip.
+// selection state lives in the checkbox, each with an explanatory hover tooltip.
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Icon } from "./Icon.jsx";
 import { themeStatus, themesOf, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag, RequiredMarker } from "./shared.jsx";
@@ -19,21 +18,17 @@ function selectAllTip(nSel, total) {
   return <><span className="tt-title">{nSel} of {total} selected</span>Select all questions</>;
 }
 
-// Checkbox + tooltip for one question row. State semantics (per the frame):
-//   empty  → "Add to questionnaire"
-//   subtle → "Added to questionnaire from template" (was selected on open)
-//   solid  → "Just added to questionnaire" (selected during this session)
-function RowCheckbox({ on, fromTemplate, onClick }) {
-  const label = !on ? "Add to questionnaire"
-    : fromTemplate ? "Added to questionnaire from template" : "Just added to questionnaire";
+// Checkbox + tooltip for one question row: unchecked = add, checked = added.
+function RowCheckbox({ on, onClick }) {
+  const label = on ? "Added to questionnaire" : "Add to questionnaire";
   return (
     <Tooltip label={label} pos="is-above" float>
-      <Checkbox on={on} large subtle={on && fromTemplate} onClick={onClick} />
+      <Checkbox on={on} large onClick={onClick} />
     </Tooltip>
   );
 }
 
-function QRow({ q, on, fromTemplate, onToggle, onRequiredPress, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom }) {
+function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom }) {
   const required = q.required;
   // Required questions keep an INTERACTIVE (checked) checkbox — pressing it can't
   // uncheck it; instead it surfaces a live info notification explaining why. A
@@ -43,7 +38,7 @@ function QRow({ q, on, fromTemplate, onToggle, onRequiredPress, rowRef, leaving,
       onClick={leaving ? undefined : (required ? onRequiredPress : onToggle)}>
       {required
         ? <Checkbox on large onClick={(e) => { e.stopPropagation(); onRequiredPress(); }} />
-        : <RowCheckbox on={on} fromTemplate={fromTemplate} onClick={(e) => { e.stopPropagation(); onToggle(); }} />}
+        : <RowCheckbox on={on} onClick={(e) => { e.stopPropagation(); onToggle(); }} />}
       <div className="aql-text">{q.text}</div>
       {q.theme
         ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-above" float
@@ -667,7 +662,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                         </button>
                       </Tooltip>
                     </div>
-                    {!isColl && g.items.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} fromTemplate={initial.has(qq.id)}
+                    {!isColl && g.items.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
                       leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
                       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}

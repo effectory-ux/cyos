@@ -80,29 +80,8 @@ function AddTopicDialog({ onCancel, onAdd }) {
   );
 }
 
-// Inline (click-to-edit) description under a topic header. Enter or blur saves,
-// Escape cancels; an empty save removes the description.
-function TopicDesc({ desc, onSave }) {
-  const [editing, setEditing] = useState(false);
-  const [v, setV] = useState(desc || "");
-  const start = () => { setV(desc || ""); setEditing(true); };
-  const commit = () => { setEditing(false); const t = v.trim(); if (t !== (desc || "")) onSave(t || undefined); };
-  if (editing) {
-    return (
-      <textarea className="desc-edit" autoFocus rows={2} value={v}
-        onChange={e => setV(e.target.value)}
-        onBlur={commit}
-        onKeyDown={e => {
-          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); }
-          if (e.key === "Escape") { setV(desc || ""); setEditing(false); }
-        }} />
-    );
-  }
-  return desc
-    ? <div className="qsec-desc-text" role="button" tabIndex={0} onClick={start}
-        onKeyDown={e => { if (e.key === "Enter") start(); }}>{desc}</div>
-    : <button className="qsec-desc-ghost" onClick={start}><Icon name="plus" size={14} />Add description</button>;
-}
+// Topic descriptions are edited via the (upcoming) topic dialog; the
+// questionnaire only displays an existing description as static text.
 
 // Warning shown before removing a topic that still holds questions. Offers a
 // "don't show again" opt-out (persisted); skipped entirely for empty topics.
@@ -169,7 +148,7 @@ function TopNav({ name, onRename, onTranslations }) {
   );
 }
 
-function BuilderRow({ q, meta, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, themeInfo, onOpenTheme, onDragStart, onDragEnd }) {
+function BuilderRow({ q, meta, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, themeInfo, onOpenTheme, onDragStart, onDragEnd }) {
   const [menu, setMenu] = useState(false);
   const [view, setView] = useState("main"); // "main" | "move" (topic picker)
   const close = () => { setMenu(false); setView("main"); };
@@ -177,10 +156,10 @@ function BuilderRow({ q, meta, showDesc, onRemove, onEdit, onSettings, onResetDe
   const effTopic = (meta && meta.topic) || q.topic;
   const otherTopics = (topics || []).filter(t => t.key !== effTopic);
   // Survey-scoped extras on a standard question (custom questions carry their
-  // own): a chosen alternative wording and/or an added description.
+  // own): a chosen alternative wording and/or an added description. Both are
+  // shown and edited in the question settings dialog; the row only carries the
+  // provenance chip.
   const variant = !q.custom && meta ? meta.variant : undefined;
-  const desc = (meta && meta.desc) || q.desc;
-  const descHidden = !!(meta && meta.descHidden);
   const edited = !q.custom && !!((meta && meta.desc) || variant);
   const editLines = [
     ...(variant ? [<>Alternative wording — original: <b>{q.text}</b>. Benchmark comparisons stay valid.</>] : []),
@@ -202,7 +181,6 @@ function BuilderRow({ q, meta, showDesc, onRemove, onEdit, onSettings, onResetDe
       </Tooltip>
       <div className="qrow-main">
         <div style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{variant || q.text}</div>
-        {showDesc && desc && !descHidden && <div className="qrow-desc">{desc}</div>}
       </div>
       <div className="qrow-meta">
         {edited && (
@@ -324,9 +302,6 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   const [addTopicOpen, setAddTopicOpen] = useState(false);
   const [settingsQId, setSettingsQId] = useState(null); // question whose settings pane is open
   const [translationsOpen, setTranslationsOpen] = useState(false);
-  // View preference only — collapses/expands descriptions in this overview.
-  // It never changes what respondents see (that lives in question settings).
-  const [showDesc, setShowDesc] = useState(true);
   const sel = new Set(selectedIds);
   const customTopicSet = new Set(customTopics);
   // A topic's display name in THIS survey (library name is the stable key).
@@ -592,17 +567,6 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
             )}
           </div>
 
-          {chosen.length > 0 && (
-            <div className="view-toggles">
-              <label className="tgl-label-wrap">
-                <span className="tgl-wrap">
-                  <input type="checkbox" className="tgl" checked={showDesc} onChange={e => setShowDesc(e.target.checked)} />
-                  <span className="tgl-track"><span className="tgl-thumb" /></span>
-                </span>
-                Show descriptions
-              </label>
-            </div>
-          )}
           <div className="qsec-list">
           {visibleSections.map((s, vi) => {
             const secUp = vi > 0, secDown = vi < visibleSections.length - 1;
@@ -688,10 +652,9 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
                   )}
                 </div>
               </div>
-              {showDesc && (
+              {topicMeta[s.key] && topicMeta[s.key].desc && (
                 <div className="qsec-desc">
-                  <TopicDesc desc={topicMeta[s.key] && topicMeta[s.key].desc}
-                    onSave={(d) => onUpdateTopicMeta && onUpdateTopicMeta(s.key, { desc: d })} />
+                  <div className="qsec-desc-static">{topicMeta[s.key].desc}</div>
                 </div>
               )}
               <div className="qsec-body" onDragOver={questionBodyDragOver(s.key)} onDrop={questionBodyDrop(s.key)}>
@@ -700,7 +663,7 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
                 )}
                 {previewItems(s).map((qq) => {
                   const i = s.items.findIndex(x => x.id === qq.id);
-                  return <BuilderRow key={qq.id} q={qq} meta={qMeta[qq.id]} showDesc={showDesc}
+                  return <BuilderRow key={qq.id} q={qq} meta={qMeta[qq.id]}
                     onRemove={onRemoveQuestion} onEdit={onEditCustom} dragging={!!drag && drag.kind === "q" && drag.id === qq.id}
                     onSettings={(q) => setSettingsQId(q.id)}
                     onResetDesc={() => onUpdateQMeta && onUpdateQMeta(qq.id, { desc: undefined, descHidden: undefined, variant: undefined })}

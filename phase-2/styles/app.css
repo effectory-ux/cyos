@@ -394,10 +394,6 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .sysnotif.is-info { border-left-color: var(--border-info-base); }
 .sysnotif.is-info .sysnotif-action { color: var(--border-info-base); }
 .aql-text { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; line-height: 22.4px; color: var(--content-base); }
-/* Checkbox state: template-added questions show a subtle (light) check instead
-   of the solid brand fill, per the frame. */
-input[type="checkbox"].cb.cb-subtle:checked { background-color: var(--bg-brand-subtle); border-color: var(--border-brand-base); }
-.cb-wrap:has(input.cb-subtle:checked)::after { background-color: var(--border-brand-base); }
 /* Theme + custom tags (Figma 154:4080). Theme tag tracks how much of the theme
    is in the questionnaire: neutral (grey) → in-progress (light turquoise + ring)
    → complete (filled turquoise + check). Custom = light-blue with edit icon. */
@@ -407,7 +403,9 @@ input[type="checkbox"].cb.cb-subtle:checked { background-color: var(--bg-brand-s
    in-progress = light BLUE + blue ring + blue text; complete = filled DARK teal
    + white check + white text. Custom questions = inverted blue. */
 .tag-thm.is-progress { background: var(--bg-info-subtle); color: var(--content-info-base); }
-.tag-thm.is-complete { background: var(--content-brand-secondary); color: var(--content-on-brand-base); }
+/* Complete = positive green, matching the positive message in the theme's
+   details dialog. The check stays as a non-color completeness cue. */
+.tag-thm.is-complete { background: var(--bg-positive-base); color: var(--content-on-brand-base); }
 .tag-custom-q { background: var(--content-accent-blue-base); color: var(--content-inverse-base); }
 /* Interactive tags (open a dialog on click) get a hover/press + focus affordance. */
 .tag-thm.is-interactive, .tag-custom-q.is-interactive { cursor: pointer; transition: filter var(--motion-fast) var(--ease-standard); }
@@ -908,3 +906,6 @@ input[type="checkbox"].cb.cb-subtle:checked { background-color: var(--bg-brand-s
 /* Whole question row opens its settings */
 .qsec-body .qrow { cursor: pointer; }
 .qsec-body .qrow:hover { background: var(--bg-base-hover); }
+
+/* Static topic description (editing moves to the upcoming topic dialog) */
+.qsec-desc-static { font-size: 13.5px; line-height: 1.6; color: var(--content-secondary); }
