@@ -157,27 +157,22 @@ const Flag = ({ lang }) => (
 
 const MANUAL_LABEL = "Manually translated";
 const STALE_NOTE = "Manually translated — check if it’s still correct";
-const STALE_TITLE = "Check the manually translated languages — the primary language changed";
 const joinNames = (langs) => {
   const names = langs.map(l => `${l.name} (${l.country})`);
   return names.length < 2 ? names[0] : names.slice(0, -1).join(", ") + " and " + names.at(-1);
 };
 
-// The marker a language row / menu item carries on its right. A hand-edited
-// translation is flagged permanently; the warning is the temporary "re-check me"
-// state on top of it.
-function LangMark({ edited, stale }) {
-  if (stale) {
-    return <span className="cq-lang-stale"><Icon name="alert-circle" size={16} title={STALE_NOTE} /></span>;
-  }
-  if (edited) {
-    return <span className="cq-lang-manual"><Icon name="alert-circle" size={16} title={MANUAL_LABEL} /></span>;
-  }
-  return null;
+// The marker a language row / menu item carries on its right: a hand-edited
+// translation, flagged permanently. There is deliberately NO warning variant —
+// the keep-or-overwrite dialog already asks about anything that needs a look,
+// so a second alarm in the list would just be noise.
+function LangMark({ edited }) {
+  if (!edited) return null;
+  return <span className="cq-lang-manual"><Icon name="language" size={16} title={MANUAL_LABEL} /></span>;
 }
 
 // ---- one row in the language list --------------------------------------
-function LangRow({ lang, isActive, working, edited, stale, onSelect }) {
+function LangRow({ lang, isActive, working, edited, onSelect }) {
   return (
     <button type="button" onClick={onSelect} aria-current={isActive ? "true" : undefined}
       aria-busy={working || undefined}
@@ -187,7 +182,7 @@ function LangRow({ lang, isActive, working, edited, stale, onSelect }) {
         <span className="cq-lang-name">{lang.name}</span>
         <span className="cq-lang-country">{lang.country}</span>
       </span>
-      <LangMark edited={edited} stale={stale} />
+      <LangMark edited={edited} />
     </button>
   );
 }
@@ -250,7 +245,6 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
   const isWorking = code => (tr[code] || {}).status === "pending";
   const isStale = code => !!(tr[code] || {}).stale;
   const isEdited = code => !!(tr[code] || {}).edited;
-  const anyStale = OTHER_LANGUAGES.some(l => isStale(l.code));
 
   // Typing in a translation marks it hand-edited, which protects it from the
   // next automatic run — and is what later makes it go stale.
@@ -349,7 +343,7 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
   const langOption = l => ({
     value: l.code, label: l.name, sub: l.country, lead: <Flag lang={l} />,
     working: isWorking(l.code),
-    trail: <LangMark edited={isEdited(l.code)} stale={isStale(l.code)} />,
+    trail: <LangMark edited={isEdited(l.code)} />,
   });
   // Mirrors the side list's structure so the compact menu reads the same way.
   const langItems = [
@@ -406,13 +400,7 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
             <div className="cq-preview">
               {compact && (
                 <div className="cq-field cq-langsel">
-                  <span className="cq-lbl">Languages
-                    {anyStale && (
-                      <Tooltip label={STALE_TITLE}>
-                        <span className="cq-lang-stale"><Icon name="alert-circle" size={16} /></span>
-                      </Tooltip>
-                    )}
-                  </span>
+                  <span className="cq-lbl">Languages</span>
                   <MiniSelect ariaLabel="Languages" value={active} items={langItems}
                     onChange={selectLanguage} block />
                 </div>
@@ -485,16 +473,11 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
                   onSelect={() => selectLanguage(PRIMARY_LANGUAGE.code)} />
                 <div className="cq-langs-head is-count">
                   <span className="cq-langs-title">Translations ({OTHER_LANGUAGES.length})</span>
-                  {anyStale && (
-                    <Tooltip label={STALE_TITLE}>
-                      <span className="cq-lang-stale"><Icon name="alert-circle" size={16} /></span>
-                    </Tooltip>
-                  )}
                 </div>
                 <div className="cq-langs-scroll scroll-y">
                   {OTHER_LANGUAGES.map(l => (
                     <LangRow key={l.code} lang={l} isActive={active === l.code}
-                      working={isWorking(l.code)} edited={isEdited(l.code)} stale={isStale(l.code)}
+                      working={isWorking(l.code)} edited={isEdited(l.code)}
                       onSelect={() => selectLanguage(l.code)} />
                   ))}
                 </div>

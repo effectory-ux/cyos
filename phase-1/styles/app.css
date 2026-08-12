@@ -101,7 +101,11 @@ button.sel-btn.cq-sel { font-size: 14px; }
 /* The list bleeds across the panel's full right padding so the scrollbar lives
    in that gutter instead of eating into the rows (6px keeps content clear of it). */
 .cq-langs-scroll { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1px;
-  margin-right: calc(-1 * var(--spacing-base)); padding-right: 6px; }
+  margin-right: calc(-1 * var(--spacing-base)); padding-right: 6px;
+  /* Reserve the scrollbar gutter whether or not the list actually overflows —
+     otherwise a short list renders its rows 10px wider than the pinned primary
+     row above it, and the right-hand markers stop lining up. */
+  scrollbar-gutter: stable; }
 
 .cq-lang { display: flex; align-items: center; gap: var(--spacing-tight); width: 100%; padding: var(--spacing-tight);
   border: 0; background: var(--bg-base); border-radius: var(--radius-base); font: inherit; text-align: left;
@@ -138,14 +142,9 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .cq-card-note.is-stale { color: var(--content-warning-base); }
 .cq-note-action { padding: 0; border: 0; background: none; font: inherit; font-weight: 600;
   color: inherit; text-decoration: underline; cursor: pointer; }
-.cq-lang-stale { display: flex; flex: none; color: var(--content-warning-base); }
-.cq-lang.is-active .cq-lang-stale { color: var(--content-warning-base); }
 /* Permanent marker on a hand-edited translation — informational, not a warning. */
 .cq-lang-manual { display: flex; flex: none; color: var(--content-subtle); }
 .cq-lang.is-active .cq-lang-manual { color: inherit; }
-.cq-langs-head .cq-lang-stale, .cq-lbl .cq-lang-stale { align-self: center; }
-/* Compact "Languages" label: push the mark to the right edge of the select. */
-.cq-lbl > .tt-demo { margin-left: auto; }
 .cq-answer { width: 100%; padding: var(--spacing-tight) 0 0; }
 
 /* Benchmark note sits in the footer beside Cancel/Create, so the frame stays
