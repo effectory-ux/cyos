@@ -53,3 +53,35 @@ export const VARIANTS = {
 export function variantsOf(text) {
   return VARIANTS[text] || [];
 }
+
+// Effectory-approved DESCRIPTION alternatives, same mechanics as question
+// variants: for now a description is chosen from a curated list (free editing
+// may come later). Questions without a curated list fall back to the generic
+// clarifications below.
+export const DESC_VARIANTS = {
+  "Day to day, I find my work enjoyable": [
+    "Reflect on the parts of your job that bring you satisfaction or joy.",
+    "Think about your work in general, not one exceptional day.",
+  ],
+  "I'm kitted out with the tools and systems my job calls for": [
+    "Think of the equipment, software, and systems you use in your daily work.",
+    "Consider whether missing tools slow you down in a normal week.",
+  ],
+  "My job and personal life sit in healthy balance": [
+    "Consider the past few months, including busy periods.",
+    "Think about how often work spills into your personal time.",
+  ],
+  "Would you point a friend towards us as a place to work?": [
+    "Imagine a friend with skills similar to yours is looking for a job.",
+    "Think about whether you would speak positively about working here.",
+  ],
+};
+
+const GENERIC_DESCS = [
+  "Think about your experience over the past few months.",
+  "Consider your day-to-day situation, not one specific moment.",
+];
+
+export function descVariantsOf(text) {
+  return DESC_VARIANTS[text] || GENERIC_DESCS;
+}
