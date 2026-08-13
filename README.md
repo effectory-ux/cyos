@@ -31,18 +31,21 @@ npm run dev
 ## Deploying the demos
 
 Nothing deploys automatically — pushing to `main` changes no demo. The Pages
-site (landing page + all phases) is published only by manually running the
-**Deploy demos** workflow:
+site is served from the `gh-pages` branch (never edit it by hand), and the
+**Deploy demos** workflow updates only the slice you pick; everything else on
+the site stays byte-identical:
 
 ```sh
-gh workflow run "Deploy demos"
+gh workflow run "Deploy demos" -f target=site-and-research   # landing + research docs only
+gh workflow run "Deploy demos" -f target=phase-2             # phase-2 demo only
+gh workflow run "Deploy demos" -f target=phase-1             # phase-1 demo only
+gh workflow run "Deploy demos" -f target=everything
 ```
 
-A run rebuilds every phase from `main`; phases whose source didn't change build
-to an identical app, so they stay effectively frozen. Phase 1's original demo
-link is no longer built separately — the personal `cyos-survey-creation-flow-demo`
-repo now serves only a static redirect to `phase-1/` above, so there's nothing
-to deploy for it.
+Research docs are static pages in `site/research/<slug>/index.html`, linked
+from the landing page. Phase 1's original demo link is not built separately —
+the personal `cyos-survey-creation-flow-demo` repo serves only a static
+redirect to `phase-1/` above, so there's nothing to deploy for it.
 
 See each phase's own README and NOTICE for what's implemented and which files
 are vendored from the design system.
