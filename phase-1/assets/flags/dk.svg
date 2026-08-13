@@ -1,0 +1,15 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="20.3333" height="15.3333" viewBox="0 0 20.3333 15.3333" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="flag">
+<g clip-path="url(#clip0_0_426)">
+<path id="icon" d="M1 1H19.3362V14.3333H1V1Z" fill="#C60C30"/>
+<path id="icon_2" d="M6.89286 1H8.85709V14.3333H6.89286V1Z" fill="white"/>
+<path id="icon_3" d="M1 6.71428H19.3362V8.619H1V6.71428Z" fill="white"/>
+</g>
+<rect x="0.5" y="0.5" width="19.3333" height="14.3333" rx="1.5" stroke="#F5F7FA"/>
+</g>
+<defs>
+<clipPath id="clip0_0_426">
+<rect x="1" y="1" width="18.3333" height="13.3333" rx="1" fill="white"/>
+</clipPath>
+</defs>
+</svg>

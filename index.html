@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CYOS prototypes</title>
+  <style>
+    :root {
+      --teal: #00919e; --teal-dark: #007784; --ink: #192743; --sub: #5a6b8c;
+      --bg: #f6f8fa; --card: #ffffff; --border: #e3e8ef;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: "Poppins", -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg); color: var(--ink);
+      min-height: 100vh; display: grid; place-items: center; padding: 32px;
+    }
+    main { width: 100%; max-width: 640px; }
+    h1 { font-size: 28px; font-weight: 600; margin-bottom: 4px; }
+    .sub { color: var(--sub); font-size: 15px; margin-bottom: 28px; }
+    a.card {
+      display: flex; align-items: center; gap: 16px; text-decoration: none;
+      background: var(--card); color: inherit; border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 24px; margin-bottom: 14px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    a.card:hover { border-color: var(--teal); box-shadow: 0 4px 14px rgba(25,39,67,.08); }
+    .badge {
+      flex: none; width: 44px; height: 44px; border-radius: 10px;
+      background: #e0f2f3; color: var(--teal-dark); display: grid; place-items: center;
+      font-weight: 600; font-size: 15px;
+    }
+    .card h2 { font-size: 16px; font-weight: 600; }
+    .card p { font-size: 13.5px; color: var(--sub); margin-top: 2px; }
+    .arrow { margin-left: auto; color: var(--teal); font-size: 18px; }
+    footer { margin-top: 24px; font-size: 12.5px; color: var(--sub); }
+    h2.section { font-size: 15px; font-weight: 600; color: var(--sub); margin: 24px 0 12px; }
+    .badge-r { background: #eceffd; color: #4f46e5; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CYOS prototypes</h1>
+    <p class="sub">Survey creation flow — prototype phases</p>
+    <a class="card" href="./phase-1/">
+      <span class="badge">P1</span>
+      <span><h2>Phase 1 — survey creation flow</h2>
+      <p>Templates, question library, themes, and the questionnaire builder</p></span>
+      <span class="arrow">→</span>
+    </a>
+    <a class="card" href="./phase-2/">
+      <span class="badge">P2</span>
+      <span><h2>Phase 2 — survey-scoped customization</h2>
+      <p>Topic renames, custom topics, descriptions, question settings, and translations</p></span>
+      <span class="arrow">→</span>
+    </a>
+    <h2 class="section">Research</h2>
+    <a class="card" href="./research/central-library-sync/">
+      <span class="badge badge-r">R</span>
+      <span><h2>How other tools solve the central-library problem</h2>
+      <p>Linking, local overrides, and sync in GitHub, Figma, Contentful, Salesforce, AEM, Crowdin, and more — reference notes for Question Management</p></span>
+      <span class="arrow">→</span>
+    </a>
+    <footer>Internal prototype — not a production Effectory product</footer>
+  </main>
+</body>
+</html>
