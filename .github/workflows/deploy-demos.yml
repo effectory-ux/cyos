@@ -1,55 +1,81 @@
 name: Deploy demos
 
-# Publishes ALL phases to this repo's GitHub Pages site under subpaths:
-#   https://effectory-ux.github.io/cyos/            → landing page (site/index.html)
-#   https://effectory-ux.github.io/cyos/phase-1/    → phase 1 build
-#   https://effectory-ux.github.io/cyos/phase-2/    → phase 2 build
+# Publishes to this repo's Pages site (https://effectory-ux.github.io/cyos/),
+# served from the gh-pages branch. MANUAL TRIGGER ONLY, and scoped: the target
+# input decides which slice of the site is updated — everything else on the
+# branch stays byte-identical, so publishing a research doc never touches the
+# phase demos and vice versa.
 #
-# MANUAL TRIGGER ONLY (workflow_dispatch) — demos never change on push; run
-# this deliberately via the Actions tab or `gh workflow run "Deploy demos"`.
-# Note: one Pages site is a single atomic artifact, so a run rebuilds every
-# phase from main. Unchanged source builds to an identical app, so untouched
-# phases stay effectively frozen. Phase 1's ORIGINAL demo link is served from
-# the separate cyos-survey-creation-flow-demo repo, which now holds only a
-# static redirect to this site's phase-1/ — nothing to deploy for it.
+#   site-and-research → landing page + site/research/** (static files)
+#   phase-1           → builds phase-1/ and replaces /phase-1/
+#   phase-2           → builds phase-2/ and replaces /phase-2/
+#   everything        → all of the above
+#
+# Phase 1's ORIGINAL demo link is still the separate
+# cyos-survey-creation-flow-demo repo, updated only via phase-1/deploy-demo.sh.
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: What to publish
+        type: choice
+        default: site-and-research
+        options:
+          - site-and-research
+          - phase-1
+          - phase-2
+          - everything
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: gh-pages
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: src
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: out
       - uses: actions/setup-node@v4
+        if: inputs.target == 'phase-1' || inputs.target == 'phase-2' || inputs.target == 'everything'
         with:
           node-version: 22
-      - name: Build phase 1
-        run: npm ci --prefix phase-1 && npm run build --prefix phase-1
-      - name: Build phase 2
-        run: npm ci --prefix phase-2 && npm run build --prefix phase-2
-      - name: Assemble site
+      - name: Update landing page and research docs
+        if: inputs.target == 'site-and-research' || inputs.target == 'everything'
         run: |
-          mkdir -p _site
-          cp -R site/. _site/
-          cp -R phase-1/dist _site/phase-1
-          cp -R phase-2/dist _site/phase-2
-          touch _site/.nojekyll
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          # Sync site/ onto the branch root, removing stale static files but
+          # never touching the phase build folders.
+          rsync -a --delete --exclude 'phase-1/' --exclude 'phase-2/' --exclude '.git/' --exclude '.nojekyll' src/site/ out/
+      - name: Build and replace phase 1
+        if: inputs.target == 'phase-1' || inputs.target == 'everything'
+        run: |
+          npm ci --prefix src/phase-1
+          npm run build --prefix src/phase-1
+          rm -rf out/phase-1
+          cp -R src/phase-1/dist out/phase-1
+      - name: Build and replace phase 2
+        if: inputs.target == 'phase-2' || inputs.target == 'everything'
+        run: |
+          npm ci --prefix src/phase-2
+          npm run build --prefix src/phase-2
+          rm -rf out/phase-2
+          cp -R src/phase-2/dist out/phase-2
+      - name: Publish
+        run: |
+          cd out
+          touch .nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "Nothing changed — nothing published."; exit 0; }
+          git commit -m "Publish ${{ inputs.target }} ($GITHUB_SHA)"
+          git push origin gh-pages
