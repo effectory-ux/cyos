@@ -59,7 +59,7 @@ function TopicRemoveWarning({ label, count, onCancel, onConfirm }) {
           </div>
           <p className="dialog-subtitle">
             This removes the topic and the <b>{count} {count === 1 ? "question" : "questions"}</b> in it from your
-            questionnaire. You can add them back later from <b>Add questions</b>.
+            questionnaire. You can select them again later via <b>Select questions</b>.
           </p>
         </div>
         <label className="cb-label-wrap" style={{ display: "flex", alignItems: "center", gap: "var(--spacing-tight)", cursor: "pointer" }}>
@@ -511,7 +511,7 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
                   </>
                 )}
               </div>
-              <button className="btn btn-primary" style={{ flex: "none" }} onClick={onEditQuestions}><Icon name="plus" size={16} />Add questions</button>
+              <button className="btn btn-primary" style={{ flex: "none" }} onClick={onEditQuestions}><Icon name="plus" size={16} />Select questions</button>
             </div>
             {chosen.length > 0 && activeTemplates.length > 0 && (
               <div className="ov-tags">
@@ -617,11 +617,6 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
                   )}
                 </div>
               </div>
-              {topicMeta[s.key] && topicMeta[s.key].desc && (
-                <div className="qsec-desc">
-                  <div className="qsec-desc-static">{topicMeta[s.key].desc}</div>
-                </div>
-              )}
               <div className="qsec-body" onDragOver={questionBodyDragOver(s.key)} onDrop={questionBodyDrop(s.key)}>
                 {s.items.length === 0 && (
                   <div className="qsec-empty">No questions yet — drag questions here, or move them here from their menu</div>
@@ -657,7 +652,7 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
             <div style={{ marginTop: "var(--spacing-extra-loose)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "var(--spacing-loose)", textAlign: "center" }}>
               <div className="text-l5" style={{ color: "var(--content-secondary)" }}>Want to add or remove questions?</div>
               <div className="text-medium text-subdued">Open the question editor to select questions or write your own.</div>
-              <button className="btn btn-secondary" onClick={onEditQuestions}><Icon name="plus" size={16} />Add questions</button>
+              <button className="btn btn-secondary" onClick={onEditQuestions}><Icon name="plus" size={16} />Select questions</button>
             </div>
           )}
 

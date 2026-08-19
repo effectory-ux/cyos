@@ -233,12 +233,14 @@ export function CustomTag({ label = "Custom", pos = "is-left", float = false, on
 
 // ---- DS checkbox -------------------------------------------------------
 // Visual checkbox using the DS .cb pattern. Non-native (click handled by parent row).
-export function Checkbox({ on, indeterminate, large, onClick }) {
+// `locked` renders a checked-but-disabled look (org-required questions): the
+// value can't change, so the control shouldn't invite a click.
+export function Checkbox({ on, indeterminate, large, locked, onClick }) {
   const ref = useRef(null);
   useEffect(() => { if (ref.current) ref.current.indeterminate = !!indeterminate && !on; }, [indeterminate, on]);
   return (
-    <span className="cb-wrap" onClick={onClick} style={{ cursor: "pointer" }}>
-      <input ref={ref} type="checkbox" className={"cb" + (large ? " cb-lg" : "")} checked={on}
+    <span className="cb-wrap" onClick={onClick} style={{ cursor: locked ? "not-allowed" : "pointer" }}>
+      <input ref={ref} type="checkbox" className={"cb" + (large ? " cb-lg" : "") + (locked ? " cb-locked" : "")} checked={on}
         readOnly tabIndex={-1} style={{ pointerEvents: "none" }} />
     </span>
   );

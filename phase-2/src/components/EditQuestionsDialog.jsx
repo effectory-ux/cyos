@@ -1,7 +1,9 @@
-// EditQuestionsDialog.jsx — "Add question from library" (Unified-survey-page frame)
-// Tabs (Questions | Themes placeholder), search + Show-filter + Create custom
-// question toolbar, sections with select-all checkboxes, and rows whose
-// selection state lives in the checkbox, each with an explanatory hover tooltip.
+// EditQuestionsDialog.jsx — "Select questions" (Unified-survey-page frame)
+// Tabs: Library questions | Custom questions | Themes | Templates. The library
+// tab shows ONLY library content grouped by library topics — custom questions
+// and custom topics live in the questionnaire (and the Custom questions tab),
+// never in the library view. Rows keep selection in the checkbox with hover
+// tooltips.
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Icon } from "./Icon.jsx";
 import { themeStatus, themesOf, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag, RequiredMarker } from "./shared.jsx";
@@ -37,7 +39,7 @@ function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, on
     <div ref={rowRef} className={"aql-row" + (leaving ? " is-leaving" : "")}
       onClick={leaving ? undefined : (required ? onRequiredPress : onToggle)}>
       {required
-        ? <Checkbox on large onClick={(e) => { e.stopPropagation(); onRequiredPress(); }} />
+        ? <Checkbox on large locked onClick={(e) => { e.stopPropagation(); onRequiredPress(); }} />
         : <RowCheckbox on={on} onClick={(e) => { e.stopPropagation(); onToggle(); }} />}
       <div className="aql-text">{q.text}</div>
       {q.theme
@@ -524,7 +526,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     setPool(p => [...p, nq]); setSel(s => new Set([...s, nq.id])); setCustomOpen(false);
     // Make the new question visible where it landed: clear search/filter,
     // switch to the Questions tab, scroll to the row, and toast.
-    setQ(""); setShow("all"); setTab("questions");
+    setQ(""); setShow("all"); setTab("custom");
     setJustAdded(nq.id); setToast({ topic: nq.topic });
     timers.current.forEach(clearTimeout);
     timers.current = [
@@ -533,7 +535,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     ];
   };
 
-  const visible = pool.filter(x => [x.text, x.theme, x.topic].some(v => (v || "").toLowerCase().includes(q.toLowerCase())))
+  const customQs = pool.filter(x => x.custom);
+  const visible = pool.filter(x => !x.custom)
+    .filter(x => [x.text, x.theme, x.topic].some(v => (v || "").toLowerCase().includes(q.toLowerCase())))
     .filter(x => (show === "all" ? true : show === "selected" ? sel.has(x.id) : !sel.has(x.id)) || leaving.has(x.id));
   const groups = groupQuestions(visible, "library");
   const selCount = [...sel].length;
@@ -558,12 +562,14 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         ) : (
         <>
         <div className="dialog-header" style={{ paddingRight: 24 }}>
-          <h2 className="dialog-title" id="eq-title" style={{ fontSize: 20, lineHeight: "28px" }}>Add question from library</h2>
+          <h2 className="dialog-title" id="eq-title" style={{ fontSize: 20, lineHeight: "28px" }}>Select questions</h2>
         </div>
 
         <div className="tabs" role="tablist">
           <button className={"tab" + (tab === "questions" ? " is-active" : "")} role="tab" aria-selected={tab === "questions"}
-            onClick={() => setTab("questions")}><Icon name="list-unordered" size={16} />Questions</button>
+            onClick={() => setTab("questions")}><Icon name="list-unordered" size={16} />Library questions</button>
+          <button className={"tab" + (tab === "custom" ? " is-active" : "")} role="tab" aria-selected={tab === "custom"}
+            onClick={() => setTab("custom")}><Icon name="edit" size={16} />Custom questions</button>
           <button className={"tab" + (tab === "themes" ? " is-active" : "")} role="tab" aria-selected={tab === "themes"}
             onClick={() => setTab("themes")}><Icon name="themes" size={16} />Themes</button>
           <button className={"tab" + (tab === "templates" ? " is-active" : "")} role="tab" aria-selected={tab === "templates"}
@@ -580,8 +586,14 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
             <button className={"btn btn-secondary" + (secKeys.length === 0 ? " is-disabled" : "")} disabled={secKeys.length === 0}
               style={{ flex: "none" }} onClick={toggleAllSecs}>
               <Icon name={allCollapsed ? "double-chevron-down" : "double-chevron-up"} size={16} />{allCollapsed ? "Expand all" : "Collapse all"}</button>
+          </div>
+        )}
+
+        {tab === "custom" && customQs.length > 0 && (
+          <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
+            <span className="text-medium text-subdued" style={{ flex: 1 }}>Your own questions for this survey. No benchmark comparisons.</span>
             <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
-              <Icon name="plus" size={16} />Create question</button>
+              <Icon name="plus" size={16} />Create custom question</button>
           </div>
         )}
 
@@ -625,6 +637,23 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                       onDetails={() => setThemeDetails(t.name)} />)}
                   </div>
                 )}
+              </>
+            )
+          ) : tab === "custom" ? (
+            customQs.length === 0 ? (
+              <div className="aql-themes-empty">
+                <Icon name="edit" size={32} />
+                <div className="text-l5" style={{ color: "var(--content-secondary)" }}>No custom questions yet</div>
+                <div className="text-medium">Write your own question for things the library doesn't cover.</div>
+                <button className="btn btn-primary" style={{ marginTop: 8 }} onClick={() => setCustomOpen(true)}>
+                  <Icon name="plus" size={16} />Create custom question</button>
+              </div>
+            ) : (
+              <>
+                {customQs.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
+                  leaving={leaving.has(qq.id)} themeInfo={null}
+                  onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
+                  onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
               </>
             )
           ) : tab === "templates" ? (
