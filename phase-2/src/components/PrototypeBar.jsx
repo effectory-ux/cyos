@@ -1,12 +1,14 @@
 // PrototypeBar.jsx — the prototype's own toolbar, in the spirit of the Figma /
-// Claude Design prototype chrome: a floating bar for jumping to a use case,
-// setting the starting point, and reading the current URL.
+// Claude Design prototype chrome.
 //
-// This is TOOLING, not product UI. It deliberately does not use the Engage DS —
-// it's dark, compact and floats above the app so nobody mistakes it for a
-// screen. Collapse it (or press ⌥/Alt+P) to review the prototype clean.
+// This is TOOLING, not product UI: it deliberately avoids the Engage DS (dark,
+// compact) and it is a real full-width row ABOVE the prototype rather than an
+// overlay, so it never covers a screen. Hide it with the close button or
+// Ctrl+` (a combination no browser claims); reveal it again from the tab in the
+// very top-left corner, or the same shortcut.
 import { useState, useEffect } from "react";
 import { Icon } from "./Icon.jsx";
+import { EDGE_CASES } from "../data/edgecases.js";
 
 const START_KEY = "cyos.startAt";
 export const getStartAt = () => { try { return localStorage.getItem(START_KEY) || "surveys"; } catch (_) { return "surveys"; } };
@@ -14,9 +16,8 @@ const setStartAt = (v) => { try { localStorage.setItem(START_KEY, v); } catch (_
 
 const HIDE_KEY = "cyos.barHidden";
 const getHidden = () => { try { return localStorage.getItem(HIDE_KEY) === "1"; } catch (_) { return false; } };
-const setHidden = (v) => { try { localStorage.setItem(HIDE_KEY, v ? "1" : "0"); } catch (_) {} };
+const saveHidden = (v) => { try { localStorage.setItem(HIDE_KEY, v ? "1" : "0"); } catch (_) {} };
 
-// Where the prototype can open. Keys are stable so they can be stored.
 export const START_POINTS = [
   { key: "surveys", label: "Surveys list" },
   { key: "template-dialog", label: "Choose a template" },
@@ -24,8 +25,7 @@ export const START_POINTS = [
   { key: "builder-scratch", label: "Questionnaire (empty)" },
 ];
 
-// Use cases worth being able to reach in one click — the states that are
-// otherwise fiddly to reproduce by hand when showing the prototype.
+// States that are otherwise fiddly to reproduce by hand while presenting.
 export const USE_CASES = [
   { key: "surveys", label: "Surveys list", desc: "The landing page" },
   { key: "template-dialog", label: "Choose a template", desc: "6 templates, search, start from scratch" },
@@ -41,17 +41,22 @@ export const USE_CASES = [
   { key: "translations", label: "Translations", desc: "Machine-translated strings to review" },
 ];
 
-export function PrototypeBar({ route, onUseCase }) {
+export function PrototypeBar({ onUseCase, edges = {}, onToggleEdge = () => {} }) {
   const [hidden, setHide] = useState(getHidden);
-  const [menu, setMenu] = useState(null); // "cases" | "start" | null
+  const [menu, setMenu] = useState(null); // "cases" | "start" | "edges" | null
   const [start, setStart] = useState(getStartAt);
   const [copied, setCopied] = useState(false);
 
-  // ⌥/Alt+P toggles the bar, so a screenshot can be taken without it.
+  // Ctrl+` toggles the bar — no browser binds it, and it can't collide with
+  // typing because we ignore the shortcut while a field has focus.
   useEffect(() => {
     const h = (e) => {
-      if ((e.altKey || e.metaKey) && (e.key === "p" || e.key === "π")) {
-        e.preventDefault(); setHide(v => { setHidden(!v); return !v; });
+      const t = e.target;
+      const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+      if (typing) return;
+      if (e.ctrlKey && (e.key === "`" || e.code === "Backquote")) {
+        e.preventDefault();
+        setHide(v => { saveHidden(!v); return !v; });
       }
     };
     window.addEventListener("keydown", h);
@@ -60,22 +65,23 @@ export function PrototypeBar({ route, onUseCase }) {
 
   const url = window.location.hash || "#/";
   const copy = () => {
-    const full = window.location.href;
-    try { navigator.clipboard.writeText(full); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch (_) {}
+    try { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch (_) {}
   };
   const pick = (key) => { setMenu(null); onUseCase(key); };
   const pickStart = (key) => { setStart(key); setStartAt(key); setMenu(null); };
+  const offCount = EDGE_CASES.filter(e => edges[e.key] !== e.on).length;
 
   if (hidden) {
     return (
-      <button className="pbar-peek" onClick={() => { setHide(false); setHidden(false); }} title="Show prototype toolbar (⌥P)">
-        <Icon name="sliders" size={14} />
+      <button className="pbar-peek" onClick={() => { setHide(false); saveHidden(false); }}
+        title="Show prototype toolbar (Ctrl+`)">
+        <Icon name="sliders" size={12} />Prototype
       </button>
     );
   }
 
   return (
-    <div className="pbar" onMouseDown={e => e.stopPropagation()}>
+    <div className="pbar">
       <span className="pbar-badge">Prototype</span>
 
       <div className="pbar-menu-wrap">
@@ -87,9 +93,36 @@ export function PrototypeBar({ route, onUseCase }) {
           <>
             <div className="pbar-scrim" onMouseDown={() => setMenu(null)} />
             <div className="pbar-menu">
+              <div className="pbar-menu-head">Jump to a state</div>
               {USE_CASES.map(c => (
                 <button key={c.key} className="pbar-item" onClick={() => pick(c.key)}>
                   <span className="pbar-item-label">{c.label}</span>
+                  <span className="pbar-item-desc">{c.desc}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="pbar-menu-wrap">
+        <button className={"pbar-btn" + (menu === "edges" ? " is-open" : "")}
+          onClick={() => setMenu(m => (m === "edges" ? null : "edges"))}>
+          <Icon name="randomize" size={14} />Edge cases
+          {offCount > 0 && <span className="pbar-count">{offCount}</span>}
+          <Icon name="chevron-down" size={14} />
+        </button>
+        {menu === "edges" && (
+          <>
+            <div className="pbar-scrim" onMouseDown={() => setMenu(null)} />
+            <div className="pbar-menu">
+              <div className="pbar-menu-head">Not every account is the same</div>
+              <div className="pbar-menu-note">Flip these to show a use case both ways. They apply to the survey you have open.</div>
+              {EDGE_CASES.map(c => (
+                <button key={c.key} className={"pbar-item" + (edges[c.key] ? " is-on" : "")}
+                  role="switch" aria-checked={!!edges[c.key]} onClick={() => onToggleEdge(c.key)}>
+                  <span className="pbar-item-label">{c.label}</span>
+                  <span className="pbar-switch" aria-hidden="true" />
                   <span className="pbar-item-desc">{c.desc}</span>
                 </button>
               ))}
@@ -124,8 +157,9 @@ export function PrototypeBar({ route, onUseCase }) {
       <button className="pbar-icon" onClick={copy} title="Copy link to this step" aria-label="Copy link to this step">
         <Icon name={copied ? "check" : "copy"} size={14} />
       </button>
-      <button className="pbar-icon" onClick={() => { setHide(true); setHidden(true); }}
-        title="Hide toolbar (⌥P)" aria-label="Hide toolbar">
+      <span className="pbar-hint">Ctrl+`</span>
+      <button className="pbar-icon" onClick={() => { setHide(true); saveHidden(true); }}
+        title="Hide toolbar (Ctrl+`)" aria-label="Hide toolbar">
         <Icon name="cross" size={14} />
       </button>
     </div>

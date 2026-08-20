@@ -261,7 +261,7 @@ function reconcileLayout(prev, groups) {
   return next;
 }
 
-export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onSaveTranslation, openDialog, onDialogChange }) {
+export function Builder({ survey, variantsEnabled = true, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onSaveTranslation, openDialog, onDialogChange }) {
   const { name, isTemplate, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {} } = survey;
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
@@ -329,7 +329,7 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   // On-page ordering the user can drag-reorder. Lives only here — the Add
   // questions dialog always works from the library order, never this one.
   const [layout, setLayout] = useState(() => groups.map(g => ({ key: g.key, label: g.label, items: g.items })));
-  const sig = selectedIds.join(",") + "|" + pool.map(p => p.id + ":" + (p.topic || "") + ":" + (p.text || "")).join(",")
+  const sig = selectedIds.join(",") + "|" + pool.map(p => p.id + ":" + (p.topic || "") + ":" + (p.text || "") + ":" + (p.required ? "1" : "0")).join(",")
     + "|" + customTopics.join(",") + "|" + Object.entries(qMeta).map(([id, m]) => id + ">" + (m.topic || "")).join(",");
   useEffect(() => { setLayout(prev => reconcileLayout(prev, groups)); }, [sig]); // eslint-disable-line
 
@@ -725,7 +725,7 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
       {settingsQId && (() => {
         const q = pool.find(p => p.id === settingsQId);
         return q ? (
-          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)}
+          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} variantsEnabled={variantsEnabled}
             topicOptions={visibleSections.map(x => ({ value: x.key, label: topicName(x.key) }))}
             onCancel={() => setSettingsQId(null)}
             onSave={({ qMeta: patch, topic }) => {

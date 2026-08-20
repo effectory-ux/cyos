@@ -11,6 +11,7 @@ import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
 import { libraryPool } from "./data/qlib.js";
 import { PrototypeBar, getStartAt } from "./components/PrototypeBar.jsx";
 import { serialize, writeRoute, parse } from "./data/routes.js";
+import { defaultEdges } from "./data/edgecases.js";
 
 // Behaviour the design iterations landed on: removing the last question of a
 // complete theme soft-locks (asks first), and "Add custom question" lives in
@@ -46,6 +47,31 @@ export function App() {
   const [builderDialog, setBuilderDialog] = useState(null);
   // The URL the prototype was opened with, captured during the first render:
   // the route-writing effect below runs before boot and would overwrite it.
+  // Edge-case switches from the prototype toolbar. These are not cosmetic: they
+  // change the survey (org-required questions) and behaviour (soft-lock,
+  // whether approved alternative wordings exist at all).
+  const [edges, setEdges] = useState(defaultEdges);
+  // Which questions were org-required before they were switched off, so the
+  // toggle round-trips exactly instead of guessing.
+  const wasRequired = useRef(null);
+  const toggleEdge = (key) => {
+    const on = !edges[key];
+    setEdges(prev => ({ ...prev, [key]: on }));
+    if (key !== "required") return;
+    // Org-required questions actually leave / return to the survey. Remember
+    // which ones were required so switching back restores exactly those.
+    setSurvey(sv => {
+      if (!sv) return sv;
+      if (!on) {
+        wasRequired.current = new Set(sv.pool.filter(q => q.required).map(q => q.id));
+        return { ...sv, pool: sv.pool.map(q => (q.required ? { ...q, required: false } : q)) };
+      }
+      const back = wasRequired.current;
+      if (!back) return sv;
+      return { ...sv, pool: sv.pool.map(q => (back.has(q.id) ? { ...q, required: true } : q)) };
+    });
+  };
+
   const initialHash = useRef(typeof window !== "undefined" ? window.location.hash : "");
   const [openInBuilder, setOpenInBuilder] = useState(null);
 
@@ -207,7 +233,7 @@ export function App() {
   // Removing the last question of a complete theme breaks its composite score —
   // surface the positive “keep it complete” dialog first (when soft-lock is on).
   const requestRemove = (q) => {
-    if (TWEAKS.integrity === "lock") {
+    if (edges.softlock) {
       const status = themeStatus(survey.selectedIds, survey.pool);
       // A question in several themes can break more than one complete theme.
       const broken = themesOf(q).filter(name => status.find(x => x.name === name)?.complete);
@@ -335,12 +361,13 @@ export function App() {
   }, []); // eslint-disable-line
 
   return (
-    <div className="app">
-      <PrototypeBar route={route} onUseCase={gotoUseCase} />
+    <div className="proto-shell">
+      <PrototypeBar onUseCase={gotoUseCase} edges={edges} onToggleEdge={toggleEdge} />
+      <div className="app">
       {screen === "surveys" && <Sidebar />}
       {screen === "surveys"
         ? <SurveysPage rows={surveysList} onCreate={() => setModal(true)} onDeleteDraft={deleteSurvey} onOpen={openSurvey} />
-        : <Builder survey={survey} onEditQuestions={() => { setEditTab("questions"); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
+        : <Builder survey={survey} variantsEnabled={edges.variants} onEditQuestions={() => { setEditTab("questions"); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveQuestionTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
@@ -348,6 +375,7 @@ export function App() {
             onSaveTranslation={saveTranslation}
             openDialog={openInBuilder} onDialogChange={setBuilderDialog}
             onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }} />}
+      </div>
 
       {modal && <TemplateModal changing={changing} onClose={closeModal} onUse={useTemplate} onScratch={startScratch} />}
       {pending && <NameSurveyDialog suggested={pending.suggested} isTemplate={pending.survey.isTemplate}
@@ -355,7 +383,7 @@ export function App() {
         needsProject={!pending.survey.proj} project={pending.survey.proj}
         onBack={cancelName} onConfirm={confirmName} />}
       {editing && survey && (
-        <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds} tweaks={TWEAKS}
+        <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds} tweaks={{ ...TWEAKS, integrity: edges.softlock ? "lock" : "off" }}
           initialTab={editTab} onClose={() => setEditing(false)} onSave={saveQuestions} />
       )}
       {removeConfirm && <ThemeConfirm q={removeConfirm.q} themes={removeConfirm.themes} pool={survey && survey.pool}

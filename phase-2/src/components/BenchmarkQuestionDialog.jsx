@@ -63,7 +63,7 @@ function PreviewSelect({ value, display, options, explain, big, placeholder, dis
   );
 }
 
-export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], onCancel, onSave }) {
+export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], variantsEnabled = true, onCancel, onSave }) {
   // Staged edits — committed on Save only.
   const [variant, setVariant] = useState(meta.variant);
   const [desc, setDesc] = useState(meta.desc);
@@ -72,7 +72,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   const [topicOpen, setTopicOpen] = useState(false);
 
   const wording = variant || q.text;
-  const variants = variantsOf(q.text);
+  const variants = variantsEnabled ? variantsOf(q.text) : [];
   const descOptions = descVariantsOf(q.text);
   const primary = lang === "en";
   const t = (text) => (primary || !text ? text : autoTranslation(text, lang));
@@ -148,7 +148,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
         <div className="bmq-stage">
           <div className="bmq-preview">
             <div className="bmq-card">
-              <PreviewSelect big value={variant} display={t(wording)} disabled={!primary}
+              <PreviewSelect big value={variant} display={t(wording)} disabled={!primary || variants.length === 0}
                 placeholder="Question text"
                 explain={{ title: "Change benchmarked question", body: "Standard questions can only be replaced with one of the listed alternatives to ensure it fits with the benchmark." }}
                 options={[
