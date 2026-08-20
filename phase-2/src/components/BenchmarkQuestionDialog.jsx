@@ -25,7 +25,7 @@ const SCALE_DOTS = [
 // plus a chevron that reveals the approved alternatives. `explain` renders the
 // dropdown's explanation header; option `value` of undefined = "no selection"
 // (used for removing the description).
-function PreviewSelect({ value, display, options, explain, big, placeholder, disabled, onChange }) {
+function PreviewSelect({ value, display, options, explain, big, placeholder, disabled, footer, onChange }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={"bmq-sel-wrap" + (big ? " is-big" : "")}>
@@ -56,6 +56,7 @@ function PreviewSelect({ value, display, options, explain, big, placeholder, dis
                 </div>
               );
             })}
+            {footer && <div className="bmq-dd-foot">{footer}</div>}
           </div>
         </>
       )}
@@ -63,16 +64,60 @@ function PreviewSelect({ value, display, options, explain, big, placeholder, dis
   );
 }
 
-export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], variantsEnabled = true, onCancel, onSave }) {
+// Leaving the approved wordings behind is a real consequence: the question
+// stops being the benchmarked standard one and becomes your own custom
+// question. Say so once, plainly, and let people opt out of the reminder.
+const SKIP_KEY = "cyos.skipDetachWarn";
+const skipDetachWarn = () => { try { return localStorage.getItem(SKIP_KEY) === "1"; } catch (_) { return false; } };
+
+function DetachWarning({ onCancel, onConfirm }) {
+  const [dontShow, setDontShow] = useState(false);
+  return (
+    <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 82 }}
+      onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
+      <div className="dialog dialog-s" role="dialog" aria-modal="true" aria-labelledby="dw-title">
+        <div className="dialog-header is-sm">
+          <div className="dialog-header-top">
+            <Icon name="alert-triangle" size={20} className="dialog-header-icon is-warning" />
+            <h3 className="dialog-title" id="dw-title">Write your own wording?</h3>
+          </div>
+          <p className="dialog-subtitle">
+            This question becomes <b>your own custom question</b>. You can word it however you like, but it
+            <b> loses its benchmark</b> — results can no longer be compared with other organizations, and it
+            leaves the standard question set.
+          </p>
+        </div>
+        <label className="cb-label-wrap" style={{ display: "flex", alignItems: "center", gap: "var(--spacing-tight)", cursor: "pointer" }}>
+          <span className="cb-wrap"><input type="checkbox" className="cb" checked={dontShow} onChange={e => setDontShow(e.target.checked)} /></span>
+          <span className="text-medium">Don't show this again</span>
+        </label>
+        <div className="dialog-footer">
+          <div className="spacer" />
+          <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
+          <button className="btn btn-primary" onClick={() => onConfirm(dontShow)}>Write my own wording</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], onCancel, onSave, onDetach }) {
   // Staged edits — committed on Save only.
   const [variant, setVariant] = useState(meta.variant);
   const [desc, setDesc] = useState(meta.desc);
   const [topic, setTopic] = useState(topicKey || q.topic);
   const [lang, setLang] = useState("en");
   const [topicOpen, setTopicOpen] = useState(false);
+  const [detachAsk, setDetachAsk] = useState(false);
+  const detach = () => { if (skipDetachWarn()) doDetach(false); else setDetachAsk(true); };
+  const doDetach = (remember) => {
+    if (remember) { try { localStorage.setItem(SKIP_KEY, "1"); } catch (_) {} }
+    setDetachAsk(false);
+    onDetach && onDetach({ text: wording, topic });
+  };
 
   const wording = variant || q.text;
-  const variants = variantsEnabled ? variantsOf(q.text) : [];
+  const variants = variantsOf(q.text);
   const descOptions = descVariantsOf(q.text);
   const primary = lang === "en";
   const t = (text) => (primary || !text ? text : autoTranslation(text, lang));
@@ -148,13 +193,22 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
         <div className="bmq-stage">
           <div className="bmq-preview">
             <div className="bmq-card">
-              <PreviewSelect big value={variant} display={t(wording)} disabled={!primary || variants.length === 0}
+              <PreviewSelect big value={variant} display={t(wording)} disabled={!primary}
                 placeholder="Question text"
                 explain={{ title: "Change benchmarked question", body: "Standard questions can only be replaced with one of the listed alternatives to ensure it fits with the benchmark." }}
                 options={[
                   { value: undefined, label: q.text },
                   ...variants.map(v => ({ value: v, label: v })),
                 ]}
+                footer={
+                  <button className="bmq-dd-detach" onClick={detach}>
+                    <Icon name="edit" size={14} />
+                    <span>
+                      <b>Write your own wording</b>
+                      <span>None of these fit? Word it yourself — it becomes a custom question and loses its benchmark.</span>
+                    </span>
+                  </button>
+                }
                 onChange={setVariant} />
               <PreviewSelect value={desc} display={t(desc)} disabled={!primary}
                 placeholder="Add a description"
@@ -199,6 +253,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
           <button className={"btn btn-primary" + (dirty ? "" : " is-disabled")} disabled={!dirty} onClick={save}>Save</button>
         </div>
       </div>
+      {detachAsk && <DetachWarning onCancel={() => setDetachAsk(false)} onConfirm={doDetach} />}
     </div>
   );
 }

@@ -214,6 +214,32 @@ export function App() {
     (survey.customTopics || []).forEach(k => { if (!keys.includes(k)) keys.push(k); });
     return keys.map(k => ({ value: k, label: ((survey.topicMeta || {})[k] || {}).name || k }));
   };
+  // "Write your own wording": the standard question leaves the questionnaire
+  // (deselected in the library — it is no longer that benchmarked question) and
+  // a CUSTOM question takes its place, same text and topic to start from. Its
+  // survey-scoped meta goes with it; a custom question owns its own text.
+  const detachQuestion = (q, text, topic) => {
+    const id = "c" + Date.now();
+    setSurvey(s => {
+      const qm = { ...(s.qMeta || {}) }; delete qm[q.id];
+      const custom = {
+        id, topic: topic || q.topic, theme: null, themes: undefined, bench: false,
+        type: q.type, custom: true, required: false,
+        text: text || q.text, desc: (s.qMeta || {})[q.id] ? (s.qMeta[q.id].desc || undefined) : undefined,
+        options: q.options,
+      };
+      return {
+        ...s,
+        pool: [...s.pool, custom],
+        selectedIds: [...s.selectedIds.filter(x => x !== q.id), id],
+        qMeta: qm,
+      };
+    });
+    // Straight into the editor — wording is the reason they detached.
+    setEditCustom({ id, topic: topic || q.topic, theme: null, bench: false, type: q.type,
+      custom: true, required: false, text: text || q.text, options: q.options });
+  };
+
   const saveTranslation = (lang, key, text) => setSurvey(s => {
     const forLang = { ...((s.i18nEdits || {})[lang] || {}) };
     if (text && text.trim()) forLang[key] = text.trim(); else delete forLang[key];
@@ -233,7 +259,7 @@ export function App() {
   // Removing the last question of a complete theme breaks its composite score —
   // surface the positive “keep it complete” dialog first (when soft-lock is on).
   const requestRemove = (q) => {
-    if (edges.softlock) {
+    if (TWEAKS.integrity === "lock") {
       const status = themeStatus(survey.selectedIds, survey.pool);
       // A question in several themes can break more than one complete theme.
       const broken = themesOf(q).filter(name => status.find(x => x.name === name)?.complete);
@@ -367,7 +393,7 @@ export function App() {
       {screen === "surveys" && <Sidebar />}
       {screen === "surveys"
         ? <SurveysPage rows={surveysList} onCreate={() => setModal(true)} onDeleteDraft={deleteSurvey} onOpen={openSurvey} />
-        : <Builder survey={survey} variantsEnabled={edges.variants} onEditQuestions={() => { setEditTab("questions"); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
+        : <Builder survey={survey} onDetachQuestion={detachQuestion} onEditQuestions={() => { setEditTab("questions"); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveQuestionTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
@@ -383,7 +409,7 @@ export function App() {
         needsProject={!pending.survey.proj} project={pending.survey.proj}
         onBack={cancelName} onConfirm={confirmName} />}
       {editing && survey && (
-        <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds} tweaks={{ ...TWEAKS, integrity: edges.softlock ? "lock" : "off" }}
+        <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds} tweaks={TWEAKS}
           initialTab={editTab} onClose={() => setEditing(false)} onSave={saveQuestions} />
       )}
       {removeConfirm && <ThemeConfirm q={removeConfirm.q} themes={removeConfirm.themes} pool={survey && survey.pool}

@@ -261,7 +261,7 @@ function reconcileLayout(prev, groups) {
   return next;
 }
 
-export function Builder({ survey, variantsEnabled = true, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onSaveTranslation, openDialog, onDialogChange }) {
+export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onSaveTranslation, openDialog, onDialogChange }) {
   const { name, isTemplate, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {} } = survey;
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
@@ -580,8 +580,13 @@ export function Builder({ survey, variantsEnabled = true, onEditQuestions, onExi
                   A topic carries no "edited" chip: once its questions are in the
                   questionnaire the topic is just structure — the library is only
                   a way to organise questions, not something you stay linked to. */}
-              <div className="qsec-head is-clickable"
-                onClick={e => { if (e.target.closest("button, .menu, [role='menu']")) return; setTopicDialog({ key: s.key }); }}>
+              <div className="qsec-head is-clickable" role="button" tabIndex={0}
+                aria-label={"Topic settings: " + topicName(s.key)}
+                onClick={e => { if (e.target.closest("button, .menu, [role='menu']")) return; setTopicDialog({ key: s.key }); }}
+                onKeyDown={e => {
+                  if (e.target !== e.currentTarget) return; // let buttons inside handle their own keys
+                  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setTopicDialog({ key: s.key }); }
+                }}>
                 <Tooltip label="Drag to reorder" pos="is-left">
                   <button className="ib ib-36 ib-tertiary drag-ib" aria-label="Drag to reorder" draggable
                     onDragStart={startSection(s.key, vi)} onDragEnd={clearDrag} onClick={e => e.preventDefault()}>
@@ -725,9 +730,10 @@ export function Builder({ survey, variantsEnabled = true, onEditQuestions, onExi
       {settingsQId && (() => {
         const q = pool.find(p => p.id === settingsQId);
         return q ? (
-          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} variantsEnabled={variantsEnabled}
+          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)}
             topicOptions={visibleSections.map(x => ({ value: x.key, label: topicName(x.key) }))}
             onCancel={() => setSettingsQId(null)}
+            onDetach={({ text, topic }) => { setSettingsQId(null); onDetachQuestion && onDetachQuestion(q, text, topic); }}
             onSave={({ qMeta: patch, topic }) => {
               onUpdateQMeta && onUpdateQMeta(q.id, patch);
               if (topic) onMoveTopic && onMoveTopic(q.id, topic);

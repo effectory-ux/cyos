@@ -359,7 +359,7 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .aql-sec + .aql-sec { margin-top: var(--spacing-super-loose); }
 /* Topic header (Figma _Topic 6142:15859): 12px gap, only bottom padding (20px),
    a bottom divider. */
-.aql-sechead { display: flex; align-items: center; gap: var(--spacing-base-tight); padding: 0 0 20px;
+.aql-sechead { display: flex; align-items: center; gap: var(--spacing-extra-tight); padding: 0 0 20px;
   border-bottom: 1px solid var(--border-base); }
 .aql-sechead h3 { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
 .aql-count { font-size: 14px; font-weight: 500; color: var(--content-base); white-space: nowrap; }
@@ -1089,3 +1089,27 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
   font-weight: 600; opacity: .35; transition: opacity .15s ease; }
 .pbar-peek:hover, .pbar-peek:focus-visible { opacity: 1; }
 .pbar-peek i { display: flex; }
+
+/* Wording dropdown footer: the way out of the approved list. */
+.bmq-dd-foot { border-top: 1px solid var(--border-base); margin-top: 4px; padding-top: 4px; }
+.bmq-dd-detach { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 10px 12px;
+  border: none; border-radius: var(--radius-base); background: transparent; cursor: pointer;
+  font-family: inherit; text-align: left; color: var(--content-base); }
+.bmq-dd-detach:hover { background: var(--bg-base-hover); }
+.bmq-dd-detach > i { display: flex; flex: none; margin-top: 2px; color: var(--content-secondary); }
+.bmq-dd-detach b { display: block; font-size: 14px; font-weight: 600; }
+.bmq-dd-detach span span { display: block; margin-top: 2px; font-size: 12px; line-height: 1.5;
+  color: var(--content-secondary); }
+
+/* ---- Topic row states (builder) -----------------------------------------
+   The whole row opens the topic's settings, so it needs the same feedback a
+   clickable row gets anywhere else: hover, pressed, and a keyboard focus ring.
+   Buttons inside keep their own states — hovering the kebab or the drag handle
+   shouldn't read as "the row is armed". */
+.qsec-head.is-clickable { cursor: pointer; transition: background var(--motion-fast) var(--ease-standard); }
+.qsec-head.is-clickable:hover { background: var(--bg-base-hover); }
+.qsec-head.is-clickable:active { background: var(--bg-secondary); }
+.qsec-head.is-clickable:has(.ib:hover) { background: var(--bg-base); }
+.qsec-head.is-clickable:focus-visible { outline: 2px solid var(--border-brand); outline-offset: -2px; }
+.qsec-head.is-clickable .qsec-title { transition: color var(--motion-fast) var(--ease-standard); }
+.qsec-head.is-clickable:hover .qsec-title { color: var(--content-brand); }

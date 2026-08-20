@@ -379,7 +379,6 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
                 <div className="aql-sechead tmpl-qsec-head">
                   <h3>{g.label}</h3>
                   <div className="spacer" />
-                  {nSel > 0 && <span className="aql-count">{nSel} selected</span>}
                   <SelectAllTopic allOn={gAll} total={ids.length}
                     onToggle={() => ids.forEach(id => { if (gAll ? sel.has(id) : !sel.has(id)) onToggleQuestion(id); })} />
                 </div>
@@ -694,7 +693,6 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                     <div className="aql-sechead">
                       <h3>{g.label}</h3>
                       <div className="spacer" />
-                      {nSel > 0 && <span className="aql-count">{nSel} selected</span>}
                       <SelectAllTopic allOn={allOn} total={ids.length} onToggle={() => setMany(ids, !allOn)} />
                       <Tooltip label={isColl ? "Expand" : "Collapse"} pos="is-above" float>
                         <button className="ib ib-tertiary aql-sec-toggle" aria-label={isColl ? "Expand questions" : "Collapse questions"}
