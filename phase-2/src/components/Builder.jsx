@@ -535,7 +535,12 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                   </>
                 )}
               </div>
-              <button className="btn btn-primary" style={{ flex: "none" }} onClick={onEditQuestions}><Icon name="plus" size={16} />Select questions</button>
+              <div className="ov-actions">
+                <button className="btn btn-secondary" onClick={() => setTopicDialog({ creating: true })}>
+                  <Icon name="plus" size={16} />Add topic</button>
+                <button className="btn btn-primary" onClick={onEditQuestions}>
+                  <Icon name="plus" size={16} />Select questions</button>
+              </div>
             </div>
             {chosen.length > 0 && activeTemplates.length > 0 && (
               <div className="ov-tags">
@@ -662,12 +667,6 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           </div>
 
           {chosen.length > 0 && (
-            <button className="add-topic-btn" onClick={() => setTopicDialog({ creating: true })}>
-              <Icon name="plus" size={16} />Add topic
-            </button>
-          )}
-
-          {chosen.length > 0 && (
             <div style={{ marginTop: "var(--spacing-extra-loose)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "var(--spacing-loose)", textAlign: "center" }}>
               <div className="text-l5" style={{ color: "var(--content-secondary)" }}>Want to add or remove questions?</div>
               <div className="text-medium text-subdued">Open the question editor to select questions or write your own.</div>
@@ -730,7 +729,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
       {settingsQId && (() => {
         const q = pool.find(p => p.id === settingsQId);
         return q ? (
-          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)}
+          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]}
             topicOptions={visibleSections.map(x => ({ value: x.key, label: topicName(x.key) }))}
             onCancel={() => setSettingsQId(null)}
             onDetach={({ text, topic }) => { setSettingsQId(null); onDetachQuestion && onDetachQuestion(q, text, topic); }}

@@ -22,10 +22,9 @@ const SCALE_DOTS = [
 ];
 
 // A select rendered inside the preview card: looks like the content it holds,
-// plus a chevron that reveals the approved alternatives. `explain` renders the
-// dropdown's explanation header; option `value` of undefined = "no selection"
-// (used for removing the description).
-function PreviewSelect({ value, display, options, explain, big, placeholder, disabled, footer, onChange }) {
+// plus a chevron that reveals the approved alternatives. An option `value` of
+// undefined means "no selection" (used for removing the description).
+function PreviewSelect({ value, display, options, big, placeholder, disabled, footer, onChange }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={"bmq-sel-wrap" + (big ? " is-big" : "")}>
@@ -39,12 +38,6 @@ function PreviewSelect({ value, display, options, explain, big, placeholder, dis
         <>
           <div className="cq-menu-scrim" onMouseDown={() => setOpen(false)} />
           <div className="bmq-dropdown" role="listbox">
-            {explain && (
-              <div className="bmq-dd-explain">
-                <div className="bmq-dd-explain-title">{explain.title}</div>
-                <div>{explain.body}</div>
-              </div>
-            )}
             {options.map((opt, i) => {
               const on = (opt.value ?? undefined) === (value ?? undefined);
               return (
@@ -70,8 +63,35 @@ function PreviewSelect({ value, display, options, explain, big, placeholder, dis
 const SKIP_KEY = "cyos.skipDetachWarn";
 const skipDetachWarn = () => { try { return localStorage.getItem(SKIP_KEY) === "1"; } catch (_) { return false; } };
 
-function DetachWarning({ onCancel, onConfirm }) {
+function DetachWarning({ theme, themeCount, onCancel, onConfirm }) {
   const [dontShow, setDontShow] = useState(false);
+  // Wording your own question also drops it out of its theme. When it is the
+  // last question holding that theme complete, lead with the theme (the same
+  // framing as the theme guardrail) — that is the bigger loss.
+  if (theme) return (
+    <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 82 }}
+      onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
+      <div className="dialog dialog-s" role="dialog" aria-modal="true" aria-labelledby="dwt-title">
+        <div className="dialog-header is-sm">
+          <h3 className="dialog-title" id="dwt-title">Keep the “{theme}” theme complete?</h3>
+          <p className="dialog-subtitle">
+            This is the last question holding the theme complete. You need all {themeCount} questions to
+            get its composite score. Writing your own wording takes this question out of the theme, and
+            out of the benchmark.
+          </p>
+        </div>
+        <label className="cb-label-wrap" style={{ display: "flex", alignItems: "center", gap: "var(--spacing-tight)", cursor: "pointer" }}>
+          <span className="cb-wrap"><input type="checkbox" className="cb" checked={dontShow} onChange={e => setDontShow(e.target.checked)} /></span>
+          <span className="text-medium">Don't show this again</span>
+        </label>
+        <div className="dialog-footer">
+          <div className="spacer" />
+          <button className="btn btn-secondary" onClick={() => onConfirm(dontShow)}>Write my own anyway</button>
+          <button className="btn btn-primary" onClick={onCancel}>Keep question</button>
+        </div>
+      </div>
+    </div>
+  );
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 82 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
@@ -82,9 +102,8 @@ function DetachWarning({ onCancel, onConfirm }) {
             <h3 className="dialog-title" id="dw-title">Write your own wording?</h3>
           </div>
           <p className="dialog-subtitle">
-            This question becomes <b>your own custom question</b>. You can word it however you like, but it
-            <b> loses its benchmark</b> — results can no longer be compared with other organizations, and it
-            leaves the standard question set.
+            You can word it however you like. It becomes your own custom question and <b>loses its
+            benchmark</b>, so its results can no longer be compared with other organizations.
           </p>
         </div>
         <label className="cb-label-wrap" style={{ display: "flex", alignItems: "center", gap: "var(--spacing-tight)", cursor: "pointer" }}>
@@ -101,7 +120,7 @@ function DetachWarning({ onCancel, onConfirm }) {
   );
 }
 
-export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], onCancel, onSave, onDetach }) {
+export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, onCancel, onSave, onDetach }) {
   // Staged edits — committed on Save only.
   const [variant, setVariant] = useState(meta.variant);
   const [desc, setDesc] = useState(meta.desc);
@@ -109,7 +128,11 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   const [lang, setLang] = useState("en");
   const [topicOpen, setTopicOpen] = useState(false);
   const [detachAsk, setDetachAsk] = useState(false);
-  const detach = () => { if (skipDetachWarn()) doDetach(false); else setDetachAsk(true); };
+  // A description can be one of the approved ones OR free text (it clarifies the
+  // question, it doesn't carry the benchmark), so it gets the same escape hatch
+  // as the wording — minus the consequence.
+  const [descFree, setDescFree] = useState(() => !!meta.desc && !descVariantsOf(q.text).includes(meta.desc));
+  const detach = () => { if (skipDetachWarn() && !completesTheme) doDetach(false); else setDetachAsk(true); };
   const doDetach = (remember) => {
     if (remember) { try { localStorage.setItem(SKIP_KEY, "1"); } catch (_) {} }
     setDetachAsk(false);
@@ -134,7 +157,12 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
     });
   };
 
+  // Detaching pulls the question out of its theme too. If it is the last one
+  // holding that theme complete, the warning leads with the theme instead.
+  const completesTheme = !!(q.theme && themeInfo && themeInfo.total > 0 && themeInfo.kept >= themeInfo.total);
   const topicLabel = (topicOptions.find(o => o.value === topic) || {}).label || topic;
+  // Item 6: the dialog is titled by the thing itself (primary-language value).
+  const title = q.text;
 
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 70 }}
@@ -144,8 +172,8 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-          <h2 className="dialog-title" id="bmq-title">Benchmarked question</h2>
-          <p className="dialog-subtitle">Questions that are defined by our professionals and are compared to relevant benchmarks.</p>
+          <h2 className="dialog-title" id="bmq-title">{title}</h2>
+          <p className="dialog-subtitle">Benchmarked question, defined by our professionals and compared to relevant benchmarks.</p>
         </div>
 
         <div className="bmq-selects">
@@ -193,39 +221,81 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
         <div className="bmq-stage">
           <div className="bmq-preview">
             <div className="bmq-card">
-              <PreviewSelect big value={variant} display={t(wording)} disabled={!primary}
-                placeholder="Question text"
-                explain={{ title: "Change benchmarked question", body: "Standard questions can only be replaced with one of the listed alternatives to ensure it fits with the benchmark." }}
-                options={[
-                  { value: undefined, label: q.text },
-                  ...variants.map(v => ({ value: v, label: v })),
-                ]}
-                footer={
-                  <button className="bmq-dd-detach" onClick={detach}>
-                    <Icon name="edit" size={14} />
-                    <span>
-                      <b>Write your own wording</b>
-                      <span>None of these fit? Word it yourself — it becomes a custom question and loses its benchmark.</span>
-                    </span>
+              {/* A translation is derived from the primary language, so it is
+                  shown as text: offering a select there would imply the
+                  alternatives exist per language, which they don't. */}
+              {primary ? (
+                <PreviewSelect big value={variant} display={wording} placeholder="Question text"
+                  options={[
+                    { value: undefined, label: q.text },
+                    ...variants.map(v => ({ value: v, label: v })),
+                  ]}
+                  footer={
+                    <button className="bmq-dd-detach" onClick={detach}>
+                      <Icon name="edit" size={14} />
+                      <span>
+                        <b>Write your own wording</b>
+                        <span>Becomes a custom question. Loses the benchmark.</span>
+                      </span>
+                    </button>
+                  }
+                  onChange={setVariant} />
+              ) : (
+                <div className="bmq-locked is-big">{t(wording)}</div>
+              )}
+
+              {primary ? (descFree ? (
+                <div className="bmq-descfree">
+                  <textarea className="bmq-descfield" rows={2} value={desc || ""} autoFocus
+                    placeholder="Write a description for participants" aria-label="Description"
+                    onChange={e => setDesc(e.target.value)} />
+                  <button className="bmq-descfree-back" onClick={() => { setDescFree(false); setDesc(undefined); }}>
+                    Use an approved description
                   </button>
-                }
-                onChange={setVariant} />
-              <PreviewSelect value={desc} display={t(desc)} disabled={!primary}
-                placeholder="Add a description"
-                explain={{ title: "Change description", body: "Descriptions clarify the question for participants. Choose one of the approved descriptions — they don't affect the benchmark." }}
-                options={[
-                  ...descOptions.map(d => ({ value: d, label: d })),
-                  { value: undefined, label: "No description", muted: true },
-                ]}
-                onChange={setDesc} />
-              <div className="bmq-scale">
-                <div className="bmq-scale-row">
-                  <span className="bmq-scale-end">{t(SCALE_LABELS[0])}</span>
-                  {SCALE_DOTS.map((c, i) => <span key={i} className="bmq-dot" style={{ "--dot": c }} />)}
-                  <span className="bmq-scale-end">{t(SCALE_LABELS[4])}</span>
                 </div>
-                <span className="bmq-idk">{t("I don't know")}</span>
-              </div>
+              ) : (
+                <PreviewSelect value={desc} display={desc} placeholder="Add a description"
+                  options={[
+                    ...descOptions.map(d => ({ value: d, label: d })),
+                    { value: undefined, label: "No description", muted: true },
+                  ]}
+                  footer={
+                    <button className="bmq-dd-detach" onClick={() => { setDescFree(true); setDesc(""); }}>
+                      <Icon name="edit" size={14} />
+                      <span>
+                        <b>Write your own description</b>
+                        <span>Free text. The benchmark is not affected.</span>
+                      </span>
+                    </button>
+                  }
+                  onChange={setDesc} />
+              )) : ((desc || "").trim() ? <div className="bmq-locked">{t(desc)}</div> : null)}
+
+              {/* The real answer type, with every point named — answer
+                  categories are participant-facing text, so they translate too. */}
+              {q.type === "multiple" ? (
+                <div className="bmq-opts">
+                  {(q.options || []).map((o, i) => (
+                    <div key={i} className="bmq-opt"><span className="bmq-opt-radio" aria-hidden="true" />{t(o)}</div>
+                  ))}
+                </div>
+              ) : q.type === "text" ? (
+                <div className="bmq-textbox">{t("Share your thoughts")}</div>
+              ) : (
+                <div className="bmq-scale">
+                  <div className="bmq-scale-row">
+                    <span className="bmq-scale-end">{t(SCALE_LABELS[0])}</span>
+                    {SCALE_DOTS.map((c, i) => (
+                      <Tooltip key={i} label={t(SCALE_LABELS[i])}>
+                        <span className="bmq-dot" style={{ "--dot": c }} tabIndex={0}
+                          role="img" aria-label={t(SCALE_LABELS[i])} />
+                      </Tooltip>
+                    ))}
+                    <span className="bmq-scale-end">{t(SCALE_LABELS[4])}</span>
+                  </div>
+                  <span className="bmq-idk">{t("I don't know")}</span>
+                </div>
+              )}
             </div>
           </div>
           <div className="bmq-langs">
@@ -253,7 +323,8 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
           <button className={"btn btn-primary" + (dirty ? "" : " is-disabled")} disabled={!dirty} onClick={save}>Save</button>
         </div>
       </div>
-      {detachAsk && <DetachWarning onCancel={() => setDetachAsk(false)} onConfirm={doDetach} />}
+      {detachAsk && <DetachWarning onCancel={() => setDetachAsk(false)} onConfirm={doDetach}
+        theme={completesTheme ? q.theme : undefined} themeCount={themeInfo && themeInfo.total} />}
     </div>
   );
 }

@@ -40,10 +40,9 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-          <h2 className="dialog-title" id="tpd-title">{creating ? "Add topic" : "Topic"}</h2>
+          <h2 className="dialog-title" id="tpd-title">{creating ? "Add topic" : (initialName || "Topic")}</h2>
           <p className="dialog-subtitle">
             Topics organize the questions in this survey and introduce them to participants. They don't affect themes or benchmarks.
-            {!creating && !isCustom && " Renaming applies to this survey only."}
           </p>
         </div>
 
