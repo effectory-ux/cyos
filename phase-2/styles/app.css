@@ -107,8 +107,8 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .cq-lang-country { font-size: 12px; font-weight: 400; line-height: 19.2px; color: var(--content-secondary); }
 
 /* Flag: 20px box holding an 18.33 x 13.34 leaf, exactly as the DS country marks. */
-.cq-flag { flex: none; display: grid; place-items: center; width: 20px; height: 20px; }
-.cq-flag img { display: block; width: 18.33px; height: 13.34px; border-radius: 1px; object-fit: cover;
+.cq-flag, .lang-flag { flex: none; display: grid; place-items: center; width: 20px; height: 20px; }
+.cq-flag img, .lang-flag img { display: block; width: 18.33px; height: 13.34px; border-radius: 1px; object-fit: cover;
   box-shadow: 0 0 0 1px #f5f7fa; /* neutral/N4 — the hairline the DS flags carry */ }
 
 /* Anything mid-translation pulses — quieter than a spinner, and it marks the
@@ -661,26 +661,6 @@ button.sel-btn.cq-sel { font-size: 14px; }
 @media (max-width: 760px) { .srow-proj span { max-width: 160px; } .spill { width: auto; } }
 
 /* ---- Phase 2: survey-scoped customization ------------------------------- */
-/* "Edited" provenance chip — quiet grey, only shown on diverged items. */
-.tag-edited { border-radius: var(--radius-base); max-width: 140px; border: 1px solid var(--border-white);
-  background: var(--bg-tertiary); color: var(--content-secondary); }
-.tag-edited i { display: flex; width: 10px; height: 10px; }
-.tag-edited.is-interactive { cursor: pointer; transition: filter var(--motion-fast) var(--ease-standard); }
-.tag-edited.is-interactive:hover { filter: brightness(0.94); }
-.tag-edited.is-interactive:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 1px; }
-
-/* Provenance popover (opened from the chip) */
-.prov-scrim { position: fixed; inset: 0; z-index: 90; }
-.prov-pop { position: fixed; z-index: 91; width: 280px; background: var(--bg-base);
-  border: 1px solid var(--border-base); border-radius: var(--radius-md); box-shadow: var(--sh-popovers);
-  padding: var(--spacing-base); display: flex; flex-direction: column; gap: 6px; }
-.prov-title { font-size: 14px; font-weight: 600; color: var(--content-base); }
-.prov-line { font-size: 13px; line-height: 1.5; color: var(--content-secondary); }
-.prov-scope { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--content-subtle);
-  padding-top: 2px; }
-.prov-scope i { display: flex; flex: none; }
-.prov-reset { align-self: flex-start; margin-top: 4px; }
-
 /* Topic + question descriptions in the questionnaire view */
 .qsec-desc { padding: 0 var(--spacing-loose) var(--spacing-base) 60px; margin-top: -6px; }
 .qsec-desc-text { font-size: 13.5px; line-height: 1.6; color: var(--content-secondary); cursor: text;
@@ -943,9 +923,6 @@ button.sel-btn.cq-sel { font-size: 14px; }
   border-radius: var(--radius-md); background: none; cursor: pointer; font-family: inherit; text-align: left; }
 .bmq-lang:hover { background: var(--bg-base-hover); }
 .bmq-lang.is-selected { background: var(--bg-brand-subtle-selected); }
-.bmq-lang-badge { width: 22px; height: 22px; flex: none; display: grid; place-items: center;
-  border-radius: var(--radius-base); background: var(--bg-tertiary); color: var(--content-secondary);
-  font-size: 9.5px; font-weight: 700; letter-spacing: .02em; }
 .bmq-lang-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .bmq-lang-text b { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
 .bmq-lang-text span { font-size: 12px; line-height: 19.2px; color: var(--content-secondary); }
@@ -1045,3 +1022,7 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .tpv-footer { justify-content: center; }
 /* .btn-big is the DS Button Big; the reference pins it to 326px. */
 .tpv-cta { min-width: 326px; justify-content: center; }
+
+/* "Move to topic" flyout — a nested .menu beside the row menu, rendered in a
+   fixed layer so cards/scroll containers can't clip it. */
+.qrow-submenu { position: fixed; z-index: 1010; max-height: 320px; overflow-y: auto; }

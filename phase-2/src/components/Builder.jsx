@@ -1,7 +1,8 @@
 // Builder.jsx — Questionnaire step, full-width (Engage DS)
 import { useState, useEffect, useRef, Fragment } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, EditedTag, Tooltip, RequiredMarker, themesOf } from "./shared.jsx";
+import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, Tooltip, RequiredMarker, themesOf } from "./shared.jsx";
 import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
@@ -111,8 +112,22 @@ function TopNav({ name, onRename, onTranslations }) {
 
 function BuilderRow({ q, meta, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, themeInfo, onOpenTheme, onDragStart, onDragEnd }) {
   const [menu, setMenu] = useState(false);
-  const [view, setView] = useState("main"); // "main" | "move" (topic picker)
-  const close = () => { setMenu(false); setView("main"); };
+  // "Move to topic" opens a nested submenu BESIDE the menu (DS pattern: a
+  // trailing .menu-chevron item flying out a second .menu) instead of swapping
+  // the menu's contents. Rendered in a fixed layer so no card/scroll ancestor
+  // can clip it; `subAt` holds the measured position.
+  const [subAt, setSubAt] = useState(null);
+  const moveRef = useRef(null);
+  const close = () => { setMenu(false); setSubAt(null); };
+  const openSub = () => {
+    const el = moveRef.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    const W = 240, gap = 4;
+    // Flyout to the left of the menu (it sits at the row's right edge); flip
+    // right if there isn't room, and keep it inside the viewport vertically.
+    const left = r.left - W - gap >= 8 ? r.left - W - gap : Math.min(r.right + gap, window.innerWidth - W - 8);
+    setSubAt({ left, top: Math.min(r.top - 8, window.innerHeight - 260), width: W });
+  };
   const hasMove = canUp || canDown;
   const effTopic = (meta && meta.topic) || q.topic;
   const otherTopics = (topics || []).filter(t => t.key !== effTopic);
@@ -121,11 +136,6 @@ function BuilderRow({ q, meta, onRemove, onEdit, onSettings, onResetDesc, onMove
   // shown and edited in the question settings dialog; the row only carries the
   // provenance chip.
   const variant = !q.custom && meta ? meta.variant : undefined;
-  const edited = !q.custom && !!((meta && meta.desc) || variant);
-  const editLines = [
-    ...(variant ? [<>Alternative wording — original: <b>{q.text}</b>. Benchmark comparisons stay valid.</>] : []),
-    ...(meta && meta.desc ? ["A description was added to this question."] : []),
-  ];
   // The whole row opens the question's settings — clicks on interactive
   // children (drag handle, tags, menus, inputs) keep their own behaviour.
   const rowClick = (e) => {
@@ -144,11 +154,6 @@ function BuilderRow({ q, meta, onRemove, onEdit, onSettings, onResetDesc, onMove
         <div style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{variant || q.text}</div>
       </div>
       <div className="qrow-meta">
-        {edited && (
-          <EditedTag label={variant && !(meta && meta.desc) ? "Alternative" : "Edited"} title="Edited for this survey"
-            lines={editLines}
-            resetLabel="Reset to standard" onReset={onResetDesc} />
-        )}
         {q.theme
           ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-left"
               onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
@@ -162,21 +167,6 @@ function BuilderRow({ q, meta, onRemove, onEdit, onSettings, onResetDesc, onMove
             <>
               <div style={{ position: "fixed", inset: 0, zIndex: 1 }} onMouseDown={close} />
               <div className="menu" role="menu" style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, width: 240, zIndex: 2 }}>
-                {view === "move" ? (
-                  <>
-                    <div className="menu-item" role="menuitem" onClick={() => setView("main")}>
-                      <span className="menu-item-icon"><Icon name="chevron-left" size={16} /></span>
-                      <span className="menu-item-body"><span className="menu-item-title">Move to topic</span></span>
-                    </div>
-                    <div className="menu-divider" />
-                    {otherTopics.map(t => (
-                      <div key={t.key} className="menu-item" role="menuitem" onClick={() => { close(); onMoveTopic && onMoveTopic(t.key); }}>
-                        <span className="menu-item-body"><span className="menu-item-title">{t.label}</span></span>
-                      </div>
-                    ))}
-                    {otherTopics.length === 0 && <div className="menu-item is-disabled"><span className="menu-item-body"><span className="menu-item-title">No other topics</span></span></div>}
-                  </>
-                ) : (
                   <>
                     {q.custom ? (
                       <div className="menu-item" role="menuitem" onClick={() => { close(); onEdit && onEdit(q); }}>
@@ -202,7 +192,9 @@ function BuilderRow({ q, meta, onRemove, onEdit, onSettings, onResetDesc, onMove
                         <span className="menu-item-body"><span className="menu-item-title">Move down</span></span>
                       </div>
                     )}
-                    <div className="menu-item" role="menuitem" onClick={() => setView("move")}>
+                    <div ref={moveRef} className={"menu-item" + (subAt ? " is-hover" : "")} role="menuitem"
+                      aria-haspopup="menu" aria-expanded={!!subAt}
+                      onMouseEnter={openSub} onClick={() => (subAt ? setSubAt(null) : openSub())}>
                       <span className="menu-item-icon"><Icon name="import-export" size={16} /></span>
                       <span className="menu-item-body"><span className="menu-item-title">Move to topic</span></span>
                       <span className="menu-chevron"><Icon name="chevron-right" size={16} /></span>
@@ -225,8 +217,22 @@ function BuilderRow({ q, meta, onRemove, onEdit, onSettings, onResetDesc, onMove
                       </div>
                     )}
                   </>
-                )}
               </div>
+              {subAt && createPortal(
+                <div className="menu qrow-submenu" role="menu" aria-label="Move to topic"
+                  style={{ left: subAt.left, top: subAt.top, width: subAt.width }}
+                  onMouseLeave={() => setSubAt(null)}>
+                  <div className="menu-group-lbl">Move to topic</div>
+                  {otherTopics.map(t => (
+                    <div key={t.key} className="menu-item" role="menuitem"
+                      onClick={() => { close(); onMoveTopic && onMoveTopic(t.key); }}>
+                      <span className="menu-item-body"><span className="menu-item-title">{t.label}</span></span>
+                    </div>
+                  ))}
+                  {otherTopics.length === 0 && (
+                    <div className="menu-item is-disabled"><span className="menu-item-body"><span className="menu-item-title">No other topics</span></span></div>
+                  )}
+                </div>, document.body)}
             </>
           )}
         </div>
@@ -552,28 +558,18 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
             {zone(vi)}
             <section data-key={s.key}
               className={"qsec" + (locked ? " is-locked" : "") + (isDropTarget ? " is-drop-target" : "") + (secDragging ? " is-dragging" : "") + (enteringSecs.has(s.key) ? " is-entering" : "")}>
-              <div className="qsec-head">
+              {/* The whole topic row opens its settings, like a question row.
+                  A topic carries no "edited" chip: once its questions are in the
+                  questionnaire the topic is just structure — the library is only
+                  a way to organise questions, not something you stay linked to. */}
+              <div className="qsec-head is-clickable"
+                onClick={e => { if (e.target.closest("button, .menu, [role='menu']")) return; setTopicDialog({ key: s.key }); }}>
                 <Tooltip label="Drag to reorder" pos="is-left">
                   <button className="ib ib-36 ib-tertiary drag-ib" aria-label="Drag to reorder" draggable
                     onDragStart={startSection(s.key, vi)} onDragEnd={clearDrag} onClick={e => e.preventDefault()}>
                     <Icon name="drag-drop" size={16} /></button>
                 </Tooltip>
-                <h2 className="qsec-title is-clickable" role="button" tabIndex={0}
-                  onClick={() => setTopicDialog({ key: s.key })}
-                  onKeyDown={e => { if (e.key === "Enter") setTopicDialog({ key: s.key }); }}>{topicName(s.key)}</h2>
-                {customTopicSet.has(s.key) ? (
-                  <Tooltip label="Topic created for this survey">
-                    <span className="tag tag-custom-q"><Icon name="edit-inline" size={10} /><span className="tag-ellip">Custom</span></span>
-                  </Tooltip>
-                ) : (topicMeta[s.key] && (topicMeta[s.key].name || topicMeta[s.key].desc)) ? (
-                  <EditedTag title="Edited for this survey"
-                    lines={[
-                      ...(topicMeta[s.key].name ? [<>Original name: <b>{s.key}</b></>] : []),
-                      ...(topicMeta[s.key].desc ? ["A description was added to this topic."] : []),
-                    ]}
-                    resetLabel={topicMeta[s.key].name ? "Reset name" : "Remove description"}
-                    onReset={() => onUpdateTopicMeta && onUpdateTopicMeta(s.key, topicMeta[s.key].name ? { name: undefined } : { desc: undefined })} />
-                ) : null}
+                <h2 className="qsec-title">{topicName(s.key)}</h2>
                 <div className="spacer" />
                 <span className="qsec-count">{s.items.length} {s.items.length === 1 ? "question" : "questions"}</span>
                 <div className="qsec-menu-wrap">

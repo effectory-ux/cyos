@@ -10,7 +10,7 @@ import { useState } from "react";
 import { Icon } from "./Icon.jsx";
 import { QTypeIcon, Tooltip } from "./shared.jsx";
 import { QTYPES, SCALE_LABELS } from "../data/data.js";
-import { LANGUAGES, autoTranslation } from "../data/i18n.js";
+import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 import { variantsOf, descVariantsOf } from "../data/variants.js";
 
 const SCALE_DOTS = [
@@ -90,7 +90,6 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   };
 
   const topicLabel = (topicOptions.find(o => o.value === topic) || {}).label || topic;
-  const langMeta = { en: "United Kingdom", nl: "Netherlands", de: "Germany" };
 
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 70 }}
@@ -179,15 +178,15 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             <div className="bmq-langs-head">Primary language</div>
             {LANGUAGES.filter(l => l.primary).map(l => (
               <button key={l.code} className={"bmq-lang" + (lang === l.code ? " is-selected" : "")} onClick={() => setLang(l.code)}>
-                <span className="bmq-lang-badge">{l.code.toUpperCase()}</span>
-                <span className="bmq-lang-text"><b>{l.label}</b><span>{langMeta[l.code]}</span></span>
+                <span className="lang-flag"><img src={flagSrc(l.flag)} alt="" /></span>
+                <span className="bmq-lang-text"><b>{l.label}</b><span>{l.country}</span></span>
               </button>
             ))}
             <div className="bmq-langs-head" style={{ paddingTop: 16 }}>Translations ({LANGUAGES.length - 1})</div>
             {LANGUAGES.filter(l => !l.primary).map(l => (
               <button key={l.code} className={"bmq-lang" + (lang === l.code ? " is-selected" : "")} onClick={() => setLang(l.code)}>
-                <span className="bmq-lang-badge">{l.code.toUpperCase()}</span>
-                <span className="bmq-lang-text"><b>{l.label}</b><span>{langMeta[l.code]}</span></span>
+                <span className="lang-flag"><img src={flagSrc(l.flag)} alt="" /></span>
+                <span className="bmq-lang-text"><b>{l.label}</b><span>{l.country}</span></span>
               </button>
             ))}
             {!primary && <div className="bmq-lang-note">Translations of benchmarked questions are provided by Effectory. Change the wording in the primary language.</div>}

@@ -8,7 +8,7 @@
 import { useState } from "react";
 import { Icon } from "./Icon.jsx";
 import { Tooltip } from "./shared.jsx";
-import { LANGUAGES, autoTranslation } from "../data/i18n.js";
+import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 
 export function TopicDialog({ creating, name: initialName, desc: initialDesc, originalName, isCustom, questionCount = 0, i18nEdits = {}, stringKeyBase, onCancel, onSave }) {
   const [name, setName] = useState(initialName || "");
@@ -30,7 +30,6 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
     || (desc.trim() && !reviewed(code, "desc"))
   );
 
-  const langMeta = { en: "United Kingdom", nl: "Netherlands", de: "Germany" };
   const save = () => { if (valid && dirty) onSave({ name: name.trim(), desc: desc.trim() || undefined }); };
 
   return (
@@ -73,15 +72,15 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
             <div className="bmq-langs-head">Primary language</div>
             {LANGUAGES.filter(l => l.primary).map(l => (
               <button key={l.code} className={"bmq-lang" + (lang === l.code ? " is-selected" : "")} onClick={() => setLang(l.code)}>
-                <span className="bmq-lang-badge">{l.code.toUpperCase()}</span>
-                <span className="bmq-lang-text"><b>{l.label}</b><span>{langMeta[l.code]}</span></span>
+                <span className="lang-flag"><img src={flagSrc(l.flag)} alt="" /></span>
+                <span className="bmq-lang-text"><b>{l.label}</b><span>{l.country}</span></span>
               </button>
             ))}
             <div className="bmq-langs-head" style={{ paddingTop: 16 }}>Translations ({LANGUAGES.length - 1})</div>
             {LANGUAGES.filter(l => !l.primary).map(l => (
               <button key={l.code} className={"bmq-lang" + (lang === l.code ? " is-selected" : "")} onClick={() => setLang(l.code)}>
-                <span className="bmq-lang-badge">{l.code.toUpperCase()}</span>
-                <span className="bmq-lang-text"><b>{l.label}</b><span>{langMeta[l.code]}</span></span>
+                <span className="lang-flag"><img src={flagSrc(l.flag)} alt="" /></span>
+                <span className="bmq-lang-text"><b>{l.label}</b><span>{l.country}</span></span>
                 {needsReview(l.code) && (
                   <Tooltip label="Machine translated — review in Translations">
                     <span className="bmq-lang-alert"><Icon name="alert-circle" size={16} /></span>
