@@ -191,7 +191,7 @@ button.sel-btn.cq-sel { font-size: 14px; }
 /* ---- template preview (full takeover inside the template dialog) ---- */
 .tpv-topbar { display: flex; align-items: center; justify-content: space-between; }
 .tpv-hero { display: flex; align-items: center; gap: var(--spacing-base); }
-.tpv-illus { width: 96px; height: 96px; border-radius: var(--radius-full); flex: none; display: grid; place-items: center; }
+.tpv-illus { width: 64px; height: 64px; flex: none; }
 .tpv-meta { font-size: 14px; color: var(--content-secondary); margin-top: 4px; }
 .tpv-section-title { font-size: 16px; font-weight: 600; color: var(--content-base); margin: 0 0 var(--spacing-base-tight); }
 .tpv-why { display: inline; }
@@ -1000,20 +1000,40 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .tpl-desc { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .tpl-recommended { position: absolute; top: var(--spacing-base); right: var(--spacing-base); z-index: 1; }
 
-/* ---- Template selection modal — layout only ------------------------------
-   Surfaces, type and controls come from the DS: .dialog/.dialog-l (1080px),
-   .dialog-header/.dialog-body/.dialog-footer, .search-wrap + input.srch,
-   .inline-notif, .card* (the template cards) and the .text-* helpers. The
-   rules below only size the dialog and place app content inside it. */
+/* ---- Create-survey dialog — layout only ---------------------------------
+   Follows the design-system reference prototype `create-survey-dialog`.
+   Surfaces, type and controls are DS: .dialog/.dialog-l, .dialog-header/
+   body/footer, .search-wrap + input.srch, .inline-notif, .card*, .tf-*,
+   .slt-*, .btn-big and the .text-* helpers. Only sizing/placement lives here.
+   The grid-auto-rows and flex-shrink rules are load-bearing per the
+   reference's "layout gotchas" — don't clean them up. */
 .tpl-dialog { height: min(880px, calc(100vh - 64px)); }
 /* Keep the title clear of the DS .dialog-close (28px at top/right 15px). */
 .dialog-header.has-close { padding-right: var(--spacing-extra-loose); }
 .tpl-toolbar { display: flex; gap: var(--spacing-base-tight); align-items: center; }
 .tpl-toolbar .search-wrap { flex: 1; }
+.tpl-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-loose); grid-auto-rows: min-content; }
+.tpl-card { position: relative; }
+.tpl-card .card-body { flex: 1; gap: var(--spacing-tight); }
+.tpl-card-img { width: 64px; height: 64px; flex-shrink: 0; margin-bottom: var(--spacing-tight); }
+.tpl-name, .tpl-meta, .tpl-desc { flex-shrink: 0; }
 .tpl-meta { color: var(--content-secondary); }
-.tpl-empty { padding: var(--spacing-super-extra-loose) 0; text-align: center; color: var(--content-secondary); }
+.tpl-desc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+/* Both actions share the card width, 16px apart (reference). */
+.tpl-actions { gap: var(--spacing-base); }
+.tpl-actions .btn { flex: 1; }
+.tpl-empty { display: flex; flex-direction: column; align-items: center; gap: var(--spacing-loose);
+  padding: var(--spacing-extra-loose) 0; text-align: center; }
+.tpl-empty img { width: 380px; max-width: 100%; flex-shrink: 0; }
 .tpl-footnote { justify-content: center; gap: var(--spacing-tight); font-size: 14px; color: var(--content-secondary); }
 .tpl-footnote i { color: var(--content-info); display: flex; flex: none; }
+
+/* "Let's get started" — name + (conditional) project */
+.ns-body { display: flex; flex-direction: column; gap: var(--spacing-loose); }
+/* Rendered in a fixed layer (portal) so .dialog's overflow:hidden can't clip it. */
+.ns-menu-scrim { position: fixed; inset: 0; z-index: 1010; }
+.ns-proj-menu { position: fixed; z-index: 1011; max-height: 240px; overflow-y: auto; }
 
 /* Template preview (in-dialog takeover) */
 .tpv-body { display: flex; flex-direction: column; gap: var(--spacing-loose); }
@@ -1023,6 +1043,5 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .tpv-trow:last-child { border-bottom: none; }
 .tpv-section-title.is-lg { font-size: 20px; margin-bottom: var(--spacing-base); }
 .tpv-footer { justify-content: center; }
-/* The DS has no large-button variant; this hero CTA size is an app decision
-   (flagged upstream — candidate for a DS .btn-lg). */
-.tpv-cta { min-width: 280px; height: 48px; font-size: 16px; }
+/* .btn-big is the DS Button Big; the reference pins it to 326px. */
+.tpv-cta { min-width: 326px; justify-content: center; }

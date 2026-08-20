@@ -70,7 +70,10 @@ export function App() {
     setModal(false);
   };
   // Commit the named survey and open the builder (reusing the id when changing).
-  const confirmName = (name) => { setSurvey(normalize({ ...pending.survey, id: pending.survey.id || "d" + Date.now(), name })); setPending(null); setChanging(false); setEditing(false); setScreen("builder"); };
+  const confirmName = (name, proj) => {
+    setSurvey(normalize({ ...pending.survey, id: pending.survey.id || "d" + Date.now(), name, proj: proj || pending.survey.proj }));
+    setPending(null); setChanging(false); setEditing(false); setScreen("builder");
+  };
   // Back out of naming → return to template selection.
   const cancelName = () => { setPending(null); setModal(true); };
   // Close the modal without changing anything (also cancels a change-in-progress).
@@ -83,8 +86,8 @@ export function App() {
   const saveAndClose = () => {
     setSurveysList(list => {
       const existing = list.find(r => r.id === survey.id);
-      const base = existing || { id: survey.id, proj: "Central Employee Listening", status: "Draft", resp: "—", mine: true };
-      const row = { ...base, name: survey.name, date: "Edited just now", questions: survey.selectedIds.length, survey };
+      const base = existing || { id: survey.id, proj: survey.proj || "Central Employee Listening", status: "Draft", resp: "—", mine: true };
+      const row = { ...base, name: survey.name, proj: survey.proj || base.proj, date: "Edited just now", questions: survey.selectedIds.length, survey };
       return existing ? list.map(r => r.id === survey.id ? row : r) : [row, ...list];
     });
     setScreen("surveys");
@@ -251,7 +254,9 @@ export function App() {
 
       {modal && <TemplateModal changing={changing} onClose={closeModal} onUse={useTemplate} onScratch={startScratch} />}
       {pending && <NameSurveyDialog suggested={pending.suggested} isTemplate={pending.survey.isTemplate}
-        templateName={pending.survey.templateName} changing={changing} onBack={cancelName} onConfirm={confirmName} />}
+        templateName={pending.survey.templateName} changing={changing}
+        needsProject={!pending.survey.proj} project={pending.survey.proj}
+        onBack={cancelName} onConfirm={confirmName} />}
       {editing && survey && (
         <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds} tweaks={TWEAKS}
           initialTab={editTab} onClose={() => setEditing(false)} onSave={saveQuestions} />

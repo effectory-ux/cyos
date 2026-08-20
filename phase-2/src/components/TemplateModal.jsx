@@ -2,32 +2,33 @@
 import { useState } from "react";
 import { Icon } from "./Icon.jsx";
 import { QTypeIcon, Tag, Tooltip } from "./shared.jsx";
-import { TEMPLATES, BADGE_COLORS } from "../data/data.js";
+import { TEMPLATES } from "../data/data.js";
 import { TEMPLATE_PREVIEWS, TEMPLATE_META } from "../data/qlib.js";
 
 function tmplCount(t) { return (TEMPLATE_META[t.id] || {}).count ?? t.count; }
 function tmplMinutes(t) { return (TEMPLATE_META[t.id] || {}).minutes ?? Math.max(3, Math.round(t.count * 0.5)); }
 
-// One template = the DS Card component (v1.17.0 structure): .card-elevated
-// surface, .card-body content slot with .card-title / .card-text, and the two
-// actions in .card-actions. Deliberately NOT .is-interactive — per the DS rule
-// for rows/cards that carry their own buttons, those stay static (you can't
-// nest buttons inside a clickable card).
+// One template = the DS Card component, following the design-system reference
+// prototype `create-survey-dialog` exactly: a 64px illustration, the name
+// (.text-large.text-w600), a 12px project line (.text-small.text-w500), a
+// 3-line-clamped description, and the two actions pinned to the bottom sharing
+// the width. Hovering (or focusing inside) the card promotes "Use template" to
+// the real DS primary button, per the reference's behaviour rules.
 function TemplateCard({ t, onUse, onPreview }) {
-  const b = BADGE_COLORS[t.badge];
+  const [hot, setHot] = useState(false);
   return (
-    <div className="card card-elevated tpl-card">
+    <div className="card card-elevated tpl-card"
+      onMouseEnter={() => setHot(true)} onMouseLeave={() => setHot(false)}
+      onFocus={() => setHot(true)} onBlur={() => setHot(false)}>
       {t.recommended && <span className="tag tag-brand tpl-recommended">Recommended</span>}
       <div className="card-body">
-        <span className="tpl-illus" style={{ background: b.bg, color: b.fg }}>
-          <Icon name={b.icon} size={26} />
-        </span>
-        <span className="card-title">{t.name}</span>
-        <span className="text-small tpl-meta">{t.scope} · {tmplCount(t)} questions</span>
+        <img className="tpl-card-img" src={"assets/illustrations/" + t.illus} alt="" />
+        <span className="text-large text-w600 tpl-name">{t.name}</span>
+        <span className="text-small text-w500 tpl-meta">{t.scope} · {tmplCount(t)} questions</span>
         <span className="card-text tpl-desc">{t.desc}</span>
       </div>
-      <div className="card-actions">
-        <button className="btn btn-secondary" onClick={() => onUse(t)}>Use template</button>
+      <div className="card-actions tpl-actions">
+        <button className={"btn " + (hot ? "btn-primary" : "btn-secondary")} onClick={() => onUse(t)}>Use template</button>
         <button className="btn btn-tertiary" onClick={() => onPreview(t)}>Preview</button>
       </div>
     </div>
@@ -36,7 +37,6 @@ function TemplateCard({ t, onUse, onPreview }) {
 
 // Full-takeover preview that replaces the template grid inside the same dialog.
 function TemplatePreviewView({ t, onBack, onUse }) {
-  const b = BADGE_COLORS[t.badge];
   const groups = TEMPLATE_PREVIEWS[t.id] || [];
   const [more, setMore] = useState(false);
   return (
@@ -49,7 +49,7 @@ function TemplatePreviewView({ t, onBack, onUse }) {
 
       <div className="dialog-body scroll-y tpv-body">
         <div className="tpv-hero">
-          <span className="tpv-illus" style={{ background: b.bg, color: b.fg }}><Icon name={b.icon} size={46} /></span>
+          <img className="tpv-illus" src={"assets/illustrations/" + t.illus} alt="" />
           <div className="tpv-hero-text">
             <h2 className="dialog-title" id="tpv-title">{t.name}</h2>
             <div className="tpv-meta">Standard template · {tmplCount(t)} questions · {tmplMinutes(t)} minutes</div>
@@ -63,7 +63,7 @@ function TemplatePreviewView({ t, onBack, onUse }) {
             <h3 className="tpv-section-title">Why is it valuable?</h3>
             <p className="text-medium tpv-para">
               <span className="tpv-why">{t.why}{more && t.why2 ? " " + t.why2 : ""}</span>
-              {!more && t.why2 && <button className="tpv-showmore" onClick={() => setMore(true)}>Show more <Icon name="chevron-down" size={16} /></button>}
+              {!more && t.why2 && <button className="btn btn-link tpv-showmore" onClick={() => setMore(true)}>Show more<Icon name="chevron-down" size={16} /></button>}
             </p>
           </div>
         )}
@@ -95,7 +95,7 @@ function TemplatePreviewView({ t, onBack, onUse }) {
       </div>
 
       <div className="dialog-footer tpv-footer">
-        <button className="btn btn-primary tpv-cta" onClick={() => onUse(t)}>
+        <button className="btn-big btn-big-primary tpv-cta" onClick={() => onUse(t)}>
           Use template<Icon name="arrow-right" size={18} /></button>
       </div>
     </>
@@ -105,7 +105,9 @@ function TemplatePreviewView({ t, onBack, onUse }) {
 export function TemplateModal({ changing, onClose, onUse, onScratch }) {
   const [q, setQ] = useState("");
   const [preview, setPreview] = useState(null);
-  const list = TEMPLATES.filter(t => t.name.toLowerCase().includes(q.toLowerCase()));
+  const needle = q.trim().toLowerCase();
+  const list = TEMPLATES.filter(t => !needle
+    || [t.name, t.desc].some(v => (v || "").toLowerCase().includes(needle)));
   return (
     <div className="overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="dialog dialog-l dialog-worksurface tpl-dialog" role="dialog" aria-modal="true"
@@ -141,10 +143,17 @@ export function TemplateModal({ changing, onClose, onUse, onScratch }) {
               <button className="btn btn-secondary" onClick={onScratch}><Icon name="plus" size={16} />Start from scratch</button>
             </div>
             <div className="dialog-body scroll-y">
-              <div className="tpl-grid">
-                {list.map(t => <TemplateCard key={t.id} t={t} onUse={onUse} onPreview={setPreview} />)}
-              </div>
-              {list.length === 0 && <div className="text-medium tpl-empty">No templates match “{q}”.</div>}
+              {list.length > 0 && (
+                <div className="tpl-grid">
+                  {list.map(t => <TemplateCard key={t.id} t={t} onUse={onUse} onPreview={setPreview} />)}
+                </div>
+              )}
+              {list.length === 0 && (
+                <div className="tpl-empty">
+                  <h3 className="text-l4">No results found</h3>
+                  <img src="assets/illustrations/templates/search-no-results-illustration.svg" alt="" />
+                </div>
+              )}
             </div>
             <div className="dialog-footer tpl-footnote">
               <Icon name="info" size={16} />

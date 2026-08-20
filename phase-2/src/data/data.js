@@ -60,6 +60,15 @@ export const THEMES = {
   "Team productivity": { desc: "Team productivity is about how much a team gets out of its effort through efficient, effective ways of working.", about: "Team productivity is about how much a team gets out of its effort through efficient, effective ways of working. A strong score means people help each other set goals, hit objectives and grow through feedback — and such teams perform well consistently.", score: 7.4, benchmark: 7.0 },
   "eNPS": { desc: "The employee Net Promoter Score shows how many people would recommend the organisation as a good employer, calculated as the share of promoters minus the share of detractors.", about: "The employee Net Promoter Score shows how many people would recommend the organisation as a good employer, calculated as the share of promoters minus the share of detractors. It reflects how likely people are to act as ambassadors.", score: 7.2, benchmark: 6.9 },
 };
+// Every project on the account — the list the "Let's get started" dialog offers
+// when a survey is created from All surveys (it has no project yet).
+export const PROJECTS = [
+  "Central Employee Listening",
+  "Employee lifecycle",
+  "Team pulses",
+  "Example projects",
+];
+
 export const CUSTOM_GROUP = "Your custom questions";
 
 // Small legacy question set (realistic, IP-safe wording from the base library)
@@ -86,14 +95,18 @@ export const POOL = [
   { id: "q18", topic: "Team relationships", theme: "Psychological safety", type: "scale5", bench: true, tmpl: false, text: "I'm comfortable raising behaviour issues directly with teammates" },
 ];
 
-// templates for the modal
+// Templates for the create-survey dialog. `illus` is the DS illustration
+// (public/assets/illustrations/**) used on the template card and the preview
+// hero — the design-system reference prototype uses a 64px illustration, not an
+// icon badge. NOTE: the DS has no templates/ illustration for Team Development
+// or Onboarding yet, so those fall back to the projects/ asset (flag upstream).
 export const TEMPLATES = [
-  { id: "sos", name: "Smart Organisation Scan", scope: "Effectory module", count: 34, badge: "teal", desc: "Broad organisational scan built on the Strategic Fitness thinking; a full-length engagement survey template.", recommended: true, why: "Broad organisational scan built on the Strategic Fitness thinking; a full-length engagement survey template." },
-  { id: "tds", name: "Team Development", scope: "in company-wide surveys", count: 30, badge: "blue", desc: "Team-level diagnostic for collaboration, alignment and performance.", why: "Team-level diagnostic for collaboration, alignment and performance." },
-  { id: "sfm", name: "Strategic Fitness", scope: "in company-wide surveys", count: 22, badge: "violet", desc: "Diagnostic of the organisation's capacity to execute its strategy.", why: "Diagnostic of the organisation's capacity to execute its strategy." },
-  { id: "wcwp", name: "World-class Workplace", scope: "in company-wide surveys", count: 15, badge: "amber", desc: "Benchmarked employer-quality template based on employership and eNPS.", why: "Benchmarked employer-quality template based on employership and eNPS." },
-  { id: "dei", name: "Diversity, Equality & Inclusion", scope: "Available in 3 projects", count: 44, badge: "green", desc: "Deep-dive on psychological safety, belonging, fairness and diversity.", why: "Deep-dive on psychological safety, belonging, fairness and diversity." },
-  { id: "onb", name: "Onboarding", scope: "in Onboarding", count: 20, badge: "mint", desc: "New-joiner experience across the first weeks, from induction to job fit.", why: "New-joiner experience across the first weeks, from induction to job fit." },
+  { id: "sos", illus: "templates/sos-template.svg", name: "Smart Organisation Scan", scope: "Effectory module", count: 34, badge: "teal", desc: "Broad organisational scan built on the Strategic Fitness thinking; a full-length engagement survey template.", recommended: true, why: "Broad organisational scan built on the Strategic Fitness thinking; a full-length engagement survey template." },
+  { id: "tds", illus: "projects/team-development-scan.svg", name: "Team Development", scope: "in company-wide surveys", count: 30, badge: "blue", desc: "Team-level diagnostic for collaboration, alignment and performance.", why: "Team-level diagnostic for collaboration, alignment and performance." },
+  { id: "sfm", illus: "templates/sf-template.svg", name: "Strategic Fitness", scope: "in company-wide surveys", count: 22, badge: "violet", desc: "Diagnostic of the organisation's capacity to execute its strategy.", why: "Diagnostic of the organisation's capacity to execute its strategy." },
+  { id: "wcwp", illus: "templates/wcwp-template.svg", name: "World-class Workplace", scope: "in company-wide surveys", count: 15, badge: "amber", desc: "Benchmarked employer-quality template based on employership and eNPS.", why: "Benchmarked employer-quality template based on employership and eNPS." },
+  { id: "dei", illus: "templates/dei-template.svg", name: "Diversity, Equality & Inclusion", scope: "Available in 3 projects", count: 44, badge: "green", desc: "Deep-dive on psychological safety, belonging, fairness and diversity.", why: "Deep-dive on psychological safety, belonging, fairness and diversity." },
+  { id: "onb", illus: "projects/onboarding.svg", name: "Onboarding", scope: "in Onboarding", count: 20, badge: "mint", desc: "New-joiner experience across the first weeks, from induction to job fit.", why: "New-joiner experience across the first weeks, from induction to job fit." },
 ];
 
 export const BADGE_COLORS = {
