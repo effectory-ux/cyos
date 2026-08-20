@@ -13,6 +13,21 @@ import { templatePoolQuestions, TEMPLATE_META } from "../data/qlib.js";
 
 // Two-line tooltip for a "select the whole subject" checkbox — names the current
 // state and the action a click performs (select the rest, or clear them).
+// Per-topic select-all control. Deliberately a BUTTON, not a checkbox: a
+// checkbox reads as "the topic is selected", but what you actually do is add the
+// topic's questions — in the questionnaire the topic is only structure. Labels
+// stay short ("Select all" / "Deselect all") so translations can't break the
+// row, and the topic's total question count rides along in a grey pill.
+// Org-required questions can't be deselected; their own marker carries that.
+function SelectAllTopic({ allOn, total, onToggle }) {
+  return (
+    <button className="btn btn-tertiary aql-selectall" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
+      {allOn ? "Deselect all" : "Select all"}
+      <span className="tag tag-count">{total}</span>
+    </button>
+  );
+}
+
 function selectAllTip(nSel, total) {
   if (total === 0) return "Select all";
   if (nSel === 0) return "Select all questions";
@@ -362,12 +377,11 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
             return (
               <section key={g.key} className="tmpl-qsec">
                 <div className="aql-sechead tmpl-qsec-head">
-                  <Tooltip label={selectAllTip(nSel, ids.length)} pos="is-above" float>
-                    <Checkbox on={gAll} indeterminate={gSome && !gAll} large onClick={() => ids.forEach(id => { if (gAll ? sel.has(id) : !sel.has(id)) onToggleQuestion(id); })} />
-                  </Tooltip>
                   <h3>{g.label}</h3>
                   <div className="spacer" />
-                  <span className="aql-count">{gSome ? `${nSel} of ${ids.length} questions selected` : `${ids.length} questions`}</span>
+                  {nSel > 0 && <span className="aql-count">{nSel} selected</span>}
+                  <SelectAllTopic allOn={gAll} total={ids.length}
+                    onToggle={() => ids.forEach(id => { if (gAll ? sel.has(id) : !sel.has(id)) onToggleQuestion(id); })} />
                 </div>
                 {g.items.map(qq => (
                   <div key={qq.id} className="aql-row" onClick={() => onToggleQuestion(qq.id)}>
@@ -678,12 +692,10 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 return (
                   <section key={g.key} className={"aql-sec" + (isColl ? " is-collapsed" : "")}>
                     <div className="aql-sechead">
-                      <Tooltip label={selectAllTip(nSel, ids.length)} pos="is-above" float>
-                        <Checkbox on={allOn} indeterminate={someOn && !allOn} large onClick={() => setMany(ids, !allOn)} />
-                      </Tooltip>
                       <h3>{g.label}</h3>
                       <div className="spacer" />
-                      <span className="aql-count">{someOn ? `${nSel} of ${ids.length} questions selected` : `${ids.length} questions`}</span>
+                      {nSel > 0 && <span className="aql-count">{nSel} selected</span>}
+                      <SelectAllTopic allOn={allOn} total={ids.length} onToggle={() => setMany(ids, !allOn)} />
                       <Tooltip label={isColl ? "Expand" : "Collapse"} pos="is-above" float>
                         <button className="ib ib-tertiary aql-sec-toggle" aria-label={isColl ? "Expand questions" : "Collapse questions"}
                           aria-expanded={!isColl} onClick={() => toggleSec(g.key)}>

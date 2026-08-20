@@ -1,5 +1,5 @@
 // app.jsx — flow controller
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Sidebar, SurveysPage, OutOfScopeDialog } from "./components/Shell.jsx";
 import { Builder } from "./components/Builder.jsx";
 import { TemplateModal } from "./components/TemplateModal.jsx";
@@ -9,6 +9,8 @@ import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus, themesOf } from "./components/shared.jsx";
 import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
 import { libraryPool } from "./data/qlib.js";
+import { PrototypeBar, getStartAt } from "./components/PrototypeBar.jsx";
+import { serialize, writeRoute, parse } from "./data/routes.js";
 
 // Behaviour the design iterations landed on: removing the last question of a
 // complete theme soft-locks (asks first), and "Add custom question" lives in
@@ -38,6 +40,14 @@ export function App() {
   // A non-editable survey (Live/Closed) the user clicked — shows the
   // out-of-scope dialog pointing at a separate prototype.
   const [outOfScope, setOutOfScope] = useState(null);
+  // Which dialog the Builder currently has open ({ dialog, arg }), reported up so
+  // every step of the prototype has a URL. `openInBuilder` asks the Builder to
+  // restore one (deep link / use case).
+  const [builderDialog, setBuilderDialog] = useState(null);
+  // The URL the prototype was opened with, captured during the first render:
+  // the route-writing effect below runs before boot and would overwrite it.
+  const initialHash = useRef(typeof window !== "undefined" ? window.location.hash : "");
+  const [openInBuilder, setOpenInBuilder] = useState(null);
 
   // Phase-2 customization state lives ON the survey, so it saves/reopens with
   // it and is always survey-scoped (the library is never written to):
@@ -239,8 +249,94 @@ export function App() {
     };
   });
 
+  // ---- URLs for every step -------------------------------------------------
+  // The current step is mirrored into the hash in the platform's own shape, so
+  // any state can be linked to (see data/routes.js). Dialog state that lives in
+  // the Builder is reported up via `builderDialog`.
+  const appDialog = () => {
+    if (modal) return { dialog: "choose-template" };
+    if (pending) return { dialog: "create-draft-survey" };
+    if (editing) return { dialog: "select-questions" };
+    if (editCustom) return { dialog: "custom-question", arg: editCustom.id };
+    if (outOfScope) return { dialog: "out-of-scope", arg: outOfScope.id };
+    if (screen === "builder" && builderDialog) return builderDialog;
+    return {};
+  };
+  const route = { screen, surveyId: survey && survey.id, ...appDialog() };
+  useEffect(() => { writeRoute(route); }, [screen, survey && survey.id, modal, pending, editing, editCustom, outOfScope, builderDialog]); // eslint-disable-line
+
+  // Open a demo/use-case state in one step (prototype toolbar).
+  const draftSurvey = () => {
+    const row = surveysList.find(r => r.status === "Draft" && r.survey) || surveysList.find(r => r.survey);
+    return row ? normalize(row.survey) : null;
+  };
+  const scratchSurvey = () => normalize({
+    id: "d-demo", name: "New survey", proj: "Central Employee Listening", templateName: null,
+    isTemplate: false, selectedIds: [], pool: libraryPool().map(q => ({ ...q, required: false })),
+  });
+  const closeAll = () => { setModal(false); setPending(null); setEditing(false); setEditCustom(null); setOutOfScope(null); setOpenInBuilder(null); setBuilderDialog(null); };
+  const gotoUseCase = (key) => {
+    closeAll();
+    const openBuilder = (sv, dialog) => { setSurvey(sv); setScreen("builder"); setOpenInBuilder(dialog || null); };
+    switch (key) {
+      case "surveys": setScreen("surveys"); break;
+      case "template-dialog": setScreen("surveys"); setChanging(false); setModal(true); break;
+      case "template-empty": setScreen("surveys"); setModal(true); setTimeout(() => {
+        const i = document.querySelector("input.srch"); if (i) { i.focus(); }
+      }, 60); break;
+      case "name-dialog": {
+        const base = surveyFromTemplate("sos", null, "Smart Organisation Scan");
+        setScreen("surveys"); setPending({ suggested: base.templateName, survey: base }); break;
+      }
+      case "builder": { const sv = draftSurvey(); if (sv) openBuilder(sv); break; }
+      case "builder-scratch": openBuilder(scratchSurvey()); break;
+      case "select-questions": { const sv = draftSurvey(); if (sv) { setSurvey(sv); setScreen("builder"); setEditTab("questions"); setEditing(true); } break; }
+      case "question-settings": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "question-settings", arg: (sv.pool.find(q => !q.custom && sv.selectedIds.includes(q.id)) || {}).id }); break; }
+      case "question-edited": {
+        const sv = draftSurvey(); if (!sv) break;
+        const q = sv.pool.find(x => x.text === "Day to day, I find my work enjoyable") || sv.pool[0];
+        openBuilder({ ...sv, qMeta: { ...sv.qMeta, [q.id]: { variant: "I enjoy the work I do most days", desc: "Think about your work in general, not one exceptional day." } } },
+          { dialog: "question-settings", arg: q.id });
+        break;
+      }
+      case "topic-dialog": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "topic", arg: (sv.pool.find(q => sv.selectedIds.includes(q.id)) || {}).topic }); break; }
+      case "topic-custom": {
+        const sv = draftSurvey(); if (!sv) break;
+        const key = "ct-demo";
+        openBuilder({ ...sv, customTopics: [...(sv.customTopics || []), key],
+          topicMeta: { ...sv.topicMeta, [key]: { name: "Our office move", desc: "A few questions about the move to the new building." } } },
+          { dialog: "topic", arg: key });
+        break;
+      }
+      case "translations": {
+        const sv = draftSurvey(); if (!sv) break;
+        const first = sv.pool.find(q => sv.selectedIds.includes(q.id));
+        openBuilder({ ...sv, topicMeta: { ...sv.topicMeta, [first.topic]: { name: "How you feel about your work", desc: "A short check-in on how your daily work feels." } } },
+          { dialog: "translations" });
+        break;
+      }
+      default: setScreen("surveys");
+    }
+  };
+
+  // Honour the toolbar's "Start at" (and a deep link) on first load.
+  const booted = useRef(false);
+  useEffect(() => {
+    if (booted.current) return; booted.current = true;
+    const fromUrl = parse(initialHash.current);
+    if (fromUrl && fromUrl.screen === "builder") {
+      const sv = draftSurvey(); if (sv) { setSurvey(sv); setScreen("builder");
+        if (fromUrl.dialog) setOpenInBuilder({ dialog: fromUrl.dialog, arg: fromUrl.arg }); }
+      return;
+    }
+    if (fromUrl && fromUrl.dialog) { gotoUseCase(fromUrl.dialog === "create-draft-survey" ? "name-dialog" : fromUrl.dialog === "choose-template" ? "template-dialog" : "surveys"); return; }
+    const start = getStartAt();
+    if (start !== "surveys") gotoUseCase(start);
+  }, []); // eslint-disable-line
+
   return (
     <div className="app">
+      <PrototypeBar route={route} onUseCase={gotoUseCase} />
       {screen === "surveys" && <Sidebar />}
       {screen === "surveys"
         ? <SurveysPage rows={surveysList} onCreate={() => setModal(true)} onDeleteDraft={deleteSurvey} onOpen={openSurvey} />
@@ -250,6 +346,7 @@ export function App() {
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
             onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta}
             onSaveTranslation={saveTranslation}
+            openDialog={openInBuilder} onDialogChange={setBuilderDialog}
             onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }} />}
 
       {modal && <TemplateModal changing={changing} onClose={closeModal} onUse={useTemplate} onScratch={startScratch} />}

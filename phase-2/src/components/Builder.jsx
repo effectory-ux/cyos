@@ -261,7 +261,7 @@ function reconcileLayout(prev, groups) {
   return next;
 }
 
-export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onSaveTranslation }) {
+export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onSaveTranslation, openDialog, onDialogChange }) {
   const { name, isTemplate, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {} } = survey;
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
@@ -271,6 +271,24 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   const [topicDialog, setTopicDialog] = useState(null);
   const [settingsQId, setSettingsQId] = useState(null); // standard question whose dialog is open
   const [translationsOpen, setTranslationsOpen] = useState(false);
+  // Every builder dialog has a URL: report which one is open, and restore one
+  // asked for by a deep link or the prototype toolbar.
+  useEffect(() => {
+    if (!onDialogChange) return;
+    if (settingsQId) onDialogChange({ dialog: "question-settings", arg: settingsQId });
+    else if (topicDialog) onDialogChange(topicDialog.creating ? { dialog: "add-topic" } : { dialog: "topic", arg: topicDialog.key });
+    else if (translationsOpen) onDialogChange({ dialog: "translations" });
+    else onDialogChange(null);
+  }, [settingsQId, topicDialog, translationsOpen]); // eslint-disable-line
+  useEffect(() => {
+    if (!openDialog) return;
+    const { dialog, arg } = openDialog;
+    if (dialog === "question-settings" && arg) setSettingsQId(arg);
+    else if (dialog === "topic" && arg) setTopicDialog({ key: arg });
+    else if (dialog === "add-topic") setTopicDialog({ creating: true });
+    else if (dialog === "translations") setTranslationsOpen(true);
+  }, [openDialog]); // eslint-disable-line
+
   const sel = new Set(selectedIds);
   const customTopicSet = new Set(customTopics);
   // A topic's display name in THIS survey (library name is the stable key).

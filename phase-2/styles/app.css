@@ -1026,3 +1026,52 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 /* "Move to topic" flyout — a nested .menu beside the row menu, rendered in a
    fixed layer so cards/scroll containers can't clip it. */
 .qrow-submenu { position: fixed; z-index: 1010; max-height: 320px; overflow-y: auto; }
+
+/* Per-topic select-all: a tertiary button + grey total pill, at the row's right
+   end (replaces the old select-all checkbox). */
+.aql-selectall { flex: none; gap: var(--spacing-tight); }
+/* The total rides in a grey circle; --bg-secondary is too faint against the
+   button's transparent fill, so the pill uses the stronger neutral. */
+.aql-selectall .tag-count { pointer-events: none; background: var(--bg-tertiary);
+  color: var(--content-secondary); height: 20px; min-width: 20px; padding: 0 6px; }
+
+/* ---- Prototype toolbar (tooling, NOT product UI) -------------------------
+   Deliberately outside the Engage DS: dark, compact, floating above the app so
+   it can never be mistaken for a screen. ⌥P hides it for clean screenshots. */
+.pbar { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2000;
+  display: flex; align-items: center; gap: 6px; max-width: min(920px, calc(100vw - 24px));
+  padding: 6px 8px; border-radius: 999px; background: #14161a; color: #e7e9ec;
+  box-shadow: 0 6px 24px rgba(16,22,26,.28); font-size: 12.5px;
+  font-family: 'Poppins', sans-serif; }
+.pbar-badge { flex: none; padding: 3px 8px; border-radius: 999px; background: #2a2f39; color: #b9c0cc;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.pbar-btn, .pbar-icon { display: inline-flex; align-items: center; gap: 5px; flex: none;
+  padding: 5px 9px; border: none; border-radius: 999px; background: transparent; color: #e7e9ec;
+  font: inherit; cursor: pointer; }
+.pbar-btn:hover, .pbar-icon:hover { background: #2a2f39; }
+.pbar-btn.is-open { background: #343b47; }
+.pbar-btn i, .pbar-icon i { display: flex; }
+.pbar-sep { width: 1px; height: 16px; background: #343b47; flex: none; }
+.pbar-url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: #9aa3b2; font-family: 'Liberation Mono', ui-monospace, monospace; font-size: 11.5px; padding: 0 2px; }
+.pbar-menu-wrap { position: relative; flex: none; }
+.pbar-scrim { position: fixed; inset: 0; z-index: 1; }
+.pbar-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 2; width: 300px;
+  max-height: 60vh; overflow-y: auto; padding: 6px; border-radius: 12px; background: #14161a;
+  box-shadow: 0 10px 30px rgba(16,22,26,.4); display: flex; flex-direction: column; gap: 1px; }
+.pbar-menu-head { padding: 6px 8px; color: #7f8796; font-size: 10.5px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; }
+.pbar-item { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%;
+  padding: 7px 9px; border: none; border-radius: 8px; background: transparent; color: #e7e9ec;
+  font: inherit; text-align: left; cursor: pointer; }
+.pbar-item:hover { background: #2a2f39; }
+.pbar-item.is-on { background: #22303a; }
+.pbar-item i { display: flex; margin-left: auto; color: #7ad3c8; }
+.pbar-item-label { font-weight: 600; }
+.pbar-item-desc { flex-basis: 100%; color: #8b93a2; font-size: 11.5px; }
+.pbar-peek { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2000;
+  display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 22px;
+  padding: 0; border: none; border-radius: 999px; background: rgba(20,22,26,.5); color: #e7e9ec;
+  cursor: pointer; }
+.pbar-peek:hover { background: #14161a; }
+.pbar-peek i { display: flex; }

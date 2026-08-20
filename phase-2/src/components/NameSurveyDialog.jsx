@@ -19,7 +19,9 @@ const MIN = 3, MAX = 35;
 
 export function NameSurveyDialog({ suggested, isTemplate, templateName, changing, needsProject = true, project, onBack, onConfirm }) {
   const [name, setName] = useState(suggested || "");
-  const [proj, setProj] = useState(project || "");
+  // Pre-selected so the flow is one click to test; still a real choice the user
+  // can change (and still required — "Create survey" validates it).
+  const [proj, setProj] = useState(project || PROJECTS[0]);
   const [touched, setTouched] = useState(false); // name blurred at least once
   const [open, setOpen] = useState(false);       // project menu
   // .dialog has overflow:hidden for its rounded corners, so the select's menu
