@@ -23,7 +23,7 @@ function TemplateCard({ t, onUse, onPreview }) {
           <Icon name={b.icon} size={26} />
         </span>
         <span className="card-title">{t.name}</span>
-        <span className="card-text tpl-meta">{t.scope} · {tmplCount(t)} questions</span>
+        <span className="text-small tpl-meta">{t.scope} · {tmplCount(t)} questions</span>
         <span className="card-text tpl-desc">{t.desc}</span>
       </div>
       <div className="card-actions">
@@ -41,27 +41,27 @@ function TemplatePreviewView({ t, onBack, onUse }) {
   const [more, setMore] = useState(false);
   return (
     <>
-      <div className="dialog-header" style={{ paddingRight: 48 }}>
+      <div className="dialog-header has-close">
         <div className="tpv-topbar">
           <button className="btn btn-secondary" onClick={onBack}><Icon name="arrow-left" size={16} />Back to templates</button>
         </div>
       </div>
 
-      <div className="dialog-body scroll-y" style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-loose)" }}>
+      <div className="dialog-body scroll-y tpv-body">
         <div className="tpv-hero">
           <span className="tpv-illus" style={{ background: b.bg, color: b.fg }}><Icon name={b.icon} size={46} /></span>
-          <div style={{ minWidth: 0 }}>
+          <div className="tpv-hero-text">
             <h2 className="dialog-title" id="tpv-title">{t.name}</h2>
             <div className="tpv-meta">Standard template · {tmplCount(t)} questions · {tmplMinutes(t)} minutes</div>
           </div>
         </div>
 
-        <p className="text-medium" style={{ margin: 0, color: "var(--content-secondary)", lineHeight: 1.6 }}>{t.desc}</p>
+        <p className="text-medium tpv-para">{t.desc}</p>
 
         {t.why && (
           <div>
             <h3 className="tpv-section-title">Why is it valuable?</h3>
-            <p className="text-medium" style={{ margin: 0, color: "var(--content-secondary)", lineHeight: 1.6 }}>
+            <p className="text-medium tpv-para">
               <span className="tpv-why">{t.why}{more && t.why2 ? " " + t.why2 : ""}</span>
               {!more && t.why2 && <button className="tpv-showmore" onClick={() => setMore(true)}>Show more <Icon name="chevron-down" size={16} /></button>}
             </p>
@@ -69,7 +69,7 @@ function TemplatePreviewView({ t, onBack, onUse }) {
         )}
 
         <div>
-          <h3 className="tpv-section-title" style={{ fontSize: 20, marginBottom: "var(--spacing-base)" }}>Questionnaire</h3>
+          <h3 className="tpv-section-title is-lg">Questionnaire</h3>
           <div className="tpv-qbox">
             {groups.map(g => (
               <section key={g.topic}>
@@ -79,9 +79,9 @@ function TemplatePreviewView({ t, onBack, onUse }) {
                 </div>
                 <div className="card card-elevated">
                   {g.questions.map((qq, i) => (
-                    <div key={i} className="qrow tpv-trow" style={{ borderBottom: i === g.questions.length - 1 ? "none" : undefined }}>
+                    <div key={i} className="qrow tpv-trow">
                       <div className="qrow-main">
-                        <span style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.5 }}>{qq.text}</span>
+                        <span className="tpv-qtext">{qq.text}</span>
                       </div>
                       <div className="tpv-tcell"><QTypeIcon type={qq.type} size={24} /></div>
                       <div className="tpv-tcell is-tag"><Tag kind="standard">Standard</Tag></div>
@@ -94,8 +94,8 @@ function TemplatePreviewView({ t, onBack, onUse }) {
         </div>
       </div>
 
-      <div className="dialog-footer" style={{ justifyContent: "center" }}>
-        <button className="btn btn-primary" style={{ minWidth: 280, height: 48, fontSize: 16 }} onClick={() => onUse(t)}>
+      <div className="dialog-footer tpv-footer">
+        <button className="btn btn-primary tpv-cta" onClick={() => onUse(t)}>
           Use template<Icon name="arrow-right" size={18} /></button>
       </div>
     </>
@@ -108,9 +108,8 @@ export function TemplateModal({ changing, onClose, onUse, onScratch }) {
   const list = TEMPLATES.filter(t => t.name.toLowerCase().includes(q.toLowerCase()));
   return (
     <div className="overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="dialog dialog-l dialog-worksurface" role="dialog" aria-modal="true"
-        aria-labelledby={preview ? "tpv-title" : "tpl-title"}
-        style={{ display: "flex", flexDirection: "column", height: "min(880px, calc(100vh - 64px))" }}>
+      <div className="dialog dialog-l dialog-worksurface tpl-dialog" role="dialog" aria-modal="true"
+        aria-labelledby={preview ? "tpv-title" : "tpl-title"}>
         <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
           <button className="dialog-close" aria-label="Close" onClick={onClose}><Icon name="cross" /></button>
         </Tooltip>
@@ -119,7 +118,7 @@ export function TemplateModal({ changing, onClose, onUse, onScratch }) {
           <TemplatePreviewView t={preview} onBack={() => setPreview(null)} onUse={onUse} />
         ) : (
           <>
-            <div className="dialog-header" style={{ paddingRight: 24 }}>
+            <div className="dialog-header has-close">
               <h2 className="dialog-title" id="tpl-title">Choose a survey template</h2>
               <p className="dialog-subtitle">Save time with pre-made survey templates crafted by our experts</p>
             </div>
@@ -134,21 +133,21 @@ export function TemplateModal({ changing, onClose, onUse, onScratch }) {
                 </div>
               </div>
             )}
-            <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
-              <div className="search-wrap" style={{ flex: 1 }}>
+            <div className="tpl-toolbar">
+              <div className="search-wrap">
                 <span className="search-icon"><Icon name="search" size={16} /></span>
                 <input type="search" className="srch" placeholder="Search templates" value={q} onChange={e => setQ(e.target.value)} />
               </div>
-              <button className="btn btn-secondary" style={{ flex: "none" }} onClick={onScratch}><Icon name="plus" size={16} />Start from scratch</button>
+              <button className="btn btn-secondary" onClick={onScratch}><Icon name="plus" size={16} />Start from scratch</button>
             </div>
             <div className="dialog-body scroll-y">
               <div className="tpl-grid">
                 {list.map(t => <TemplateCard key={t.id} t={t} onUse={onUse} onPreview={setPreview} />)}
               </div>
-              {list.length === 0 && <div className="text-medium text-subdued" style={{ padding: "60px 0", textAlign: "center" }}>No templates match “{q}”.</div>}
+              {list.length === 0 && <div className="text-medium tpl-empty">No templates match “{q}”.</div>}
             </div>
-            <div className="dialog-footer" style={{ justifyContent: "center", gap: 8, color: "var(--content-secondary)", fontSize: 14 }}>
-              <Icon name="info" size={16} style={{ color: "var(--content-info-base)" }} />
+            <div className="dialog-footer tpl-footnote">
+              <Icon name="info" size={16} />
               Can’t find a template? Look in other projects, or start from scratch and add questions yourself.
             </div>
           </>

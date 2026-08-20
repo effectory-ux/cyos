@@ -6,8 +6,8 @@
 import { libraryPool, templatePoolQuestions } from "./qlib.js";
 
 export const QTYPES = {
-  scale5:   { label: "5-point scale",   icon: "point-scale",  bg: "var(--bg-accent-turquoise-subtle)", fg: "var(--content-accent-turquoise-base)", creatable: true },
-  multiple: { label: "Multiple choice", icon: "check-square",  bg: "var(--bg-highlight-subtle)",        fg: "var(--content-highlight-base)",        creatable: true },
+  scale5:   { label: "5-point scale",   icon: "point-scale",  bg: "var(--bg-accent-turquoise-subtle)", fg: "var(--content-accent-turquoise)", creatable: true },
+  multiple: { label: "Multiple choice", icon: "check-square",  bg: "var(--bg-highlight-subtle)",        fg: "var(--content-highlight)",        creatable: true },
   text:     { label: "Text answer",     icon: "text-entry",    bg: "var(--bg-accent-purple-subtle)",    fg: "var(--border-accent-purple-base)",     creatable: true },
 };
 
@@ -97,12 +97,12 @@ export const TEMPLATES = [
 ];
 
 export const BADGE_COLORS = {
-  teal:   { bg: "var(--bg-accent-turquoise-subtle)", fg: "var(--content-accent-turquoise-base)", icon: "box" },
-  blue:   { bg: "var(--bg-info-subtle)", fg: "var(--content-info-base)", icon: "users" },
+  teal:   { bg: "var(--bg-accent-turquoise-subtle)", fg: "var(--content-accent-turquoise)", icon: "box" },
+  blue:   { bg: "var(--bg-info-subtle)", fg: "var(--content-info)", icon: "users" },
   violet: { bg: "var(--bg-accent-purple-subtle)", fg: "var(--border-accent-purple-base)", icon: "shapes" },
-  amber:  { bg: "var(--bg-highlight-subtle)", fg: "var(--content-highlight-base)", icon: "star" },
-  green:  { bg: "var(--bg-positive-subtle)", fg: "var(--content-positive-base)", icon: "group" },
-  mint:   { bg: "var(--bg-accent-turquoise-subtle)", fg: "var(--content-accent-turquoise-base)", icon: "home" },
+  amber:  { bg: "var(--bg-highlight-subtle)", fg: "var(--content-highlight)", icon: "star" },
+  green:  { bg: "var(--bg-positive-subtle)", fg: "var(--content-positive)", icon: "group" },
+  mint:   { bg: "var(--bg-accent-turquoise-subtle)", fg: "var(--content-accent-turquoise)", icon: "home" },
 };
 
 export const DEFAULT_MC = ["", ""];

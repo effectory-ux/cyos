@@ -97,7 +97,7 @@ function MiniSelect({ value, placeholder, items, onChange, ariaLabel, block, inv
 const SCALE_DOTS = [
   "var(--bg-distribution-strongly-disagree)",
   "var(--bg-distribution-disagree)",
-  "var(--bg-distribution-neither-agree-disagree)",
+  "var(--bg-distribution-neither)",
   "var(--bg-distribution-agree)",
   "var(--bg-distribution-strongly-agree)",
 ];

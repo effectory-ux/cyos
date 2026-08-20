@@ -1,7 +1,7 @@
 # CYOS — Survey creation flow
 
 Implementation of the CYOS survey-creation flow from the Claude Design handoff
-bundle (`cyos-v2`), built on the **Effectory Engage Design System v1.6.0**
+bundle (`cyos-v2`), built on the **Effectory Engage Design System v1.17.0**
 (tokens, components, icons — copied verbatim from the design-system skill).
 
 **Live demo:** https://effectory-ux.github.io/cyos/phase-2/ (deployed together with
@@ -113,8 +113,12 @@ src/
 
 - `tokens.css`/`foundation.css`/`components.css` are the DS skill's files —
   never edit them here; regenerate from the `effectory-design-documentation` repo.
-- `app.css` contains one deliberate DS correction: `btn-primary`/`btn-danger`
-  disabled states lack a background rule in the DS — worth an upstream ticket.
+- `app.css` no longer carries DS corrections: the `btn-primary`/`btn-danger`
+  disabled-background fix landed upstream, and Card/Tag/Page-header are now real
+  DS components (the hand-rolled versions were removed in the v1.17.0 upgrade).
+  One divergence remains and is flagged in `app.css`: the DS has no
+  large-button variant, so the template-preview hero CTA (`.tpv-cta`) sets its
+  own size.
 - Token-built customs with no DS component (escape hatch per the skill): wizard
   stepper, status/benchmark/custom tags, list rows (`.qrow`), question-type tile
   (`.qtile`), and the `.dialog-worksurface` scroll helper for tall dialogs.

@@ -96,10 +96,10 @@ function TopNav({ name, onRename, onTranslations }) {
           <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px",
             borderRadius: "var(--radius-md)", background: s.active ? "var(--bg-base-hover)" : "transparent" }}>
             {s.done
-              ? <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--bg-positive-base)", color: "var(--content-on-brand-base)", display: "grid", placeItems: "center", flex: "none" }}><Icon name="check" size={12} /></span>
+              ? <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--bg-positive)", color: "var(--content-on-brand-base)", display: "grid", placeItems: "center", flex: "none" }}><Icon name="check" size={12} /></span>
               : <span style={{ width: 20, height: 20, borderRadius: "50%", fontSize: 12, fontWeight: 700, display: "grid", placeItems: "center", flex: "none",
-                  background: s.active ? "var(--bg-brand-base)" : "var(--bg-tertiary)", color: s.active ? "var(--content-on-brand-base)" : "var(--content-secondary)" }}>{s.n}</span>}
-            <Icon name={s.icon} size={16} style={{ color: s.active ? "var(--content-brand-base)" : "var(--content-secondary)" }} />
+                  background: s.active ? "var(--bg-brand)" : "var(--bg-tertiary)", color: s.active ? "var(--content-on-brand-base)" : "var(--content-secondary)" }}>{s.n}</span>}
+            <Icon name={s.icon} size={16} style={{ color: s.active ? "var(--content-brand)" : "var(--content-secondary)" }} />
             <span style={{ fontSize: 14, fontWeight: s.active ? 600 : 500, color: s.active ? "var(--content-base)" : "var(--content-secondary)" }}>{s.label}</span>
           </div>
         ))}
