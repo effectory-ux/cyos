@@ -77,7 +77,7 @@ function TopicRemoveWarning({ label, count, onCancel, onConfirm }) {
   );
 }
 
-function TopNav({ name, onRename, onTranslations }) {
+function TopNav({ name, onRename }) {
   const steps = [
     { n: 1, icon: "clipboard-note", label: "Questionnaire", active: true },
     { n: 2, icon: "users", label: "Participants" },
@@ -90,7 +90,6 @@ function TopNav({ name, onRename, onTranslations }) {
       <span className="tag tag-draft">Draft</span>
       <span style={{ fontWeight: 600, fontSize: 16 }}>{name}</span>
       <button className="btn btn-link" style={{ padding: "4px 6px" }} onClick={onRename}><Icon name="edit" size={14} />Edit name</button>
-      <button className="btn btn-link" style={{ padding: "4px 6px" }} onClick={onTranslations}><Icon name="language" size={14} />Translations</button>
       <div className="spacer" />
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         {steps.map(s => (
@@ -505,8 +504,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
 
   return (
     <div className={"col" + (tipsOff ? " tips-off" : "")}>
-      <TopNav name={name} onRename={() => setRename({ kind: "survey", value: name })}
-        onTranslations={() => setTranslationsOpen(true)} />
+      <TopNav name={name} onRename={() => setRename({ kind: "survey", value: name })} />
       <div className="scroll-y" style={{ flex: 1, padding: "var(--spacing-super-loose) 0 110px", background: "var(--bg-base)" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 var(--spacing-super-loose)" }}>
           <h1 className="text-l2" style={{ margin: "0 0 4px" }}>Questions</h1>
@@ -718,11 +716,15 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           originalName={key} isCustom={isCustom} questionCount={sec ? sec.items.length : 0}
           i18nEdits={i18nEdits} stringKeyBase={"topic:" + key}
           onCancel={() => setTopicDialog(null)}
-          onSave={({ name: nm, desc: ds }) => {
+          onSave={({ name: nm, desc: ds, translations }) => {
             const patch = {};
             if (nm !== topicName(key)) patch.name = nm;
             if ((ds || undefined) !== ((topicMeta[key] || {}).desc || undefined)) patch.desc = ds;
             if (Object.keys(patch).length) onUpdateTopicMeta && onUpdateTopicMeta(key, patch);
+            // Reviewed translations are saved after the source text, so a changed
+            // source can't wipe the translation the user just typed.
+            (translations || []).forEach(({ code, part, text }) =>
+              onSaveTranslation && onSaveTranslation(code, `topic:${key}:${part}`, text));
             setTopicDialog(null);
           }} />;
       })()}

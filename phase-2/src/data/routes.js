@@ -20,9 +20,12 @@ export function serialize(route) {
   const base = screen === "builder" && surveyId
     ? `/surveys/${surveyId}/questionnaire`
     : `/projects/${PROJECT_ID}/survey-list`;
-  const suffix = dialog ? `(dialog:${dialog}${arg ? "/" + arg : ""})` : "";
+  // Topic keys and question ids can contain spaces or "&", so encode the arg.
+  const suffix = dialog ? `(dialog:${dialog}${arg ? "/" + encodeURIComponent(arg) : ""})` : "";
   return "#" + base + suffix;
 }
+
+const safeDecode = (v) => { try { return decodeURIComponent(v); } catch (_) { return v; } };
 
 export function parse(hash) {
   const raw = (hash || "").replace(/^#/, "");
@@ -35,7 +38,7 @@ export function parse(hash) {
     screen: survey ? "builder" : "surveys",
     surveyId: survey ? survey[1] : undefined,
     dialog: dialog || undefined,
-    arg: arg || undefined,
+    arg: arg ? safeDecode(arg) : undefined,
   };
 }
 

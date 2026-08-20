@@ -161,8 +161,9 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   // holding that theme complete, the warning leads with the theme instead.
   const completesTheme = !!(q.theme && themeInfo && themeInfo.total > 0 && themeInfo.kept >= themeInfo.total);
   const topicLabel = (topicOptions.find(o => o.value === topic) || {}).label || topic;
-  // Item 6: the dialog is titled by the thing itself (primary-language value).
-  const title = q.text;
+  // The dialog is titled by the thing itself: the wording actually in use, so
+  // picking an alternative retitles it.
+  const title = wording;
 
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 70 }}
@@ -172,8 +173,13 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
+          <div className="bmq-kind">
+            <span className="infotag"><QTypeIcon type={q.type} size={16} />{QTYPES[q.type].label}</span>
+            <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
+            {variant && <span className="infotag is-alt">Alternative wording</span>}
+          </div>
           <h2 className="dialog-title" id="bmq-title">{title}</h2>
-          <p className="dialog-subtitle">Benchmarked question, defined by our professionals and compared to relevant benchmarks.</p>
+          <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
         </div>
 
         <div className="bmq-selects">

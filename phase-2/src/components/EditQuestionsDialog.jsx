@@ -126,9 +126,6 @@ export function ThemeDetailsDialog({ theme, sel, onToggle, onToggleAll, onClose 
     questions.forEach(qq => { if (initial.has(qq.id) !== sel.has(qq.id)) onToggle(qq.id); });
     onClose();
   };
-  const count = kept === 0 ? `${total} ${total === 1 ? "question" : "questions"}`
-    : complete ? `All questions selected (${total})`
-      : `${kept} of ${total} questions selected`;
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 65 }}
       onMouseDown={e => { if (e.target === e.currentTarget) cancel(); }}>
@@ -154,13 +151,12 @@ export function ThemeDetailsDialog({ theme, sel, onToggle, onToggleAll, onClose 
           </div>
         </div>
         <div className="dialog-body scroll-y">
+          {/* Same header as a topic's: title, then the select-all button with the
+              total in a grey pill. One component, one behaviour. */}
           <div className="aql-sechead" style={{ paddingTop: 0 }}>
-            <Tooltip label={selectAllTip(kept, total)} pos="is-above" float>
-              <Checkbox on={complete} indeterminate={kept > 0 && !complete} large onClick={() => onToggleAll(kept < total)} />
-            </Tooltip>
             <h3>Theme questions</h3>
             <div className="spacer" />
-            <span className="aql-count">{count}</span>
+            <SelectAllTopic allOn={complete} total={total} onToggle={() => onToggleAll(kept < total)} />
           </div>
           {questions.map(qq => (
             <div key={qq.id} className="aql-row" onClick={() => onToggle(qq.id)}>

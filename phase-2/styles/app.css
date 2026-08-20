@@ -940,21 +940,24 @@ button.sel-btn.cq-sel { font-size: 14px; }
   background-image: radial-gradient(rgba(255,255,255,.28) 3px, transparent 3.5px),
     radial-gradient(rgba(20,66,63,.22) 3px, transparent 3.5px);
   background-size: 104px 104px, 104px 104px; background-position: 0 0, 52px 52px; }
-.tpd-title-input { width: 100%; max-width: 560px; padding: 4px 10px; background: transparent;
-  border: 1px dashed transparent; border-radius: var(--radius-md); outline: none;
-  color: #fff; font-family: inherit; font-size: 28px; font-weight: 700; line-height: 1.3; text-align: center; }
-.tpd-title-input::placeholder { color: rgba(255,255,255,.65); }
-.tpd-title-input:hover { border-color: rgba(255,255,255,.55); }
-.tpd-title-input:focus { border-color: #fff; border-style: solid; }
-.tpd-title-input.is-static { border-color: transparent; }
+.tpd-title-input { width: 100%; max-width: 560px; padding: 6px 12px; background: rgba(255,255,255,.10);
+  border: 1.5px dashed rgba(255,255,255,.55); border-radius: var(--radius-md); outline: none;
+  color: #fff; font-family: inherit; font-size: 28px; font-weight: 700; line-height: 1.3; text-align: center;
+  transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+.tpd-title-input::placeholder { color: rgba(255,255,255,.7); }
+.tpd-title-input:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.8); }
+.tpd-title-input:focus { background: var(--bg-base); border-color: #fff; border-style: solid; color: var(--content-base); }
+.tpd-title-input:focus::placeholder { color: var(--content-placeholder); }
 .tpd-count { color: rgba(255,255,255,.95); font-size: 15px; }
-.tpd-desc-input { width: 100%; max-width: 620px; padding: 6px 10px; background: transparent;
-  border: 1px dashed transparent; border-radius: var(--radius-md); outline: none; resize: none;
-  color: #fff; font-family: inherit; font-size: 16px; line-height: 1.6; text-align: center; }
-.tpd-desc-input::placeholder { color: rgba(255,255,255,.65); }
-.tpd-desc-input:hover { border-color: rgba(255,255,255,.55); }
-.tpd-desc-input:focus { border-color: #fff; border-style: solid; }
-.tpd-desc-input.is-static { border-color: transparent; }
+.tpd-desc-input { width: 100%; max-width: 620px; padding: 8px 12px; background: rgba(255,255,255,.10);
+  border: 1.5px dashed rgba(255,255,255,.55); border-radius: var(--radius-md); outline: none; resize: none;
+  color: #fff; font-family: inherit; font-size: 16px; line-height: 1.6; text-align: center;
+  transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+.tpd-desc-input::placeholder { color: rgba(255,255,255,.7); }
+.tpd-desc-input:hover:not(:disabled) { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.8); }
+.tpd-desc-input:focus { background: var(--bg-base); border-color: #fff; border-style: solid; color: var(--content-base); }
+.tpd-desc-input:focus::placeholder { color: var(--content-placeholder); }
+.tpd-desc-input:disabled { background: transparent; border-color: rgba(255,255,255,.25); cursor: not-allowed; }
 .tpd-next { width: 48px; height: 48px; border-radius: 50%; flex: none; margin-top: 20px;
   background: #17171b; color: #fff; display: grid; place-items: center; }
 .qsec-title.is-clickable { cursor: pointer; border-radius: var(--radius-base); padding: 2px 6px; margin-left: -6px; }
@@ -1143,3 +1146,7 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 
 /* Questionnaire overview actions (top of the page) */
 .ov-actions { display: flex; align-items: center; gap: var(--spacing-tight); flex: none; }
+
+/* What kind of question this is — the title only carries its text. */
+.bmq-kind { display: flex; align-items: center; gap: var(--spacing-tight); flex-wrap: wrap; }
+.infotag.is-alt { background: var(--bg-tertiary); color: var(--content-secondary); }
