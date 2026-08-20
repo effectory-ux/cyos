@@ -8,24 +8,25 @@ import { TEMPLATE_PREVIEWS, TEMPLATE_META } from "../data/qlib.js";
 function tmplCount(t) { return (TEMPLATE_META[t.id] || {}).count ?? t.count; }
 function tmplMinutes(t) { return (TEMPLATE_META[t.id] || {}).minutes ?? Math.max(3, Math.round(t.count * 0.5)); }
 
+// One template = the DS Card component (v1.17.0 structure): .card-elevated
+// surface, .card-body content slot with .card-title / .card-text, and the two
+// actions in .card-actions. Deliberately NOT .is-interactive — per the DS rule
+// for rows/cards that carry their own buttons, those stay static (you can't
+// nest buttons inside a clickable card).
 function TemplateCard({ t, onUse, onPreview }) {
   const b = BADGE_COLORS[t.badge];
   return (
-    <div className="card" style={{ boxShadow: "var(--sh-card)", padding: "var(--spacing-loose)", display: "flex",
-      flexDirection: "column", gap: "var(--spacing-base)", position: "relative" }}>
-      {t.recommended && (
-        <span className="tag" style={{ position: "absolute", top: 16, right: 16, background: "var(--bg-brand-base)", color: "var(--content-on-brand-base)" }}>Recommended</span>
-      )}
-      <span style={{ width: 52, height: 52, borderRadius: "var(--radius-full)", background: b.bg, color: b.fg, display: "grid", placeItems: "center" }}>
-        <Icon name={b.icon} size={26} />
-      </span>
-      <div>
-        <div className="text-l5">{t.name}</div>
-        <div className="text-small" style={{ marginTop: 2, color: "var(--content-secondary)" }}>{t.scope} · {tmplCount(t)} questions</div>
+    <div className="card card-elevated tpl-card">
+      {t.recommended && <span className="tag tag-brand tpl-recommended">Recommended</span>}
+      <div className="card-body">
+        <span className="tpl-illus" style={{ background: b.bg, color: b.fg }}>
+          <Icon name={b.icon} size={26} />
+        </span>
+        <span className="card-title">{t.name}</span>
+        <span className="card-text tpl-meta">{t.scope} · {tmplCount(t)} questions</span>
+        <span className="card-text tpl-desc">{t.desc}</span>
       </div>
-      <p className="text-medium" style={{ margin: 0, color: "var(--content-secondary)", flex: 1,
-        display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{t.desc}</p>
-      <div style={{ display: "flex", gap: 8 }}>
+      <div className="card-actions">
         <button className="btn btn-secondary" onClick={() => onUse(t)}>Use template</button>
         <button className="btn btn-tertiary" onClick={() => onPreview(t)}>Preview</button>
       </div>
@@ -76,7 +77,7 @@ function TemplatePreviewView({ t, onBack, onUse }) {
                   <h4 className="text-l5">{g.topic}</h4>
                   <span className="tpv-count">{g.questions.length}</span>
                 </div>
-                <div className="card" style={{ overflow: "hidden" }}>
+                <div className="card card-elevated">
                   {g.questions.map((qq, i) => (
                     <div key={i} className="qrow tpv-trow" style={{ borderBottom: i === g.questions.length - 1 ? "none" : undefined }}>
                       <div className="qrow-main">
@@ -141,7 +142,7 @@ export function TemplateModal({ changing, onClose, onUse, onScratch }) {
               <button className="btn btn-secondary" style={{ flex: "none" }} onClick={onScratch}><Icon name="plus" size={16} />Start from scratch</button>
             </div>
             <div className="dialog-body scroll-y">
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "var(--spacing-loose)" }}>
+              <div className="tpl-grid">
                 {list.map(t => <TemplateCard key={t.id} t={t} onUse={onUse} onPreview={setPreview} />)}
               </div>
               {list.length === 0 && <div className="text-medium text-subdued" style={{ padding: "60px 0", textAlign: "center" }}>No templates match “{q}”.</div>}

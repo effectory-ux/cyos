@@ -488,7 +488,7 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
           <h1 className="text-l2" style={{ margin: "0 0 4px" }}>Questions</h1>
           <p style={{ margin: "0 0 var(--spacing-loose)", fontSize: 14, lineHeight: 1.6, color: "var(--content-secondary)" }}>Select the question sets and single questions that you want to include in this survey.</p>
 
-          <div className="card ov-card">
+          <div className="card card-elevated ov-card">
             <div className="ov-top">
               <div className="ov-content">
                 {chosen.length === 0 ? (

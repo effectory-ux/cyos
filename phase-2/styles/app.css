@@ -18,8 +18,31 @@ body {
 .app { height: 100vh; display: flex; overflow: hidden; background: var(--bg-secondary); }
 .col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-/* ---- generic card / surface ---- */
-.card { background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-lg); box-shadow: var(--sh-card); }
+/* ---- DS Card — backported from Engage DS v1.17.0 ------------------------
+   The vendored DS files here are v1.6.0, which predates the Card component,
+   so its rules are mirrored VERBATIM below with this version's token names
+   (upstream --bg-brand → --bg-brand-base, etc.). Do not diverge from
+   upstream; delete this block once the vendored DS files are upgraded.
+   Note: base .card is borderless/shadowless — add .card-elevated (border +
+   shadow), .card-outlined (border) or .card-filled (tinted). */
+.card { display: flex; flex-direction: column; background: var(--bg-base); border: 1px solid transparent;
+  border-radius: var(--radius-md); overflow: hidden; font-family: 'Poppins', sans-serif; }
+.card-elevated { border-color: var(--border-base); box-shadow: var(--sh-card); }
+.card-outlined { border-color: var(--border-base); }
+.card-filled   { background: var(--bg-secondary); }
+.card.is-interactive { cursor: pointer; transition: box-shadow .15s ease, border-color .15s ease; }
+.card-elevated.is-interactive:hover, .card-elevated.is-interactive.is-hover { box-shadow: var(--sh-card-hover); }
+.card-outlined.is-interactive:hover, .card-outlined.is-interactive.is-hover { border-color: var(--border-action); box-shadow: var(--sh-card); }
+.card-filled.is-interactive:hover, .card-filled.is-interactive.is-hover { background: var(--bg-base-hover); }
+.card-body { display: flex; flex-direction: column; gap: 8px; padding: 24px; }
+.card-title { font-size: 16px; font-weight: 600; line-height: 1.5; color: var(--content-base); }
+.card-text { font-size: 14px; font-weight: 400; line-height: 1.6; color: var(--content-secondary); }
+.card-actions { display: flex; align-items: center; gap: 8px; padding: 0 24px 24px; }
+.card-actions.has-divider { padding-top: 16px; border-top: 1px solid var(--border-base); margin-top: 4px; }
+.card.is-sm .card-body { padding: 16px; }
+.card.is-sm .card-actions { padding: 0 16px 16px; }
+.card.is-compact .card-body { padding: 12px; }
+.card.is-compact .card-actions { padding: 0 12px 12px; }
 .scroll-y { overflow: auto; }
 .scroll-y::-webkit-scrollbar { width: 10px; height: 10px; }
 .scroll-y::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: var(--radius-base); border: 2px solid transparent; background-clip: padding-box; }
@@ -29,6 +52,7 @@ body {
 .tag { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px;
   border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; line-height: 16px; white-space: nowrap; }
 .tag i { display: flex; width: 14px; height: 14px; flex: none; }
+.tag-brand { background: var(--bg-brand-base); color: var(--content-on-brand-base); }
 .tag-neutral { background: var(--bg-secondary); color: var(--content-secondary); }
 .tag-count { background: var(--bg-secondary); color: var(--content-secondary); border-radius: var(--radius-full); min-width: 22px; justify-content: center; padding: 0 7px; }
 .tag-benchmark { background: var(--bg-accent-turquoise-subtle); color: var(--content-accent-turquoise-base); }
@@ -1010,3 +1034,19 @@ button.sel-btn.cq-sel { font-size: 14px; }
 /* Org-required questions: checked but locked — reads as disabled, not actionable */
 input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disabled); border-color: transparent; }
 .cb-wrap:has(input.cb-locked:checked)::after { background-color: var(--content-disabled); }
+
+/* ---- Template selection grid (layout only; the card itself is the DS Card) --
+   Everything visual — surface, radius, padding, title/text type, action row —
+   comes from .card / .card-body / .card-title / .card-text / .card-actions.
+   These rules only place app-specific content inside that structure. */
+.tpl-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--spacing-loose); }
+.tpl-card { position: relative; }
+.tpl-card .card-body { flex: 1; }
+/* .card has overflow:hidden, so let the action row wrap instead of clipping
+   when a card gets narrow (below the dialog's intended desktop width). */
+.tpl-card .card-actions { flex-wrap: wrap; }
+.tpl-illus { width: 52px; height: 52px; border-radius: var(--radius-full); flex: none;
+  display: grid; place-items: center; margin-bottom: var(--spacing-tight); }
+.tpl-meta { font-size: 12px; line-height: 19.2px; }
+.tpl-desc { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.tpl-recommended { position: absolute; top: var(--spacing-base); right: var(--spacing-base); z-index: 1; }
