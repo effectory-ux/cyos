@@ -85,7 +85,7 @@ export function App() {
   //                 own desc/topic on the pool object).
   //   i18nEdits:    { [lang]: { [stringKey]: text } } — reviewed translations of
   //                 user-authored strings; absence = automatic translation.
-  const normalize = (sv) => ({ topicMeta: {}, customTopics: [], qMeta: {}, i18nEdits: {}, ...sv });
+  const normalize = (sv) => ({ topicMeta: {}, customTopics: [], qMeta: {}, i18nEdits: {}, intro: {}, ...sv });
 
   // When changing a template from the builder, keep the same survey id so it
   // updates in place (a fresh id is minted only for a brand-new survey).
@@ -179,6 +179,15 @@ export function App() {
     if ("name" in patch) touched.push(`topic:${key}:name`);
     if ("desc" in patch) touched.push(`topic:${key}:desc`);
     return { ...s, topicMeta: tm, i18nEdits: dropI18n(s, touched) };
+  });
+  // The intro screen participants see first. Survey-scoped like everything else
+  // in this step; its title defaults to the survey's own name until edited.
+  const updateIntro = (patch) => setSurvey(s => {
+    const next = compact({ ...(s.intro || {}), ...patch });
+    const touched = [];
+    if ("title" in patch && (patch.title || undefined) !== ((s.intro || {}).title || undefined)) touched.push("intro:name");
+    if ("desc" in patch && (patch.desc || undefined) !== ((s.intro || {}).desc || undefined)) touched.push("intro:desc");
+    return { ...s, intro: next, i18nEdits: touched.length ? dropI18n(s, touched) : s.i18nEdits };
   });
   const addTopic = ({ name, desc }) => setSurvey(s => {
     const key = "ct-" + Date.now();
@@ -393,11 +402,11 @@ export function App() {
       {screen === "surveys" && <Sidebar />}
       {screen === "surveys"
         ? <SurveysPage rows={surveysList} onCreate={() => setModal(true)} onDeleteDraft={deleteSurvey} onOpen={openSurvey} />
-        : <Builder survey={survey} onDetachQuestion={detachQuestion} onEditQuestions={() => { setEditTab("questions"); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
+        : <Builder survey={survey} onDetachQuestion={detachQuestion} onEditQuestions={(tab) => { setEditTab(tab || "questions"); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveQuestionTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
-            onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta}
+            onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta} onUpdateIntro={updateIntro}
             onSaveTranslation={saveTranslation}
             openDialog={openInBuilder} onDialogChange={setBuilderDialog}
             onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }} />}

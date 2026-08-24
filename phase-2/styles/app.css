@@ -468,21 +468,67 @@ button.sel-btn.cq-sel { font-size: 14px; }
 /* Detail hero: the illustration matches the height of the title + meta beside it. */
 .tpv-illus-fit { width: auto; height: auto; align-self: stretch; aspect-ratio: 1 / 1; }
 
-/* Builder overview card (Figma 6165:15088): count + "N active themes · M min"
-   meta, an Add-questions button, then a row of active-template tags. */
-.ov-card { display: flex; flex-direction: column; gap: 16px; padding: 24px; border-radius: 16px; }
-.ov-top { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-base); width: 100%; }
-.ov-content { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
-.ov-count-row { display: flex; align-items: center; gap: 10px; }
-.ov-count { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
-.ov-meta { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.6; color: var(--content-secondary); min-width: 0; }
+/* Builder context bar (Figma 6293:26514). The step has no page title — the tab
+   above already names it — so this bar carries the orientation instead: the
+   survey's status on the left, then the two menus that read left-to-right as
+   "what I see" and "what's in it". It sits outside the scrolling list, so it
+   stays in view for the whole page — the status IS the heading here. */
+.ctxbar { z-index: 30; flex: none; background: var(--bg-base);
+  border-bottom: 1px solid var(--border-base); }
+.ctxbar-inner { max-width: 1080px; margin: 0 auto; padding: var(--spacing-base-tight) var(--spacing-super-loose);
+  display: flex; align-items: center; gap: var(--spacing-tight); }
+.ctxbar-status { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.ctxbar-count { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
+.ctxbar-meta { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.6; color: var(--content-secondary); min-width: 0; }
 .ov-dot { flex: none; width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .55; }
-.ov-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-.ov-tmpl-tag { display: inline-flex; align-items: center; gap: 6px; max-width: 280px; padding: 4px 8px; border: none; border-radius: 6px;
-  cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500; line-height: 22.4px; color: var(--content-base);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: filter var(--motion-fast) var(--ease-standard); }
-.ov-tmpl-tag:hover { filter: brightness(0.96); }
-.ov-tmpl-tag i { flex: none; }
+/* A suggestion reports ON the survey, so it sits with the status, not with the
+   actions. It only exists when there is something to say. */
+.ctxbar-sugg { display: inline-flex; align-items: center; gap: 6px; margin-left: var(--spacing-base-tight);
+  padding: 5px 10px; border: 1px solid var(--border-warning-subtle); border-radius: 999px;
+  background: var(--bg-warning-subtle); color: var(--content-warning-secondary);
+  font-family: inherit; font-size: 13px; font-weight: 600; line-height: 18px; cursor: pointer;
+  transition: filter var(--motion-fast) var(--ease-standard); }
+.ctxbar-sugg:hover { filter: brightness(0.97); }
+.ctxbar-sugg i { flex: none; }
+.ctxbar-menu-wrap { position: relative; flex: none; }
+.ctxbar-menu { position: absolute; top: calc(100% + 4px); left: 0; width: 300px; z-index: 40; }
+.ctxbar-menu.is-right { left: auto; right: 0; }
+
+/* Intro screen card: the first thing participants see, so it is the first thing
+   in the list. Reads as content, not as a form. */
+.intro-card { display: flex; flex-direction: row; align-items: flex-start; gap: var(--spacing-base); padding: var(--spacing-base);
+  margin-bottom: var(--spacing-base); }
+.intro-card:focus-visible { outline: 2px solid var(--border-action-active); outline-offset: 2px; }
+.intro-card-body { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.intro-card-lbl { font-size: 12px; font-weight: 600; line-height: 16px; letter-spacing: .02em;
+  text-transform: uppercase; color: var(--content-subtle); }
+.intro-card-title { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
+.intro-card-desc { font-size: 14px; line-height: 22.4px; color: var(--content-secondary); }
+.intro-card-desc.is-empty { color: var(--content-placeholder); }
+
+/* A question's description, shown only when Display > Descriptions is on. */
+.qrow-desc { margin-top: 2px; font-size: 13px; line-height: 20px; color: var(--content-secondary); }
+
+/* Suggestions: one row per finding — mark, what it is, why it matters, and the
+   single action that resolves it. */
+.sgp-list { display: flex; flex-direction: column; gap: var(--spacing-tight); }
+.sgp-item { display: flex; gap: var(--spacing-base-tight); padding: var(--spacing-base-tight);
+  border: 1px solid var(--border-base); border-radius: var(--radius-md); background: var(--bg-base); }
+.sgp-item-mark { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg-secondary); color: var(--content-secondary); }
+.sgp-item-mark.is-theme { background: var(--bg-info-subtle); color: var(--content-info-secondary); }
+.sgp-item-mark.is-custom { background: var(--bg-warning-subtle); color: var(--content-warning-secondary); }
+.sgp-item-mark.is-length { background: var(--bg-secondary); color: var(--content-secondary); }
+.sgp-item-body { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.sgp-item-title { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
+.sgp-item-why { font-size: 13px; line-height: 20px; color: var(--content-secondary); }
+.sgp-item-btn { margin-top: 6px; }
+.sgp-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: var(--spacing-extra-loose) var(--spacing-base); text-align: center; }
+.sgp-empty-mark { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg-positive-subtle); color: var(--content-positive-secondary); }
+.sgp-empty-title { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
+.sgp-empty-sub { font-size: 13px; line-height: 20px; color: var(--content-secondary); max-width: 260px; }
 /* Empty / start-from-scratch placeholder (Figma 6165:15267): a grey panel with a
    heading, hint, and three greyed-out sample question rows. */
 .qb-empty { margin-top: var(--spacing-base); background: var(--bg-secondary); border: 1px solid var(--border-base); border-radius: 16px;
@@ -1145,7 +1191,6 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
   font-size: 14px; }
 
 /* Questionnaire overview actions (top of the page) */
-.ov-actions { display: flex; align-items: center; gap: var(--spacing-tight); flex: none; }
 
 /* What kind of question this is — the title only carries its text. */
 .bmq-kind { display: flex; align-items: center; gap: var(--spacing-tight); flex-wrap: wrap; }

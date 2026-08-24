@@ -13,7 +13,11 @@ import { Icon } from "./Icon.jsx";
 import { Tooltip } from "./shared.jsx";
 import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 
-export function TopicDialog({ creating, name: initialName, desc: initialDesc, originalName, isCustom, questionCount = 0, i18nEdits = {}, stringKeyBase, onCancel, onSave }) {
+// The same surface serves the survey's intro screen: participants meet it the
+// same way (a themed screen with a title, a description and a next arrow), so
+// it is edited the same way. `variant="intro"` only changes the framing copy.
+export function TopicDialog({ creating, name: initialName, desc: initialDesc, originalName, isCustom, questionCount = 0, i18nEdits = {}, stringKeyBase, variant, onCancel, onSave }) {
+  const isIntro = variant === "intro";
   const [name, setName] = useState(initialName || "");
   const [desc, setDesc] = useState(initialDesc || "");
   const [lang, setLang] = useState("en");
@@ -58,9 +62,12 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-          <h2 className="dialog-title" id="tpd-title">{creating ? "Add topic" : (initialName || "Topic")}</h2>
+          <h2 className="dialog-title" id="tpd-title">
+            {isIntro ? (initialName || "Intro screen") : creating ? "Add topic" : (initialName || "Topic")}</h2>
           <p className="dialog-subtitle">
-            Topics organize the questions in this survey and introduce them to participants. They don't affect themes or benchmarks.
+            {isIntro
+              ? "The first screen participants see. Give the survey a title in their words and, if it helps, a short welcome."
+              : "Topics organize the questions in this survey and introduce them to participants. They don't affect themes or benchmarks."}
           </p>
         </div>
 
@@ -68,15 +75,15 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
           <div className="bmq-preview is-participant">
             <div className="tpd-screen">
               <input className="tpd-title-input" value={primary ? name : tName}
-                placeholder="Topic name" autoFocus={creating}
-                aria-label={primary ? "Topic name" : "Topic name in " + lang.toUpperCase()} maxLength={60}
+                placeholder={isIntro ? "Survey title for the participants" : "Topic name"} autoFocus={creating}
+                aria-label={(isIntro ? "Survey title" : "Topic name") + (primary ? "" : " in " + lang.toUpperCase())} maxLength={60}
                 onChange={e => (primary ? setName(e.target.value) : setTrPart("name", e.target.value))} />
-              <div className="tpd-count">{questionCount} {questionCount === 1 ? "question" : "questions"}</div>
+              {!isIntro && <div className="tpd-count">{questionCount} {questionCount === 1 ? "question" : "questions"}</div>}
               {/* The description field shows in every language, so a translation
                   can be written by hand right where it appears. */}
               <textarea className="tpd-desc-input" rows={2} value={primary ? desc : tDesc} maxLength={200}
                 placeholder={primary ? "Add a description (optional)" : "Add a description"}
-                aria-label={primary ? "Topic description" : "Topic description in " + lang.toUpperCase()}
+                aria-label={(isIntro ? "Intro description" : "Topic description") + (primary ? "" : " in " + lang.toUpperCase())}
                 disabled={!primary && !desc.trim()}
                 onChange={e => (primary ? setDesc(e.target.value) : setTrPart("desc", e.target.value))} />
               <span className="tpd-next" aria-hidden="true"><Icon name="arrow-down" size={18} /></span>

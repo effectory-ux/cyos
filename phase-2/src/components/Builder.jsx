@@ -7,8 +7,10 @@ import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
 import { TranslationsDialog } from "./TranslationsDialog.jsx";
-import { TEMPLATES, BADGE_COLORS, THEMES } from "../data/data.js";
-import { templatePoolQuestions } from "../data/qlib.js";
+import { SuggestionsPanel, SuggestionsPreflight } from "./SuggestionsPanel.jsx";
+import { THEMES } from "../data/data.js";
+import { buildSuggestions } from "../data/suggestions.js";
+import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 
 // Small rename dialog — used for the survey name and for a topic's
 // questionnaire-specific label. `note` adds one quiet scope line under the field.
@@ -77,7 +79,7 @@ function TopicRemoveWarning({ label, count, onCancel, onConfirm }) {
   );
 }
 
-function TopNav({ name, onRename }) {
+function TopNav({ name, templateName, onRename }) {
   const steps = [
     { n: 1, icon: "clipboard-note", label: "Questionnaire", active: true },
     { n: 2, icon: "users", label: "Participants" },
@@ -88,8 +90,15 @@ function TopNav({ name, onRename }) {
     <div style={{ height: 64, borderBottom: "1px solid var(--border-base)", background: "var(--bg-base)", display: "flex",
       alignItems: "center", padding: "0 var(--spacing-loose)", gap: "var(--spacing-base)", flex: "none" }}>
       <span className="tag tag-draft">Draft</span>
-      <span style={{ fontWeight: 600, fontSize: 16 }}>{name}</span>
+      <h1 style={{ margin: 0, fontWeight: 600, fontSize: 16, lineHeight: "24px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: "0 1 auto", minWidth: 140, maxWidth: 340 }}>{name}</h1>
       <button className="btn btn-link" style={{ padding: "4px 6px" }} onClick={onRename}><Icon name="edit" size={14} />Edit name</button>
+      {/* Where this survey started. Provenance, not progress — it never changes
+          as questions come and go. */}
+      {templateName && (
+        <Tooltip label="The template this survey started from" pos="is-below">
+          <span className="tag tag-draft text-w500"><Icon name="layout" size={12} />From {templateName}</span>
+        </Tooltip>
+      )}
       <div className="spacer" />
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         {steps.map(s => (
@@ -109,7 +118,7 @@ function TopNav({ name, onRename }) {
   );
 }
 
-function BuilderRow({ q, meta, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, themeInfo, onOpenTheme, onDragStart, onDragEnd }) {
+function BuilderRow({ q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, themeInfo, onOpenTheme, onDragStart, onDragEnd }) {
   const [menu, setMenu] = useState(false);
   // "Move to topic" opens a nested submenu BESIDE the menu (DS pattern: a
   // trailing .menu-chevron item flying out a second .menu) instead of swapping
@@ -141,6 +150,10 @@ function BuilderRow({ q, meta, onRemove, onEdit, onSettings, onResetDesc, onMove
     if (e.target.closest("button, input, textarea, a, .menu, [role='button'], [role='menu']")) return;
     onSettings && onSettings(q);
   };
+  const text = tr(`q:${q.id}:text`, variant || q.text);
+  // A description shows only when the user asked to see them (Display menu) and
+  // this question actually has one — added here or shipped with a custom one.
+  const desc = meta && meta.descHidden ? undefined : ((meta && meta.desc) || q.desc);
   return (
     <div className={"qrow" + (dragging ? " is-dragging" : "") + (entering ? " is-entering" : "")} data-qid={q.id}
       onClick={rowClick}>
@@ -150,7 +163,8 @@ function BuilderRow({ q, meta, onRemove, onEdit, onSettings, onResetDesc, onMove
           <Icon name="drag-drop" size={16} /></button>
       </Tooltip>
       <div className="qrow-main">
-        <div style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{variant || q.text}</div>
+        <div style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{text}</div>
+        {showDesc && desc && <div className="qrow-desc">{tr(`q:${q.id}:desc`, desc)}</div>}
       </div>
       <div className="qrow-meta">
         {q.theme
@@ -260,8 +274,8 @@ function reconcileLayout(prev, groups) {
   return next;
 }
 
-export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onSaveTranslation, openDialog, onDialogChange }) {
-  const { name, isTemplate, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {} } = survey;
+export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSaveTranslation, openDialog, onDialogChange }) {
+  const { name, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {}, intro = {} } = survey;
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
   const [topicWarn, setTopicWarn] = useState(null); // section pending removal confirmation
@@ -270,6 +284,14 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   const [topicDialog, setTopicDialog] = useState(null);
   const [settingsQId, setSettingsQId] = useState(null); // standard question whose dialog is open
   const [translationsOpen, setTranslationsOpen] = useState(false);
+  const [introOpen, setIntroOpen] = useState(false);   // participant intro screen
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [preflight, setPreflight] = useState(false);   // suggestions shown on "Next step"
+  // Context-bar menus (one open at a time) and the two view settings they hold.
+  // Both are VIEW state: they change what this page shows, never the survey.
+  const [barMenu, setBarMenu] = useState(null);        // "display" | "add" | null
+  const [viewLang, setViewLang] = useState("en");
+  const [showDesc, setShowDesc] = useState(true);
   // Every builder dialog has a URL: report which one is open, and restore one
   // asked for by a deep link or the prototype toolbar.
   useEffect(() => {
@@ -277,8 +299,11 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     if (settingsQId) onDialogChange({ dialog: "question-settings", arg: settingsQId });
     else if (topicDialog) onDialogChange(topicDialog.creating ? { dialog: "add-topic" } : { dialog: "topic", arg: topicDialog.key });
     else if (translationsOpen) onDialogChange({ dialog: "translations" });
+    else if (themeDetail) onDialogChange({ dialog: "theme", arg: themeDetail });
+    else if (introOpen) onDialogChange({ dialog: "intro-screen" });
+    else if (suggestOpen) onDialogChange({ dialog: "suggestions" });
     else onDialogChange(null);
-  }, [settingsQId, topicDialog, translationsOpen]); // eslint-disable-line
+  }, [settingsQId, topicDialog, translationsOpen, themeDetail, introOpen, suggestOpen]); // eslint-disable-line
   useEffect(() => {
     if (!openDialog) return;
     const { dialog, arg } = openDialog;
@@ -286,6 +311,9 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     else if (dialog === "topic" && arg) setTopicDialog({ key: arg });
     else if (dialog === "add-topic") setTopicDialog({ creating: true });
     else if (dialog === "translations") setTranslationsOpen(true);
+    else if (dialog === "theme" && arg) setThemeDetail(arg);
+    else if (dialog === "intro-screen") setIntroOpen(true);
+    else if (dialog === "suggestions") setSuggestOpen(true);
   }, [openDialog]); // eslint-disable-line
 
   const sel = new Set(selectedIds);
@@ -317,13 +345,30 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // still render as sections so they can be filled by drag or move-to.
   const groups = groupQuestions(chosen.map(q => effTopic(q) !== q.topic ? { ...q, topic: effTopic(q) } : q), "library");
   customTopics.forEach(k => { if (!groups.find(g => g.key === k)) groups.push({ key: k, label: k, kind: "topic", items: [] }); });
-  // Header meta: a theme is "active" when every one of its questions is selected
-  // (a scored theme); a template is "active" when its whole question set is in.
+  // A theme is "active" when every one of its questions is selected — that is
+  // what earns a composite score in the results.
   const activeThemes = themeGroups.filter(t => t.total > 0 && t.kept >= t.total).length;
-  const activeTemplates = TEMPLATES.filter(t => {
-    const qs = templatePoolQuestions(t.id);
-    return qs.length > 0 && qs.every(qq => sel.has(qq.id));
-  });
+
+  // Guidance, derived — never stored. See data/suggestions.js for the rules.
+  const suggestions = buildSuggestions({ themeGroups, pool, selectedIds, minutes: estMinutes });
+
+  // A suggestion's action never invents a surface: it opens the one that
+  // already fixes it, so acting on it teaches where that thing lives.
+  const actOnSuggestion = (sg) => {
+    setSuggestOpen(false);
+    if (sg.kind === "theme") setThemeDetail(sg.theme);
+    else if (sg.kind === "custom") onEditQuestions && onEditQuestions("custom");
+  };
+
+  // Preview language: a reviewed translation if there is one, otherwise the
+  // automatic one. Standard library text ships pre-translated in production;
+  // the prototype fakes it with the same translator.
+  // Participants see the survey's own name until someone writes them a title.
+  const introTitle = intro.title || name;
+  const tr = (key, text) => {
+    if (viewLang === "en" || !text) return text;
+    return (i18nEdits[viewLang] || {})[key] || autoTranslation(text, viewLang);
+  };
 
   // On-page ordering the user can drag-reorder. Lives only here — the Add
   // questions dialog always works from the library order, never this one.
@@ -504,57 +549,124 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
 
   return (
     <div className={"col" + (tipsOff ? " tips-off" : "")}>
-      <TopNav name={name} onRename={() => setRename({ kind: "survey", value: name })} />
-      <div className="scroll-y" style={{ flex: 1, padding: "var(--spacing-super-loose) 0 110px", background: "var(--bg-base)" }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 var(--spacing-super-loose)" }}>
-          <h1 className="text-l2" style={{ margin: "0 0 4px" }}>Questions</h1>
-          <p style={{ margin: "0 0 var(--spacing-loose)", fontSize: 14, lineHeight: 1.6, color: "var(--content-secondary)" }}>Select the question sets and single questions that you want to include in this survey.</p>
+      <TopNav name={name} templateName={survey.templateName} onRename={() => setRename({ kind: "survey", value: name })} />
+      {/* The step's context bar. It replaces the page title: the active tab
+          already names the step, so an H1 would only repeat the nav — and this
+          page's whole job is a long list. Grammar, left to right:
+          STATUS (read-only) -> DISPLAY (what I see) -> ADD CONTENT (what's in
+          the survey). Only the last one writes. It sits outside the scrolling
+          list, so the status stays in view — it is the orientation now. */}
+      <div className="ctxbar">
+        <div className="ctxbar-inner">
+          <div className="ctxbar-status">
+            {chosen.length === 0 ? (
+              <>
+                <span className="ctxbar-count">Start adding your questions</span>
+                <span className="ctxbar-meta">A short summary of your selection will show here</span>
+              </>
+            ) : (
+              <>
+                <span className="ctxbar-count">{chosen.length} {chosen.length === 1 ? "question" : "questions"} selected</span>
+                <span className="ctxbar-meta">
+                  {activeThemes > 0 && <>{activeThemes} active {activeThemes === 1 ? "theme" : "themes"}<span className="ov-dot" aria-hidden="true" /></>}
+                  {estMinutes} {estMinutes === 1 ? "minute" : "minutes"} duration
+                </span>
+              </>
+            )}
+          </div>
 
-          <div className="card card-elevated ov-card">
-            <div className="ov-top">
-              <div className="ov-content">
-                {chosen.length === 0 ? (
-                  <>
-                    <span className="ov-count">Start adding your questions</span>
-                    <div className="ov-meta"><span>A short summary of your selection will show here</span></div>
-                  </>
-                ) : (
-                  <>
-                    <div className="ov-count-row">
-                      <span className="ov-count">{chosen.length} {chosen.length === 1 ? "question" : "questions"} selected</span>
+          {/* A suggestion reports on the survey, so it belongs with the status,
+              not with the actions. Hidden at zero: a clean bar is the reward. */}
+          {suggestions.length > 0 && (
+            <button className="ctxbar-sugg" onClick={() => setSuggestOpen(true)}>
+              <Icon name="zap" size={14} />
+              {suggestions.length} {suggestions.length === 1 ? "suggestion" : "suggestions"}
+            </button>
+          )}
+
+          <div className="spacer" />
+
+          <div className="ctxbar-menu-wrap">
+            <button className={"btn btn-secondary" + (barMenu === "display" ? " is-pressed" : "")}
+              aria-haspopup="menu" aria-expanded={barMenu === "display"}
+              onClick={() => setBarMenu(m => m === "display" ? null : "display")}>
+              <Icon name="eye" size={16} />Display<Icon name="chevron-down" size={16} />
+            </button>
+            {barMenu === "display" && (
+              <>
+                <div className="cq-menu-scrim" onMouseDown={() => setBarMenu(null)} />
+                <div className="menu ctxbar-menu" role="menu">
+                  <div className="menu-group-lbl">Preview language</div>
+                  {LANGUAGES.map(l => (
+                    <div key={l.code} className={"menu-item" + (viewLang === l.code ? " is-selected" : "")} role="menuitemradio"
+                      aria-checked={viewLang === l.code} onClick={() => { setViewLang(l.code); setBarMenu(null); }}>
+                      <span className="lang-flag menu-item-icon"><img src={flagSrc(l.flag)} alt="" /></span>
+                      <span className="menu-item-body"><span className="menu-item-title">{l.label}</span></span>
+                      {viewLang === l.code && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
                     </div>
-                    <div className="ov-meta">
-                      {activeThemes > 0 && <>
-                        <span>{activeThemes} active {activeThemes === 1 ? "theme" : "themes"}</span>
-                        <span className="ov-dot" aria-hidden="true" />
-                      </>}
-                      <span>{estMinutes} {estMinutes === 1 ? "minute" : "minutes"} completion time</span>
-                    </div>
-                  </>
-                )}
-              </div>
-              <div className="ov-actions">
-                <button className="btn btn-secondary" onClick={() => setTopicDialog({ creating: true })}>
-                  <Icon name="plus" size={16} />Add topic</button>
-                <button className="btn btn-primary" onClick={onEditQuestions}>
-                  <Icon name="plus" size={16} />Select questions</button>
+                  ))}
+                  <div className="menu-divider" />
+                  <div className="menu-group-lbl">Show</div>
+                  <div className="menu-item" role="menuitemcheckbox" aria-checked={showDesc}
+                    onClick={() => setShowDesc(v => !v)}>
+                    <span className="menu-item-body"><span className="menu-item-title">Descriptions</span></span>
+                    {showDesc && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="ctxbar-menu-wrap">
+            <button className={"btn btn-primary" + (barMenu === "add" ? " is-pressed" : "")}
+              aria-haspopup="menu" aria-expanded={barMenu === "add"}
+              onClick={() => setBarMenu(m => m === "add" ? null : "add")}>
+              <Icon name="plus" size={16} />Add content<Icon name="chevron-down" size={16} />
+            </button>
+            {barMenu === "add" && (
+              <>
+                <div className="cq-menu-scrim" onMouseDown={() => setBarMenu(null)} />
+                <div className="menu ctxbar-menu is-right" role="menu">
+                  <div className="menu-item" role="menuitem" onClick={() => { setBarMenu(null); onEditQuestions(); }}>
+                    <span className="menu-item-icon"><Icon name="list-unordered" size={16} /></span>
+                    <span className="menu-item-body">
+                      <span className="menu-item-title">Questions</span>
+                      <span className="menu-item-sub">From the library, or your own</span>
+                    </span>
+                  </div>
+                  <div className="menu-item" role="menuitem" onClick={() => { setBarMenu(null); setTopicDialog({ creating: true }); }}>
+                    <span className="menu-item-icon"><Icon name="folder" size={16} /></span>
+                    <span className="menu-item-body">
+                      <span className="menu-item-title">Topic</span>
+                      <span className="menu-item-sub">Group and introduce questions</span>
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="scroll-y" style={{ flex: 1, padding: "var(--spacing-loose) 0 110px", background: "var(--bg-base)" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 var(--spacing-super-loose)" }}>
+          {/* The first thing participants see, so the page reads as the real
+              sequence: intro screen, then the topics in order. Same interaction
+              as every other block here — click the card, edit it in place. */}
+          <div className="card card-elevated is-interactive intro-card" role="button" tabIndex={0}
+            aria-label="Edit the intro screen participants see"
+            onClick={e => { if (e.target.closest("button")) return; setIntroOpen(true); }}
+            onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIntroOpen(true); } }}>
+            <div className="intro-card-body">
+              <div className="intro-card-lbl">Intro screen</div>
+              <div className="intro-card-title">{tr("intro:name", introTitle)}</div>
+              <div className={"intro-card-desc" + (intro.desc ? "" : " is-empty")}>
+                {intro.desc ? tr("intro:desc", intro.desc) : "Add a short welcome for participants"}
               </div>
             </div>
-            {chosen.length > 0 && activeTemplates.length > 0 && (
-              <div className="ov-tags">
-                {activeTemplates.map(t => {
-                  const b = BADGE_COLORS[t.badge] || {};
-                  return (
-                    <Tooltip key={t.id} label="View in Templates" pos="is-below">
-                      <button className="ov-tmpl-tag" style={{ background: b.bg }} onClick={onOpenTemplates}>
-                        <Icon name={b.icon} size={16} style={{ color: b.fg }} />
-                        {t.name}
-                      </button>
-                    </Tooltip>
-                  );
-                })}
-              </div>
-            )}
+            <Tooltip label="Edit intro screen" pos="is-left">
+              <button className="ib ib-36 ib-tertiary" aria-label="Edit intro screen" onClick={() => setIntroOpen(true)}><Icon name="edit" size={16} /></button>
+            </Tooltip>
           </div>
 
           <div className="qsec-list">
@@ -595,7 +707,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     onDragStart={startSection(s.key, vi)} onDragEnd={clearDrag} onClick={e => e.preventDefault()}>
                     <Icon name="drag-drop" size={16} /></button>
                 </Tooltip>
-                <h2 className="qsec-title">{topicName(s.key)}</h2>
+                <h2 className="qsec-title">{tr(`topic:${s.key}:name`, topicName(s.key))}</h2>
                 <div className="spacer" />
                 <span className="qsec-count">{s.items.length} {s.items.length === 1 ? "question" : "questions"}</span>
                 <div className="qsec-menu-wrap">
@@ -645,7 +757,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                 )}
                 {previewItems(s).map((qq) => {
                   const i = s.items.findIndex(x => x.id === qq.id);
-                  return <BuilderRow key={qq.id} q={qq} meta={qMeta[qq.id]}
+                  return <BuilderRow key={qq.id} q={qq} meta={qMeta[qq.id]} tr={tr} showDesc={showDesc}
                     onRemove={onRemoveQuestion} onEdit={onEditCustom} dragging={!!drag && drag.kind === "q" && drag.id === qq.id}
                     onSettings={(qq2) => qq2.custom ? (onEditCustom && onEditCustom(qq2)) : setSettingsQId(qq2.id)}
                     onResetDesc={() => onUpdateQMeta && onUpdateQMeta(qq.id, { desc: undefined, descHidden: undefined, variant: undefined })}
@@ -695,7 +807,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         <div className="spacer" />
         <span className="text-medium text-subdued">Last saved: just now</span>
         <button className="btn btn-secondary" onClick={onSaveClose}>Save &amp; close</button>
-        <button className={"btn btn-primary" + (chosen.length === 0 ? " is-disabled" : "")} disabled={chosen.length === 0}>Next step<Icon name="arrow-right" size={16} /></button>
+        <button className={"btn btn-primary" + (chosen.length === 0 ? " is-disabled" : "")} disabled={chosen.length === 0}
+          onClick={() => { if (suggestions.length) setPreflight(true); }}>Next step<Icon name="arrow-right" size={16} /></button>
         <button className="btn btn-secondary is-disabled" disabled><Icon name="send" size={16} />Plan survey</button>
       </div>
 
@@ -748,6 +861,20 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
       {topicWarn && <TopicRemoveWarning label={topicName(topicWarn.key)} count={topicWarn.items.length}
         onCancel={() => setTopicWarn(null)}
         onConfirm={(dontShow) => { if (dontShow) { try { localStorage.setItem("cyos.skipTopicRemoveWarn", "1"); } catch (_) {} } doRemoveTopic(topicWarn); setTopicWarn(null); }} />}
+      {introOpen && <TopicDialog variant="intro" name={introTitle} desc={intro.desc}
+        originalName={introTitle} isCustom i18nEdits={i18nEdits} stringKeyBase="intro"
+        onCancel={() => setIntroOpen(false)}
+        onSave={({ name: nm, desc: ds, translations }) => {
+          onUpdateIntro && onUpdateIntro({ title: nm, desc: ds || undefined });
+          (translations || []).forEach(({ code, part, text }) =>
+            onSaveTranslation && onSaveTranslation(code, `intro:${part}`, text));
+          setIntroOpen(false);
+        }} />}
+      {suggestOpen && <SuggestionsPanel items={suggestions} onAct={actOnSuggestion}
+        onClose={() => setSuggestOpen(false)} />}
+      {preflight && <SuggestionsPreflight items={suggestions}
+        onReview={() => { setPreflight(false); setSuggestOpen(true); }}
+        onContinue={() => setPreflight(false)} />}
       {detailTheme && <ThemeDetailsDialog theme={detailTheme} sel={sel}
         onToggle={(id) => onToggleQuestion && onToggleQuestion(id)}
         onToggleAll={(on) => onSetManyQuestions && onSetManyQuestions(detailTheme.questions.map(x => x.id), on)}
