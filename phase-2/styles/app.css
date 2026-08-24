@@ -468,44 +468,80 @@ button.sel-btn.cq-sel { font-size: 14px; }
 /* Detail hero: the illustration matches the height of the title + meta beside it. */
 .tpv-illus-fit { width: auto; height: auto; align-self: stretch; aspect-ratio: 1 / 1; }
 
-/* Builder context bar (Figma 6293:26514). The step has no page title — the tab
+/* Builder context bar (Figma 6293:26516). The step has no page title — the tab
    above already names it — so this bar carries the orientation instead: the
-   survey's status on the left, then the two menus that read left-to-right as
-   "what I see" and "what's in it". It sits outside the scrolling list, so it
-   stays in view for the whole page — the status IS the heading here. */
-.ctxbar { z-index: 30; flex: none; background: var(--bg-base);
-  border-bottom: 1px solid var(--border-base); }
-.ctxbar-inner { max-width: 1080px; margin: 0 auto; padding: var(--spacing-base-tight) var(--spacing-super-loose);
+   survey's status on the left, the button group on the right. The whole page
+   behind it is grey (or the survey's design color), and the bar is a wash over
+   that: a dark neutral alpha on the neutral page, a white alpha once a colored
+   design is applied. White hairlines top and bottom seam it to the white main
+   nav above without a grey line between them — this page only. */
+.ctxbar { z-index: 30; flex: none; padding: var(--spacing-base);
+  background: var(--p-color-neutral-alpha-5);
+  border-top: 1px solid var(--border-white); border-bottom: 1px solid var(--border-white); }
+.ctxbar.is-themed { background: var(--p-color-neutral-dark-alpha-30); }
+.ctxbar-inner { max-width: 960px; margin: 0 auto;
   display: flex; align-items: center; gap: var(--spacing-tight); }
-.ctxbar-status { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-
-.ctxbar-count { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
+.ctxbar-status { display: flex; flex-direction: column; min-width: 0; }
+.ctxbar-count { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
 .ctxbar-meta { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.6; color: var(--content-secondary); min-width: 0; }
 .ov-dot { flex: none; width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .55; }
-/* A suggestion reports ON the survey, so it sits with the status, not with the
-   actions. It only exists when there is something to say. */
-.ctxbar-sugg { display: inline-flex; align-items: center; gap: 6px; margin-left: var(--spacing-base-tight);
-  padding: 5px 10px; border: 1px solid var(--border-warning-subtle); border-radius: 999px;
-  background: var(--bg-warning-subtle); color: var(--content-warning-secondary);
-  font-family: inherit; font-size: 13px; font-weight: 600; line-height: 18px; cursor: pointer;
-  transition: filter var(--motion-fast) var(--ease-standard); }
-.ctxbar-sugg:hover { filter: brightness(0.97); }
-.ctxbar-sugg i { flex: none; }
+/* Suggestions (Figma "sentiment-button"): a white button with an informative
+   blue border — set apart from the plain buttons beside it, but not an action
+   color. Only exists while there is something to say. */
+.ctxbar-sugg { display: inline-flex; align-items: center; gap: 8px; min-height: 36px;
+  padding: 6px 12px; border: 1px solid var(--border-info); border-radius: var(--radius-base);
+  background: var(--bg-base); color: var(--content-base); box-shadow: var(--sh-action);
+  font-family: inherit; font-size: 14px; font-weight: 500; line-height: 22.4px; cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard); }
+.ctxbar-sugg:hover { background: var(--bg-base-hover); }
+.ctxbar-sugg i { flex: none; color: var(--content-info-secondary); }
 .ctxbar-menu-wrap { position: relative; flex: none; }
 .ctxbar-menu { position: absolute; top: calc(100% + 4px); left: 0; width: 300px; z-index: 40; }
 .ctxbar-menu.is-right { left: auto; right: 0; }
 
-/* Intro screen card: the first thing participants see, so it is the first thing
-   in the list. Reads as content, not as a form. */
-.intro-card { display: flex; flex-direction: row; align-items: flex-start; gap: var(--spacing-base); padding: var(--spacing-base);
-  margin-bottom: var(--spacing-base); }
-.intro-card:focus-visible { outline: 2px solid var(--border-action-active); outline-offset: 2px; }
-.intro-card-body { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.intro-card-lbl { font-size: 12px; font-weight: 600; line-height: 16px; letter-spacing: .02em;
-  text-transform: uppercase; color: var(--content-subtle); }
-.intro-card-title { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
-.intro-card-desc { font-size: 14px; line-height: 22.4px; color: var(--content-secondary); }
-.intro-card-desc.is-empty { color: var(--content-placeholder); }
+/* Design menu (Figma 6293:27553): the org's designs as mini participant
+   screens — chrome strip with the org mark, the question card, the button in
+   the design's accent. Applied one gets the dark scrim + check. */
+.dsg-menu { position: absolute; top: calc(100% + 4px); z-index: 40; width: max-content;
+  display: grid; grid-template-columns: repeat(2, 123px); gap: var(--spacing-base); padding: var(--spacing-base); }
+.dsg-tile-wrap { padding: 0; border: none; background: none; cursor: pointer; border-radius: 6px;
+  filter: drop-shadow(0 2px 2px rgba(25, 39, 67, 0.04)); }
+.dsg-tile-wrap:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; }
+.dsg-tile { position: relative; display: block; width: 123px; height: 81px; border-radius: 6px; overflow: hidden; }
+.dsg-tile-dim { position: absolute; inset: 0; background: rgba(18, 18, 18, 0.2); }
+.dsg-chrome { position: absolute; top: 0; left: 0; right: 0; height: 11.33%;
+  background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; }
+.dsg-mark { width: 7px; height: 7px; border-radius: 2px; font-size: 5px; font-weight: 700; line-height: 7px; text-align: center; }
+.dsg-card { position: absolute; left: 24.7%; right: 24.7%; top: 32.1%; bottom: 28.1%;
+  background: rgba(255, 255, 255, 0.2); border-radius: 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.dsg-card-title { width: 40%; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.5); }
+.dsg-dots { display: flex; gap: 3px; }
+.dsg-dots i { width: 4px; height: 4px; border-radius: 50%; background: rgba(255, 255, 255, 0.75); }
+.dsg-btn { position: absolute; left: 40%; right: 40%; top: 84.1%; bottom: 9%;
+  border-radius: 5px; box-shadow: 0 0.5px 2px rgba(25, 39, 67, 0.12); }
+.dsg-selected { position: absolute; inset: 0; border-radius: 6px; background: rgba(25, 39, 67, 0.3);
+  display: grid; place-items: center; color: #fff; }
+
+/* Intro screen card (Figma 6293:26527): the first thing participants see, so
+   the first card on the page. Same 12px radius and border treatment as the
+   topic cards, 24px padding, and it behaves like a question row — background
+   hover, click anywhere to edit. Its bottom margin is 0: the section list's
+   drop zone above the first topic already provides the same gap the topics
+   have between each other. */
+.intro-card { display: flex; align-items: center; gap: var(--spacing-base-tight); padding: var(--spacing-loose);
+  background: var(--bg-base); border: 1px solid var(--p-color-neutral-alpha-15); border-radius: var(--radius-lg);
+  box-shadow: var(--sh-card); cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard); }
+.intro-card:hover { background: var(--bg-base-hover); }
+.intro-card:active { background: var(--bg-secondary); }
+.intro-card:has(.ib:hover) { background: var(--bg-base); }
+.intro-card:focus-visible { outline: 2px solid var(--border-brand); outline-offset: -2px; }
+.intro-card-body { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.intro-card-title { font-size: 20px; font-weight: 600; line-height: 28px; color: var(--content-base); }
+.intro-card-desc { font-size: 14px; font-weight: 500; line-height: 20px; color: var(--content-base);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.intro-card-desc.is-empty { color: var(--content-placeholder); font-weight: 400; }
 
 /* A question's description, shown only when Display > Descriptions is on. */
 .qrow-desc { margin-top: 2px; font-size: 13px; line-height: 20px; color: var(--content-secondary); }

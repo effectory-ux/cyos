@@ -10,6 +10,7 @@ import { TranslationsDialog } from "./TranslationsDialog.jsx";
 import { SuggestionsPanel, SuggestionsPreflight } from "./SuggestionsPanel.jsx";
 import { THEMES } from "../data/data.js";
 import { buildSuggestions } from "../data/suggestions.js";
+import { DESIGNS, designById } from "../data/designs.js";
 import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 
 // Small rename dialog — used for the survey name and for a topic's
@@ -87,7 +88,7 @@ function TopNav({ name, templateName, onRename }) {
     { n: 4, icon: "send", label: "Layout & e-mails", done: true },
   ];
   return (
-    <div style={{ height: 64, borderBottom: "1px solid var(--border-base)", background: "var(--bg-base)", display: "flex",
+    <div style={{ height: 64, background: "var(--bg-base)", display: "flex",
       alignItems: "center", padding: "0 var(--spacing-loose)", gap: "var(--spacing-base)", flex: "none" }}>
       <span className="tag tag-draft">Draft</span>
       <h1 style={{ margin: 0, fontWeight: 600, fontSize: 16, lineHeight: "24px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: "0 1 auto", minWidth: 140, maxWidth: 340 }}>{name}</h1>
@@ -274,8 +275,8 @@ function reconcileLayout(prev, groups) {
   return next;
 }
 
-export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSaveTranslation, openDialog, onDialogChange }) {
-  const { name, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {}, intro = {} } = survey;
+export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onSaveTranslation, openDialog, onDialogChange }) {
+  const { name, design: designId, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {}, intro = {} } = survey;
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
   const [topicWarn, setTopicWarn] = useState(null); // section pending removal confirmation
@@ -291,6 +292,9 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // Both are VIEW state: they change what this page shows, never the survey.
   const [barMenu, setBarMenu] = useState(null);        // "display" | "add" | null
   const [viewLang, setViewLang] = useState("en");
+  // The survey's design (a survey property, picked in the bar). In the builder
+  // it tints the page behind the cards — the cards themselves stay white.
+  const design = designById(designId);
   const [showDesc, setShowDesc] = useState(true);
   // Every builder dialog has a URL: report which one is open, and restore one
   // asked for by a deep link or the prototype toolbar.
@@ -548,7 +552,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   };
 
   return (
-    <div className={"col" + (tipsOff ? " tips-off" : "")}>
+    <div className={"col" + (tipsOff ? " tips-off" : "")}
+      style={{ background: design ? (design.photo || design.color) : "var(--bg-secondary)" }}>
       <TopNav name={name} templateName={survey.templateName} onRename={() => setRename({ kind: "survey", value: name })} />
       {/* The step's context bar. It replaces the page title: the active tab
           already names the step, so an H1 would only repeat the nav — and this
@@ -556,7 +561,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           STATUS (read-only) -> DISPLAY (what I see) -> ADD CONTENT (what's in
           the survey). Only the last one writes. It sits outside the scrolling
           list, so the status stays in view — it is the orientation now. */}
-      <div className="ctxbar">
+      <div className={"ctxbar" + (design ? " is-themed" : "")}>
         <div className="ctxbar-inner">
           <div className="ctxbar-status">
             {chosen.length === 0 ? (
@@ -569,28 +574,30 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                 <span className="ctxbar-count">{chosen.length} {chosen.length === 1 ? "question" : "questions"} selected</span>
                 <span className="ctxbar-meta">
                   {activeThemes > 0 && <>{activeThemes} active {activeThemes === 1 ? "theme" : "themes"}<span className="ov-dot" aria-hidden="true" /></>}
-                  {estMinutes} {estMinutes === 1 ? "minute" : "minutes"} duration
+                  {estMinutes} {estMinutes === 1 ? "minute" : "minutes"}
                 </span>
               </>
             )}
           </div>
 
-          {/* A suggestion reports on the survey, so it belongs with the status,
-              not with the actions. Hidden at zero: a clean bar is the reward. */}
+          <div className="spacer" />
+
+          {/* Suggestions leads the button group (Figma "sentiment-button"): a
+              white button with an informative blue border — visually louder
+              than Display/Design but not an action color. Hidden at zero: a
+              clean bar is the reward. */}
           {suggestions.length > 0 && (
             <button className="ctxbar-sugg" onClick={() => setSuggestOpen(true)}>
-              <Icon name="zap" size={14} />
-              {suggestions.length} {suggestions.length === 1 ? "suggestion" : "suggestions"}
+              <Icon name="zap" size={16} />
+              Suggestions ({suggestions.length})
             </button>
           )}
-
-          <div className="spacer" />
 
           <div className="ctxbar-menu-wrap">
             <button className={"btn btn-secondary" + (barMenu === "display" ? " is-pressed" : "")}
               aria-haspopup="menu" aria-expanded={barMenu === "display"}
               onClick={() => setBarMenu(m => m === "display" ? null : "display")}>
-              <Icon name="eye" size={16} />Display<Icon name="chevron-down" size={16} />
+              <Icon name="eye" size={16} />Display
             </button>
             {barMenu === "display" && (
               <>
@@ -618,10 +625,53 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           </div>
 
           <div className="ctxbar-menu-wrap">
+            <button className={"btn btn-secondary" + (barMenu === "design" ? " is-pressed" : "")}
+              aria-haspopup="menu" aria-expanded={barMenu === "design"}
+              onClick={() => setBarMenu(m => m === "design" ? null : "design")}>
+              <Icon name="palette" size={16} />Design
+            </button>
+            {barMenu === "design" && (
+              <>
+                <div className="cq-menu-scrim" onMouseDown={() => setBarMenu(null)} />
+                {/* The org's available designs (Figma 6293:27553): mini previews
+                    of the participant screen in each design. Click to apply;
+                    click the applied one again to go back to the neutral page. */}
+                <div className="menu dsg-menu is-right" role="menu" aria-label="Survey design">
+                  {DESIGNS.map(d => {
+                    const active = designId === d.id;
+                    return (
+                      <button key={d.id} className="dsg-tile-wrap" role="menuitemradio" aria-checked={active}
+                        aria-label={d.name} title={d.name}
+                        onClick={() => { onSetDesign && onSetDesign(active ? undefined : d.id); setBarMenu(null); }}>
+                        <span className="dsg-tile" style={{ background: d.photo || d.color }}>
+                          {d.photo && <span className="dsg-tile-dim" aria-hidden="true" />}
+                          <span className="dsg-chrome">
+                            <span className="dsg-mark" style={{ background: d.markBg, color: d.markColor || "#fff" }}>{d.mark}</span>
+                          </span>
+                          <span className="dsg-card">
+                            <span className="dsg-card-title" />
+                            <span className="dsg-dots" aria-hidden="true">
+                              <i /><i /><i /><i /><i />
+                            </span>
+                          </span>
+                          <span className="dsg-btn" style={{ background: d.button }} />
+                          {active && (
+                            <span className="dsg-selected"><Icon name="check" size={28} /></span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="ctxbar-menu-wrap">
             <button className={"btn btn-primary" + (barMenu === "add" ? " is-pressed" : "")}
               aria-haspopup="menu" aria-expanded={barMenu === "add"}
               onClick={() => setBarMenu(m => m === "add" ? null : "add")}>
-              <Icon name="plus" size={16} />Add content<Icon name="chevron-down" size={16} />
+              <Icon name="plus" size={16} />Add<Icon name="chevron-down" size={16} />
             </button>
             {barMenu === "add" && (
               <>
@@ -648,17 +698,17 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         </div>
       </div>
 
-      <div className="scroll-y" style={{ flex: 1, padding: "var(--spacing-loose) 0 110px", background: "var(--bg-base)" }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 var(--spacing-super-loose)" }}>
+      <div className="scroll-y" style={{ flex: 1, padding: "32px 0 110px" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 56px", boxSizing: "content-box" }}>
           {/* The first thing participants see, so the page reads as the real
-              sequence: intro screen, then the topics in order. Same interaction
-              as every other block here — click the card, edit it in place. */}
-          <div className="card card-elevated is-interactive intro-card" role="button" tabIndex={0}
+              sequence: intro screen, then the topics in order (Figma 6293:26527).
+              No label — the title-sized text says what it is. Same interaction
+              as a question row: click anywhere, edit in the dialog. */}
+          <div className="intro-card" role="button" tabIndex={0}
             aria-label="Edit the intro screen participants see"
             onClick={e => { if (e.target.closest("button")) return; setIntroOpen(true); }}
             onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIntroOpen(true); } }}>
             <div className="intro-card-body">
-              <div className="intro-card-lbl">Intro screen</div>
               <div className="intro-card-title">{tr("intro:name", introTitle)}</div>
               <div className={"intro-card-desc" + (intro.desc ? "" : " is-empty")}>
                 {intro.desc ? tr("intro:desc", intro.desc) : "Add a short welcome for participants"}

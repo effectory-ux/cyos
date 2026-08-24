@@ -180,6 +180,8 @@ export function App() {
     if ("desc" in patch) touched.push(`topic:${key}:desc`);
     return { ...s, topicMeta: tm, i18nEdits: dropI18n(s, touched) };
   });
+  // Which of the org's designs this survey wears — a plain survey property.
+  const setDesign = (id) => setSurvey(s => ({ ...s, design: id }));
   // The intro screen participants see first. Survey-scoped like everything else
   // in this step; its title defaults to the survey's own name until edited.
   const updateIntro = (patch) => setSurvey(s => {
@@ -406,7 +408,7 @@ export function App() {
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveQuestionTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
-            onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta} onUpdateIntro={updateIntro}
+            onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta} onUpdateIntro={updateIntro} onSetDesign={setDesign}
             onSaveTranslation={saveTranslation}
             openDialog={openInBuilder} onDialogChange={setBuilderDialog}
             onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }} />}
