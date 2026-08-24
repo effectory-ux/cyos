@@ -31,6 +31,7 @@ export function App() {
   const [survey, setSurvey] = useState(null);
   const [removeConfirm, setRemoveConfirm] = useState(null);
   const [editCustom, setEditCustom] = useState(null);
+  const [newCustom, setNewCustom] = useState(false); // create-from-builder ("Add" menu)
   // A survey-in-progress awaiting its name. Set after a template is chosen or
   // "Start from scratch" is pressed; cleared once the name dialog is confirmed
   // (→ builder) or backed out of (→ template modal).
@@ -278,6 +279,12 @@ export function App() {
     }
     removeFromSurvey(q);
   };
+  // "Add custom question" straight from the builder bar: the new question goes
+  // into the pool and is selected immediately — no trip through the library.
+  const addCustomDirect = (nq) => {
+    setSurvey(s => ({ ...s, pool: [...s.pool, nq], selectedIds: [...s.selectedIds, nq.id] }));
+    setNewCustom(false);
+  };
   const saveCustomEdit = (q) => {
     setSurvey(s => ({
       ...s,
@@ -321,12 +328,13 @@ export function App() {
     if (pending) return { dialog: "create-draft-survey" };
     if (editing) return { dialog: "select-questions" };
     if (editCustom) return { dialog: "custom-question", arg: editCustom.id };
+    if (newCustom) return { dialog: "new-custom-question" };
     if (outOfScope) return { dialog: "out-of-scope", arg: outOfScope.id };
     if (screen === "builder" && builderDialog) return builderDialog;
     return {};
   };
   const route = { screen, surveyId: survey && survey.id, ...appDialog() };
-  useEffect(() => { writeRoute(route); }, [screen, survey && survey.id, modal, pending, editing, editCustom, outOfScope, builderDialog]); // eslint-disable-line
+  useEffect(() => { writeRoute(route); }, [screen, survey && survey.id, modal, pending, editing, editCustom, newCustom, outOfScope, builderDialog]); // eslint-disable-line
 
   // Open a demo/use-case state in one step (prototype toolbar).
   const draftSurvey = () => {
@@ -337,7 +345,7 @@ export function App() {
     id: "d-demo", name: "New survey", proj: "Central Employee Listening", templateName: null,
     isTemplate: false, selectedIds: [], pool: libraryPool().map(q => ({ ...q, required: false })),
   });
-  const closeAll = () => { setModal(false); setPending(null); setEditing(false); setEditCustom(null); setOutOfScope(null); setOpenInBuilder(null); setBuilderDialog(null); };
+  const closeAll = () => { setModal(false); setPending(null); setEditing(false); setEditCustom(null); setNewCustom(false); setOutOfScope(null); setOpenInBuilder(null); setBuilderDialog(null); };
   const gotoUseCase = (key) => {
     closeAll();
     const openBuilder = (sv, dialog) => { setSurvey(sv); setScreen("builder"); setOpenInBuilder(dialog || null); };
@@ -408,7 +416,7 @@ export function App() {
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveQuestionTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
-            onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta} onUpdateIntro={updateIntro} onSetDesign={setDesign}
+            onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta} onUpdateIntro={updateIntro} onSetDesign={setDesign} onNewCustom={() => setNewCustom(true)}
             onSaveTranslation={saveTranslation}
             openDialog={openInBuilder} onDialogChange={setBuilderDialog}
             onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }} />}
@@ -426,6 +434,8 @@ export function App() {
       {removeConfirm && <ThemeConfirm q={removeConfirm.q} themes={removeConfirm.themes} pool={survey && survey.pool}
         onKeep={() => setRemoveConfirm(null)}
         onRemove={() => { removeFromSurvey(removeConfirm.q); setRemoveConfirm(null); }} />}
+      {newCustom && survey && <CustomQuestionDialog topics={surveyTopicOptions()}
+        onCancel={() => setNewCustom(false)} onAdd={addCustomDirect} />}
       {editCustom && <CustomQuestionDialog question={editCustom}
         topics={surveyTopicOptions()}
         onCancel={() => setEditCustom(null)} onSubmit={saveCustomEdit}

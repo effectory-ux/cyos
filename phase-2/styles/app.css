@@ -958,8 +958,12 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .bmq-type-disabled .qtile { opacity: .6; }
 
 .bmq-stage { flex: 1; min-height: 0; display: flex; border: 1px solid var(--border-base); border-radius: 12px; overflow: hidden; }
-.bmq-preview { flex: 1; min-width: 0; background: var(--bg-tertiary); display: flex; align-items: center;
-  justify-content: center; padding: 40px; overflow-y: auto; }
+.bmq-preview { flex: 1; min-width: 0; background: var(--bg-tertiary); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 40px; overflow-y: auto; }
+/* The kind tags float in the empty space between the container's top edge and
+   the previewed card: two symmetric flex gaps keep the card itself centered. */
+.bmq-float { flex: 1 0 0; min-height: 32px; display: flex; align-items: center; justify-content: center; }
+.bmq-float .bmq-kind { justify-content: center; }
 .bmq-card { background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-xl);
   box-shadow: 0 4px 6px rgba(25,39,67,.08); padding: 24px; width: 100%; max-width: 694px;
   display: flex; flex-direction: column; gap: 16px; align-items: center; }

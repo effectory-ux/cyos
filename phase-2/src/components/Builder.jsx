@@ -80,40 +80,50 @@ function TopicRemoveWarning({ label, count, onCancel, onConfirm }) {
   );
 }
 
-function TopNav({ name, templateName, onRename }) {
+// Top bar on the Figma _CYOS alt-menu (6293:26515): Draft tag + name + Edit
+// name on the left; the four steps as pills on the right, each with the
+// overlapping number-badge + icon pair; then a divider and the kebab. No
+// bottom border on this page — the context bar below seams to it with its own
+// white hairline.
+function TopNav({ name, onRename }) {
   const steps = [
-    { n: 1, icon: "clipboard-note", label: "Questionnaire", active: true },
-    { n: 2, icon: "users", label: "Participants" },
+    { n: 1, icon: "clipboard-a", label: "Questionnaire", active: true },
+    { n: 2, icon: "group", label: "Participants" },
     { n: 3, icon: "calendar", label: "Schedule" },
-    { n: 4, icon: "send", label: "Layout & e-mails", done: true },
+    { n: 4, icon: "pen-tool", label: "Layout & e-mails", done: true },
   ];
+  const badge = (st) => st.done
+    ? { background: "var(--bg-positive)", color: "var(--content-on-brand-base)" }
+    : st.active
+      ? { background: "var(--bg-brand)", color: "var(--content-on-brand-base)" }
+      : { background: "var(--bg-tertiary)", color: "var(--content-secondary)" };
   return (
-    <div style={{ height: 64, background: "var(--bg-base)", display: "flex",
-      alignItems: "center", padding: "0 var(--spacing-loose)", gap: "var(--spacing-base)", flex: "none" }}>
-      <span className="tag tag-draft">Draft</span>
-      <h1 style={{ margin: 0, fontWeight: 600, fontSize: 16, lineHeight: "24px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: "0 1 auto", minWidth: 140, maxWidth: 340 }}>{name}</h1>
-      <button className="btn btn-link" style={{ padding: "4px 6px" }} onClick={onRename}><Icon name="edit" size={14} />Edit name</button>
-      {/* Where this survey started. Provenance, not progress — it never changes
-          as questions come and go. */}
-      {templateName && (
-        <Tooltip label="The template this survey started from" pos="is-below">
-          <span className="tag tag-draft text-w500"><Icon name="layout" size={12} />From {templateName}</span>
-        </Tooltip>
-      )}
-      <div className="spacer" />
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        {steps.map(s => (
-          <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px",
-            borderRadius: "var(--radius-md)", background: s.active ? "var(--bg-base-hover)" : "transparent" }}>
-            {s.done
-              ? <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--bg-positive)", color: "var(--content-on-brand-base)", display: "grid", placeItems: "center", flex: "none" }}><Icon name="check" size={12} /></span>
-              : <span style={{ width: 20, height: 20, borderRadius: "50%", fontSize: 12, fontWeight: 700, display: "grid", placeItems: "center", flex: "none",
-                  background: s.active ? "var(--bg-brand)" : "var(--bg-tertiary)", color: s.active ? "var(--content-on-brand-base)" : "var(--content-secondary)" }}>{s.n}</span>}
-            <Icon name={s.icon} size={16} style={{ color: s.active ? "var(--content-brand)" : "var(--content-secondary)" }} />
-            <span style={{ fontSize: 14, fontWeight: s.active ? 600 : 500, color: s.active ? "var(--content-base)" : "var(--content-secondary)" }}>{s.label}</span>
+    <div style={{ background: "var(--bg-base)", display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "12px 12px 12px 16px", flex: "none" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <span className="tag tag-draft">Draft</span>
+        <h1 style={{ margin: 0, fontWeight: 600, fontSize: 16, lineHeight: "24px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: "0 1 auto", minWidth: 140, maxWidth: 340 }}>{name}</h1>
+        <button className="btn btn-link" style={{ padding: "6px 12px", flex: "none" }} onClick={onRename}><Icon name="edit" size={16} />Edit name</button>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "none" }}>
+        {steps.map(st => (
+          <div key={st.label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px 8px 8px",
+            borderRadius: 12, background: st.active ? "var(--bg-brand-subtle-selected)" : "transparent" }}>
+            <div style={{ display: "flex", alignItems: "center", height: 28 }}>
+              <span style={{ ...badge(st), width: 24, height: 24, borderRadius: "50%", border: "2px solid var(--border-white)",
+                display: "grid", placeItems: "center", fontSize: 13, fontWeight: 600, lineHeight: "16px",
+                marginRight: -5, position: "relative", zIndex: 2, boxSizing: "border-box" }}>
+                {st.done ? <Icon name="check" size={14} /> : st.n}</span>
+              <span style={{ background: st.active ? "var(--bg-brand-subtle-selected)" : "var(--bg-tertiary)",
+                border: "2px solid var(--border-white)", borderRadius: 6, padding: 6, display: "flex", boxSizing: "content-box" }}>
+                <Icon name={st.icon} size={16} /></span>
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600, lineHeight: "22.4px", whiteSpace: "nowrap",
+              color: st.active ? "var(--content-base)" : "var(--content-secondary)" }}>{st.label}</span>
           </div>
         ))}
-        <Tooltip label="More options" pos="is-below"><button className="ib ib-36 ib-tertiary" aria-label="More options" style={{ marginLeft: 2 }}><Icon name="more-vertical" size={16} /></button></Tooltip>
+        <span style={{ width: 1, height: 24, background: "var(--border-base)", flex: "none" }} aria-hidden="true" />
+        <Tooltip label="More options" pos="is-below"><button className="ib ib-36 ib-tertiary" aria-label="More options"><Icon name="more-vertical" size={16} /></button></Tooltip>
       </div>
     </div>
   );
@@ -275,7 +285,7 @@ function reconcileLayout(prev, groups) {
   return next;
 }
 
-export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onSaveTranslation, openDialog, onDialogChange }) {
+export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, openDialog, onDialogChange }) {
   const { name, design: designId, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {}, intro = {} } = survey;
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
@@ -553,8 +563,12 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
 
   return (
     <div className={"col" + (tipsOff ? " tips-off" : "")}
-      style={{ background: design ? (design.photo || design.color) : "var(--bg-secondary)" }}>
-      <TopNav name={name} templateName={survey.templateName} onRename={() => setRename({ kind: "survey", value: name })} />
+      style={{ background: design
+        ? (design.photo
+          ? `linear-gradient(rgba(255,255,255,.78), rgba(255,255,255,.78)), ${design.photo}`
+          : `color-mix(in srgb, ${design.color} 24%, white)`)
+        : "var(--bg-secondary)" }}>
+      <TopNav name={name} onRename={() => setRename({ kind: "survey", value: name })} />
       {/* The step's context bar. It replaces the page title: the active tab
           already names the step, so an H1 would only repeat the nav — and this
           page's whole job is a long list. Grammar, left to right:
@@ -597,7 +611,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             <button className={"btn btn-secondary" + (barMenu === "display" ? " is-pressed" : "")}
               aria-haspopup="menu" aria-expanded={barMenu === "display"}
               onClick={() => setBarMenu(m => m === "display" ? null : "display")}>
-              <Icon name="eye" size={16} />Display
+              <Icon name="layout" size={16} />Display
             </button>
             {barMenu === "display" && (
               <>
@@ -679,17 +693,15 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                 <div className="menu ctxbar-menu is-right" role="menu">
                   <div className="menu-item" role="menuitem" onClick={() => { setBarMenu(null); onEditQuestions(); }}>
                     <span className="menu-item-icon"><Icon name="list-unordered" size={16} /></span>
-                    <span className="menu-item-body">
-                      <span className="menu-item-title">Questions</span>
-                      <span className="menu-item-sub">From the library, or your own</span>
-                    </span>
+                    <span className="menu-item-body"><span className="menu-item-title">Add questions from library</span></span>
+                  </div>
+                  <div className="menu-item" role="menuitem" onClick={() => { setBarMenu(null); onNewCustom && onNewCustom(); }}>
+                    <span className="menu-item-icon"><Icon name="edit" size={16} /></span>
+                    <span className="menu-item-body"><span className="menu-item-title">Add custom question</span></span>
                   </div>
                   <div className="menu-item" role="menuitem" onClick={() => { setBarMenu(null); setTopicDialog({ creating: true }); }}>
                     <span className="menu-item-icon"><Icon name="folder" size={16} /></span>
-                    <span className="menu-item-body">
-                      <span className="menu-item-title">Topic</span>
-                      <span className="menu-item-sub">Group and introduce questions</span>
-                    </span>
+                    <span className="menu-item-body"><span className="menu-item-title">Add custom subject</span></span>
                   </div>
                 </div>
               </>

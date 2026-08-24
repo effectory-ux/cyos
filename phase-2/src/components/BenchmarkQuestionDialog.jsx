@@ -8,7 +8,7 @@
 // committed with Save; all changes are survey-scoped.
 import { useState } from "react";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, Tooltip } from "./shared.jsx";
+import { QTypeIcon, Tooltip, ThemeTag } from "./shared.jsx";
 import { QTYPES, SCALE_LABELS } from "../data/data.js";
 import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 import { variantsOf, descVariantsOf } from "../data/variants.js";
@@ -173,11 +173,6 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-          <div className="bmq-kind">
-            <span className="infotag"><QTypeIcon type={q.type} size={16} />{QTYPES[q.type].label}</span>
-            <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
-            {variant && <span className="infotag is-alt">Alternative wording</span>}
-          </div>
           <h2 className="dialog-title" id="bmq-title">{title}</h2>
           <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
         </div>
@@ -226,6 +221,17 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
 
         <div className="bmq-stage">
           <div className="bmq-preview">
+            {/* What kind of question this is, floating over the preview: it
+                describes the thing being previewed, so it lives with it. The
+                answer type is not repeated here — the Answer type select above
+                already says it. */}
+            <div className="bmq-float">
+              <div className="bmq-kind">
+                <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
+                {variant && <span className="infotag is-alt">Alternative wording</span>}
+                {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below" />}
+              </div>
+            </div>
             <div className="bmq-card">
               {/* A translation is derived from the primary language, so it is
                   shown as text: offering a select there would imply the
@@ -303,6 +309,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                 </div>
               )}
             </div>
+            <div className="bmq-float" aria-hidden="true" />
           </div>
           <div className="bmq-langs">
             <div className="bmq-langs-head">Primary language</div>

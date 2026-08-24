@@ -398,11 +398,6 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
             dialogs: the question's own text once there is any, with a tag row
             saying what kind of question it is (the title can't carry that). */}
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-          <div className="bmq-kind">
-            <span className="infotag"><QTypeIcon type={type} size={16} />{QTYPES[type].label}</span>
-            <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>
-            <span className="infotag is-alt">No benchmark</span>
-          </div>
           <h2 className="dialog-title" id="cq-title">{text.trim() || (editing ? "Custom question" : "New custom question")}</h2>
           <p className="dialog-subtitle">Write your own question and choose how people answer it. Use this for specific questions that are only valid for your context.</p>
         </div>
@@ -449,6 +444,15 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
                 </div>
               ) : (
                 <>
+                  {/* Kind tags float in the space above the previewed card —
+                      they describe what is being previewed. The answer type is
+                      not repeated: the Answer type select above already says it. */}
+                  <div className="bmq-float">
+                    <div className="bmq-kind">
+                      <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>
+                      <span className="infotag is-alt">No benchmark</span>
+                    </div>
+                  </div>
                   <div className={"cq-card" + (working ? " is-working" : "")} aria-busy={working || undefined}>
                     {showManual && (
                       <div className="cq-card-note">
@@ -515,6 +519,7 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
                       ) : <ScalePreview lang={active} />}
                     </div>
                   </div>
+                  <div className="bmq-float" aria-hidden="true" />
                 </>
               )}
             </div>
