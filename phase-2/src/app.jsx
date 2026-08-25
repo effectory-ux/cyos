@@ -398,7 +398,12 @@ export function App() {
     const fromUrl = parse(initialHash.current);
     if (fromUrl && fromUrl.screen === "builder") {
       const sv = draftSurvey(); if (sv) { setSurvey(sv); setScreen("builder");
-        if (fromUrl.dialog) setOpenInBuilder({ dialog: fromUrl.dialog, arg: fromUrl.arg }); }
+        // App-level dialogs live outside the Builder's own dialog routing.
+        if (fromUrl.dialog === "new-custom-question") setNewCustom(true);
+        else if (fromUrl.dialog === "custom-question" && fromUrl.arg) {
+          const q = sv.pool.find(x => x.id === fromUrl.arg); if (q) setEditCustom(q);
+        }
+        else if (fromUrl.dialog) setOpenInBuilder({ dialog: fromUrl.dialog, arg: fromUrl.arg }); }
       return;
     }
     if (fromUrl && fromUrl.dialog) { gotoUseCase(fromUrl.dialog === "create-draft-survey" ? "name-dialog" : fromUrl.dialog === "choose-template" ? "template-dialog" : "surveys"); return; }

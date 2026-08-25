@@ -948,6 +948,9 @@ button.sel-btn.cq-sel { font-size: 14px; }
 /* ---- Benchmarked question + topic dialogs (Figma 6271:7232, 6271:9052) --- */
 .bmq-dialog { width: 1080px; max-width: 94vw; height: min(860px, 90vh); display: flex; flex-direction: column; }
 .bmq-selects { display: flex; gap: var(--spacing-base); flex: none; }
+/* "Show translations" reveal (Figma 6304:27970): right-aligned in the selects
+   row, bottom-aligned with the inputs beside it (the fields carry labels). */
+.cq-tr-toggle { margin-left: auto; align-self: flex-end; flex: none; }
 .bmq-field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .bmq-lbl { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--content-base); }
 .bmq-top-sel { width: 100%; }

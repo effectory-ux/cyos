@@ -243,6 +243,14 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
   const [conflict, setConflict] = useState(null);
 
   const compact = useMediaQuery(COMPACT_QUERY);
+  // Translations are secondary to writing the question, so the language panel
+  // starts hidden (Figma 6304:27970) and a button in the selects row reveals
+  // it. Hiding it returns the preview to the primary language.
+  const [showTr, setShowTr] = useState(false);
+  const toggleTr = () => {
+    if (showTr) selectLanguage(PRIMARY_LANGUAGE.code);
+    setShowTr(v => !v);
+  };
   const timers = useRef([]);
   const lastSource = useRef("");
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
@@ -417,12 +425,16 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
               <span className="cq-lbl">Answer type</span>
               <MiniSelect ariaLabel="Answer type" value={type} items={typeItems} onChange={setType} block />
             </div>
+            <button className="btn btn-secondary cq-tr-toggle" aria-expanded={showTr} onClick={toggleTr}>
+              <Icon name="language" size={16} />
+              {showTr ? "Hide translations" : `Show translations (${OTHER_LANGUAGES.length})`}
+            </button>
           </div>
 
           <div className={"cq-frame" + (compact ? " is-compact" : "")}>
             {/* ---- preview (left on wide, whole frame on compact) ---- */}
             <div className="cq-preview">
-              {compact && (
+              {compact && showTr && (
                 <div className="cq-field cq-langsel">
                   <span className="cq-lbl">Languages</span>
                   <MiniSelect ariaLabel="Languages" value={active} items={langItems}
@@ -524,8 +536,8 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
               )}
             </div>
 
-            {/* ---- languages (right, wide only) ---- */}
-            {!compact && (
+            {/* ---- languages (right, wide only; revealed on demand) ---- */}
+            {!compact && showTr && (
               <div className="cq-langs">
                 <div className="cq-langs-head">Primary language</div>
                 <LangRow lang={PRIMARY_LANGUAGE} isActive={isPrimary}
