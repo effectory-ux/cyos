@@ -20,7 +20,11 @@ corner brings it back.
 The **Edit** button (dev server only) makes the whole prototype
 contentEditable and freezes its interactions, so any text can be clicked and
 retyped — open the state you want to edit first (the Use cases menu exists for
-exactly that). Every keystroke is saved **in real time**: a debounced POST to
+exactly that). Editing is TEXT-ONLY by construction: the selection is clamped
+to a single text node (you can't select across elements or grab an icon or
+button as an object) and every edit is applied by the tool itself to the text
+node's value — the browser never mutates the DOM, so elements can't be
+deleted, split or merged. Enter, drops, formatting and rich paste are inert. Every keystroke is saved **in real time**: a debounced POST to
 the Vite dev server writes `public/proto-edits.json` in the repo, each entry
 carrying the element path, the new text and the original.
 
