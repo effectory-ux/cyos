@@ -8,9 +8,11 @@
 //
 // This is TOOLING, not product UI: it avoids the host app's design system
 // (dark, compact) and it is a real full-width row ABOVE the prototype rather
-// than an overlay, so it never covers a screen. Hide it with the close button
-// or Ctrl+` (a combination no browser claims); reveal it again from the tab in
-// the very top-left corner, or the same shortcut.
+// than an overlay, so it never covers a screen. Collapse it with the button on
+// its right or Ctrl+` (a combination no browser claims); reveal it again from
+// the vertical tab on the middle of the right screen edge, or the same
+// shortcut. On narrow viewports the buttons drop their labels and rely on
+// their tooltips.
 import { useState, useEffect } from "react";
 import { Ic } from "./icons.jsx";
 import "./prototype-bar.css";
@@ -66,7 +68,8 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
     return (
       <button className="pbar-peek" onClick={() => { setHide(false); saveHidden(storagePrefix, false); }}
         title="Show prototype toolbar (Ctrl+`)">
-        <Ic name="sliders" size={12} />Prototype
+        <Ic name="sliders" size={12} />
+        <span className="pbar-peek-lbl">Prototype</span>
       </button>
     );
   }
@@ -77,9 +80,9 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
 
       {useCases.length > 0 && (
         <div className="pbar-menu-wrap">
-          <button className={"pbar-btn" + (menu === "cases" ? " is-open" : "")}
+          <button className={"pbar-btn" + (menu === "cases" ? " is-open" : "")} data-tip="Use cases"
             onClick={() => setMenu(m => (m === "cases" ? null : "cases"))}>
-            <Ic name="shapes" size={14} />Use cases<Ic name="chevron-down" size={14} />
+            <Ic name="shapes" size={14} /><span className="pbar-lbl">Use cases</span><span className="pbar-chev"><Ic name="chevron-down" size={14} /></span>
           </button>
           {menu === "cases" && (
             <>
@@ -100,11 +103,11 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
 
       {edgeCases.length > 0 && (
         <div className="pbar-menu-wrap">
-          <button className={"pbar-btn" + (menu === "edges" ? " is-open" : "")}
+          <button className={"pbar-btn" + (menu === "edges" ? " is-open" : "")} data-tip="Edge cases"
             onClick={() => setMenu(m => (m === "edges" ? null : "edges"))}>
-            <Ic name="randomize" size={14} />Edge cases
+            <Ic name="randomize" size={14} /><span className="pbar-lbl">Edge cases</span>
             {offCount > 0 && <span className="pbar-count">{offCount}</span>}
-            <Ic name="chevron-down" size={14} />
+            <span className="pbar-chev"><Ic name="chevron-down" size={14} /></span>
           </button>
           {menu === "edges" && (
             <>
@@ -128,9 +131,9 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
 
       {startPoints.length > 0 && (
         <div className="pbar-menu-wrap">
-          <button className={"pbar-btn" + (menu === "start" ? " is-open" : "")}
+          <button className={"pbar-btn" + (menu === "start" ? " is-open" : "")} data-tip="Start at"
             onClick={() => setMenu(m => (m === "start" ? null : "start"))}>
-            <Ic name="home" size={14} />Start at<Ic name="chevron-down" size={14} />
+            <Ic name="home" size={14} /><span className="pbar-lbl">Start at</span><span className="pbar-chev"><Ic name="chevron-down" size={14} /></span>
           </button>
           {menu === "start" && (
             <>
@@ -151,13 +154,14 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
 
       <span className="pbar-sep" aria-hidden="true" />
       <code className="pbar-url" title={url}>{url}</code>
-      <button className="pbar-icon" onClick={copy} title="Copy link to this step" aria-label="Copy link to this step">
+      <button className="pbar-icon pbar-tt is-right" onClick={copy}
+        data-tip={copied ? "Copied" : "Copy link to this step"} aria-label="Copy link to this step">
         <Ic name={copied ? "check" : "copy"} size={14} />
       </button>
       <span className="pbar-hint">Ctrl+`</span>
-      <button className="pbar-icon" onClick={() => { setHide(true); saveHidden(storagePrefix, true); }}
-        title="Hide toolbar (Ctrl+`)" aria-label="Hide toolbar">
-        <Ic name="cross" size={14} />
+      <button className="pbar-icon pbar-tt is-right" onClick={() => { setHide(true); saveHidden(storagePrefix, true); }}
+        data-tip="Collapse toolbar (Ctrl+`)" aria-label="Collapse toolbar">
+        <Ic name="collapse-left" size={14} />
       </button>
     </div>
   );

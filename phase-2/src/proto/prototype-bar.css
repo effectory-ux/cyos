@@ -56,10 +56,37 @@
   border-radius: 50%; background: #9aa3b2; transition: transform .15s ease, background .15s ease; }
 .pbar-item.is-on .pbar-switch { background: #1f6f66; }
 .pbar-item.is-on .pbar-switch::after { transform: translateX(12px); background: #7ad3c8; }
-/* Reveal tab, top-left corner — the way back when the bar is hidden. */
-.pbar-peek { position: fixed; top: 0; left: 0; z-index: 10000; display: inline-flex; align-items: center;
-  gap: 6px; padding: 4px 10px 5px 8px; border: none; border-radius: 0 0 8px 0; cursor: pointer;
+/* Reveal tab — the way back when the bar is collapsed: a vertical button on
+   the middle of the right screen edge, out of every layout's way. */
+.pbar-peek { position: fixed; top: 50%; right: 0; transform: translateY(-50%); z-index: 10000;
+  display: inline-flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 5px 10px 6px; border: none; border-radius: 8px 0 0 8px; cursor: pointer;
   background: #14161a; color: #cfd4dc; font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; font-size: 11px;
-  font-weight: 600; opacity: .35; transition: opacity .15s ease; }
+  font-weight: 600; opacity: .4; transition: opacity .15s ease; }
 .pbar-peek:hover, .pbar-peek:focus-visible { opacity: 1; }
+.pbar-peek-lbl { writing-mode: vertical-rl; letter-spacing: .04em; }
 .pbar-peek i { display: flex; }
+
+/* ---- Tooltips (self-contained, below the bar) ---------------------------- */
+.pbar-tt { position: relative; }
+.pbar-tt:hover::after, .pbar-tt:focus-visible::after {
+  content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 3;
+  padding: 4px 8px; border-radius: 6px; background: #2a2f39; color: #e7e9ec;
+  font-size: 11px; font-weight: 500; white-space: nowrap; pointer-events: none;
+  box-shadow: 0 4px 12px rgba(16,22,26,.4); }
+.pbar-tt.is-right:hover::after, .pbar-tt.is-right:focus-visible::after { right: 0; left: auto; }
+
+/* ---- Small screens: icons only ------------------------------------------- */
+/* Labels and chevrons go; the menu buttons pick up the same tooltip the
+   icon-only buttons always have. Menus hug the left screen edge instead of
+   their button so they stay on-screen. */
+@media (max-width: 760px) {
+  .pbar-lbl, .pbar-chev, .pbar-hint { display: none; }
+  .pbar-btn[data-tip] { position: relative; }
+  .pbar-btn[data-tip]:hover::after, .pbar-btn[data-tip]:focus-visible::after {
+    content: attr(data-tip); position: absolute; top: calc(100% + 6px); left: 0; z-index: 3;
+    padding: 4px 8px; border-radius: 6px; background: #2a2f39; color: #e7e9ec;
+    font-size: 11px; font-weight: 500; white-space: nowrap; pointer-events: none;
+    box-shadow: 0 4px 12px rgba(16,22,26,.4); }
+  .pbar-menu { position: fixed; top: 42px; left: 8px; right: 8px; width: auto; }
+}
