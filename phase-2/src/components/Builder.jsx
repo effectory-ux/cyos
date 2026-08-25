@@ -561,13 +561,18 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     setTopicWarn(s);
   };
 
+  // One background for the page, reused as the solid underlay of the sticky
+  // context bar — its wash is translucent, and scrolled content must never
+  // shine through while the bar is stuck.
+  const pageBg = design
+    ? (design.photo
+      ? `linear-gradient(rgba(255,255,255,.78), rgba(255,255,255,.78)), ${design.photo}`
+      : `color-mix(in srgb, ${design.color} 24%, white)`)
+    : "var(--bg-secondary)";
+  const barWash = design ? "rgba(255,255,255,.30)" : "rgba(25,39,67,.05)";
   return (
-    <div className={"col" + (tipsOff ? " tips-off" : "")}
-      style={{ background: design
-        ? (design.photo
-          ? `linear-gradient(rgba(255,255,255,.78), rgba(255,255,255,.78)), ${design.photo}`
-          : `color-mix(in srgb, ${design.color} 24%, white)`)
-        : "var(--bg-secondary)" }}>
+    <div className={"col" + (tipsOff ? " tips-off" : "")} style={{ background: pageBg }}>
+      <div className="scroll-y" style={{ flex: 1, padding: "0 0 110px" }}>
       <TopNav name={name} onRename={() => setRename({ kind: "survey", value: name })} />
       {/* The step's context bar. It replaces the page title: the active tab
           already names the step, so an H1 would only repeat the nav — and this
@@ -575,7 +580,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           STATUS (read-only) -> DISPLAY (what I see) -> ADD CONTENT (what's in
           the survey). Only the last one writes. It sits outside the scrolling
           list, so the status stays in view — it is the orientation now. */}
-      <div className={"ctxbar" + (design ? " is-themed" : "")}>
+      <div className="ctxbar" style={{ background: `linear-gradient(${barWash}, ${barWash}), ${pageBg}` }}>
         <div className="ctxbar-inner">
           <div className="ctxbar-status">
             {chosen.length === 0 ? (
@@ -710,8 +715,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         </div>
       </div>
 
-      <div className="scroll-y" style={{ flex: 1, padding: "32px 0 110px" }}>
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 56px", boxSizing: "content-box" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 56px 0", boxSizing: "content-box" }}>
           {/* The first thing participants see, so the page reads as the real
               sequence: intro screen, then the topics in order (Figma 6293:26527).
               No label — the title-sized text says what it is. Same interaction

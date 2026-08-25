@@ -9,9 +9,10 @@ import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus, themesOf } from "./components/shared.jsx";
 import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
 import { libraryPool } from "./data/qlib.js";
-import { PrototypeBar, getStartAt } from "./components/PrototypeBar.jsx";
+import { PrototypeBar, getStartAt } from "./proto/PrototypeBar.jsx";
+import { PROTO_STORAGE_PREFIX, START_POINTS, USE_CASES } from "./data/proto-config.js";
 import { serialize, writeRoute, parse } from "./data/routes.js";
-import { defaultEdges } from "./data/edgecases.js";
+import { defaultEdges, EDGE_CASES } from "./data/edgecases.js";
 
 // Behaviour the design iterations landed on: removing the last question of a
 // complete theme soft-locks (asks first), and "Add custom question" lives in
@@ -401,13 +402,15 @@ export function App() {
       return;
     }
     if (fromUrl && fromUrl.dialog) { gotoUseCase(fromUrl.dialog === "create-draft-survey" ? "name-dialog" : fromUrl.dialog === "choose-template" ? "template-dialog" : "surveys"); return; }
-    const start = getStartAt();
+    const start = getStartAt(PROTO_STORAGE_PREFIX, "surveys");
     if (start !== "surveys") gotoUseCase(start);
   }, []); // eslint-disable-line
 
   return (
     <div className="proto-shell">
-      <PrototypeBar onUseCase={gotoUseCase} edges={edges} onToggleEdge={toggleEdge} />
+      <PrototypeBar useCases={USE_CASES} startPoints={START_POINTS} edgeCases={EDGE_CASES}
+        storagePrefix={PROTO_STORAGE_PREFIX}
+        onUseCase={gotoUseCase} edges={edges} onToggleEdge={toggleEdge} />
       <div className="app">
       {screen === "surveys" && <Sidebar />}
       {screen === "surveys"
