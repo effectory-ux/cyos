@@ -15,6 +15,7 @@
 // their tooltips.
 import { useState, useEffect } from "react";
 import { Ic } from "./icons.jsx";
+import { initCopyEdits, enableEdit, disableEdit, discardEdits, editCount } from "./copyEdit.js";
 import "./prototype-bar.css";
 
 // Per-project localStorage keys, so two prototypes on one origin don't share
@@ -39,6 +40,19 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
   const [menu, setMenu] = useState(null); // "cases" | "start" | "edges" | null
   const [start, setStart] = useState(() => getStartAt(storagePrefix, startPoints[0] && startPoints[0].key));
   const [copied, setCopied] = useState(false);
+  // Inline copy editing (copyEdit.js): available only while the dev server
+  // runs — the deployed prototype still APPLIES saved edits, read-only.
+  const [canEdit, setCanEdit] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saveState, setSaveState] = useState("clean"); // clean | saving | saved | error
+  useEffect(() => { initCopyEdits(setSaveState).then(setCanEdit); }, []);
+  const toggleEdit = () => {
+    if (editing) { disableEdit(); setEditing(false); }
+    else { enableEdit(); setEditing(true); }
+  };
+  const discard = () => {
+    if (window.confirm("Discard all copy edits and restore the original wording?")) discardEdits();
+  };
 
   // Ctrl+` toggles the bar — no browser binds it, and it can't collide with
   // typing because we ignore the shortcut while a field has focus.
@@ -152,6 +166,26 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
         </div>
       )}
 
+      {canEdit && (
+        <>
+          <button className={"pbar-btn" + (editing ? " is-editing" : "")} data-tip={editing ? "Save and stop editing" : "Edit texts inline"}
+            onClick={toggleEdit}>
+            <Ic name={editing ? "check" : "edit"} size={14} />
+            <span className="pbar-lbl">{editing ? "Save" : "Edit"}</span>
+          </button>
+          {editing && (
+            <span className={"pbar-save is-" + saveState}>
+              {saveState === "saving" ? "Saving…" : saveState === "error" ? "Not saved" : editCount() > 0 ? "Saved" : "Click any text"}
+            </span>
+          )}
+          {editing && editCount() > 0 && (
+            <button className="pbar-icon pbar-tt" onClick={discard} data-tip="Discard all edits" aria-label="Discard all edits">
+              <Ic name="undo" size={14} />
+            </button>
+          )}
+        </>
+      )}
+
       <span className="pbar-sep" aria-hidden="true" />
       <code className="pbar-url" title={url}>{url}</code>
       <button className="pbar-icon pbar-tt is-right" onClick={copy}
@@ -159,7 +193,8 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
         <Ic name={copied ? "check" : "copy"} size={14} />
       </button>
       <span className="pbar-hint">Ctrl+`</span>
-      <button className="pbar-icon pbar-tt is-right" onClick={() => { setHide(true); saveHidden(storagePrefix, true); }}
+      <button className="pbar-icon pbar-tt is-right"
+        onClick={() => { if (editing) { disableEdit(); setEditing(false); } setHide(true); saveHidden(storagePrefix, true); }}
         data-tip="Collapse toolbar (Ctrl+`)" aria-label="Collapse toolbar">
         <Ic name="collapse-left" size={14} />
       </button>

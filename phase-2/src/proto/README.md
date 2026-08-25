@@ -12,7 +12,31 @@ corner brings it back.
 - `PrototypeBar.jsx` — the component. No imports from the host app.
 - `prototype-bar.css` — all its styles, imported by the component. Includes
   `.proto-shell`, the wrapper the host puts around its whole app.
-- `icons.jsx` — the eight glyphs it uses, inlined.
+- `icons.jsx` — the glyphs it uses, inlined.
+- `copyEdit.js` + `vite-plugin-proto-edits.js` — inline copy editing (below).
+
+## Inline copy editing
+
+The **Edit** button (dev server only) makes the whole prototype
+contentEditable and freezes its interactions, so any text can be clicked and
+retyped — open the state you want to edit first (the Use cases menu exists for
+exactly that). Every keystroke is saved **in real time**: a debounced POST to
+the Vite dev server writes `public/proto-edits.json` in the repo, each entry
+carrying the element path, the new text and the original.
+
+The same file is fetched at boot and re-applied after every React render, so
+edits survive menus, dialogs, navigation and reloads. Committed, it ships with
+the build — the deployed prototype shows the edited wording read-only (no Edit
+button there). The undo button in edit mode discards everything and restores
+the source wording.
+
+Because each entry keeps `orig` next to `text`, the file doubles as a work
+order: an agent can fold the new wording into the actual source strings and
+empty the file — edits become the new base instead of a patch layer.
+
+Hosting it in another project: add `protoEdits()` from
+`vite-plugin-proto-edits.js` to the Vite plugins array. Everything else is
+wired inside `PrototypeBar`.
 
 ## Dropping it into another project
 

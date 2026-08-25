@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { protoEdits } from "./src/proto/vite-plugin-proto-edits.js";
 
 // Dev server on a fixed port so the preview tooling can find it.
 // The Engage DS files (styles/*.css, icons.js, assets/icons/*) live at the
@@ -10,7 +11,7 @@ import react from "@vitejs/plugin-react";
 // runs at the domain root AND under a GitHub Pages project subpath
 // (e.g. /cyos-survey-creation-flow-demo/). Dev keeps the absolute '/' base.
 export default defineConfig(({ command }) => ({
-  plugins: [react()],
+  plugins: [react(), protoEdits()],
   base: command === "build" ? "./" : "/",
   server: { port: 5181, strictPort: true },
   build: { outDir: "dist", emptyOutDir: true },

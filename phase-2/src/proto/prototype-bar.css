@@ -90,3 +90,16 @@
     box-shadow: 0 4px 12px rgba(16,22,26,.4); }
   .pbar-menu { position: fixed; top: 42px; left: 8px; right: 8px; width: auto; }
 }
+
+/* ---- Inline copy editing (copyEdit.js) ------------------------------------ */
+.pbar-btn.is-editing { background: #1f6f66; color: #d9fef9; }
+.pbar-btn.is-editing:hover { background: #268277; }
+.pbar-save { flex: none; font-size: 11px; color: #8b93a2; padding: 0 2px; }
+.pbar-save.is-saving { color: #d9b96a; }
+.pbar-save.is-error { color: #e08b8b; }
+/* While edit mode is on: show what's editable, keep the caret visible, and
+   make it obvious the app itself is frozen. */
+.proto-editing { caret-color: #0a9d99; }
+.proto-editing :is(h1,h2,h3,p,span,button,a,label,li,td,code):hover { outline: 1px dashed rgba(10,157,153,.8); outline-offset: 1px; }
+.proto-editing .pbar, .proto-editing .pbar * { outline: none !important; }
+.proto-editing *:focus { outline: none; }
