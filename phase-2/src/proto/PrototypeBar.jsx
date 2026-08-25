@@ -81,16 +81,16 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
   if (hidden) {
     return (
       <button className="pbar-peek" onClick={() => { setHide(false); saveHidden(storagePrefix, false); }}
-        title="Show prototype toolbar (Ctrl+`)">
+        title="Show toolbar (Ctrl+`)">
         <Ic name="sliders" size={12} />
-        <span className="pbar-peek-lbl">Prototype</span>
+        <span className="pbar-peek-lbl">Toolbar</span>
       </button>
     );
   }
 
   return (
     <div className="pbar">
-      <span className="pbar-badge">Prototype</span>
+      <span className="pbar-badge">Toolbar</span>
 
       {useCases.length > 0 && (
         <div className="pbar-menu-wrap">

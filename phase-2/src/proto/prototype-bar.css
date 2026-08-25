@@ -98,8 +98,16 @@
 .pbar-save.is-saving { color: #d9b96a; }
 .pbar-save.is-error { color: #e08b8b; }
 /* While edit mode is on: show what's editable, keep the caret visible, and
-   make it obvious the app itself is frozen. */
+   make it obvious the app itself is frozen. The ring is two layers — a white
+   halo under a teal outline — so it reads on ANY background, light, dark or
+   brand-colored. Hover says "you could edit this"; .proto-edit-target (set
+   from the live selection) says "you are editing this". */
 .proto-editing { caret-color: #0a9d99; }
-.proto-editing :is(h1,h2,h3,p,span,button,a,label,li,td,code):hover { outline: 1px dashed rgba(10,157,153,.8); outline-offset: 1px; }
-.proto-editing .pbar, .proto-editing .pbar * { outline: none !important; }
+.proto-edit-hover {
+  outline: 2px solid #0a9d99; outline-offset: 1px; border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.9), 0 0 0 5px rgba(255,255,255,.55); }
+.proto-edit-target {
+  outline: 2px solid #0a9d99 !important; outline-offset: 1px; border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.9), 0 0 0 5px rgba(255,255,255,.55) !important; }
+.proto-editing .pbar, .proto-editing .pbar *, .proto-editing .pbar-menu * { outline: none !important; box-shadow: none; }
 .proto-editing *:focus { outline: none; }
