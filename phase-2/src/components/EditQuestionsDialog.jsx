@@ -195,14 +195,17 @@ function AddedToast({ topic, onClose }) {
   );
 }
 
-// Info notification shown when a required question is pressed — a live region
+// Info notification shown when a required question is pressed, or when a
+// "Deselect all" keeps required questions selected — a live region
 // (role=status + aria-live) so the reason is announced, not just seen.
-function RequiredNotice({ onClose }) {
+function RequiredNotice({ count = 1, onClose }) {
   return (
     <div className="sysnotif-stack">
       <div className="sysnotif is-info" role="status" aria-live="polite">
-        <div className="sysnotif-title">This question is required</div>
-        <div className="sysnotif-desc">It’s set up as required and is always included in this survey.</div>
+        <div className="sysnotif-title">{count > 1 ? `${count} questions are required` : "This question is required"}</div>
+        <div className="sysnotif-desc">{count > 1
+          ? "They’re set up as required and stay selected in this survey."
+          : "It’s set up as required and is always included in this survey."}</div>
         <button className="sysnotif-close" aria-label="Dismiss" onClick={onClose}><Icon name="cross" size={16} /></button>
       </div>
     </div>
@@ -413,6 +416,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const [justAdded, setJustAdded] = useState(null); // scroll target right after adding a custom question
   const [toast, setToast] = useState(null);         // { topic }
   const [reqNotice, setReqNotice] = useState(0);    // key: increments each time a required question is pressed (re-announces)
+  const [reqCount, setReqCount] = useState(1);      // how many required questions the notice is about
   const [themeDetails, setThemeDetails] = useState(null); // theme name whose details dialog is open
   const [editCustomQ, setEditCustomQ] = useState(null);   // custom question being edited (via its tag)
   const [collapsed, setCollapsed] = useState(() => new Set()); // collapsed Question-tab section keys
@@ -505,7 +509,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // Pressing a required question surfaces the info notice (re-mounted via key so
   // it re-plays + re-announces on each press), auto-dismissing after a moment.
   const reqTimer = useRef(null);
-  const showReqNotice = () => {
+  const showReqNotice = (count = 1) => {
+    setReqCount(count);
     setReqNotice(n => n + 1);
     if (reqTimer.current) clearTimeout(reqTimer.current);
     reqTimer.current = setTimeout(() => setReqNotice(0), 4000);
@@ -530,7 +535,15 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // Closing always drops the dialog back to the default (unfiltered) view.
   const close = () => { setShow("all"); setThemeShow("all"); setTmplShow("all"); onClose(); };
   const apply = () => { setShow("all"); setThemeShow("all"); setTmplShow("all"); onSave([...sel], pool); };
-  const setMany = (ids, on) => setSel(s => { const n = new Set(s); ids.forEach(id => { if (!on && requiredIds.has(id)) return; on ? n.add(id) : n.delete(id); }); return n; });
+  const setMany = (ids, on) => {
+    // Deselect all keeps required questions — and says so, same notice as
+    // pressing one directly.
+    if (!on) {
+      const kept = ids.filter(id => requiredIds.has(id) && sel.has(id)).length;
+      if (kept > 0) showReqNotice(kept);
+    }
+    setSel(s => { const n = new Set(s); ids.forEach(id => { if (!on && requiredIds.has(id)) return; on ? n.add(id) : n.delete(id); }); return n; });
+  };
   const addCustom = (nq) => {
     setPool(p => [...p, nq]); setSel(s => new Set([...s, nq.id])); setCustomOpen(false);
     // Make the new question visible where it landed: clear search/filter,
@@ -733,7 +746,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         onToggle={plainToggle} onToggleAll={(on) => setMany(detailTheme.questions.map(x => x.id), on)}
         onClose={() => setThemeDetails(null)} />}
       {toast && <AddedToast topic={toast.topic} onClose={() => setToast(null)} />}
-      {reqNotice > 0 && <RequiredNotice key={reqNotice} onClose={() => setReqNotice(0)} />}
+      {reqNotice > 0 && <RequiredNotice key={reqNotice} count={reqCount} onClose={() => setReqNotice(0)} />}
     </div>
   );
 }

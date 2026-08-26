@@ -233,6 +233,15 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   // place answers are editable; standard questions stay standard from A to Z.
   const [opts, setOpts] = useState(question && question.options && question.options.length ? question.options : ["", ""]);
   const [attempted, setAttempted] = useState(false);
+  // Preview-only selection on the answer options: clicking the marks shows how
+  // the question will behave (checkboxes toggle independently, radios are
+  // one-of) without changing anything real. Resets when the type changes.
+  const [previewPick, setPreviewPick] = useState(() => new Set());
+  useEffect(() => { setPreviewPick(new Set()); }, [type]);
+  const togglePreview = (i) => setPreviewPick(prev => {
+    if (type === "single") return new Set(prev.has(i) ? [] : [i]);
+    const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n;
+  });
   // The primary language is always the one selected when the dialog opens.
   const [active, setActive] = useState(PRIMARY_LANGUAGE.code);
   // { [code]: { status: "pending" | "done", text, desc, opts, edited, stale } }
@@ -266,7 +275,10 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   const showTextErr = attempted && textErr;
   const topicErr = !topic;
   const cleanOpts = opts.map(o => o.trim()).filter(Boolean);
-  const optsErr = type === "multiple" && cleanOpts.length < 2;
+  // Multiple and single choice share the whole options setup; only the marks
+  // in front of the options differ (checkboxes vs radio buttons).
+  const hasOpts = type === "multiple" || type === "single";
+  const optsErr = hasOpts && cleanOpts.length < 2;
   const showOptsErr = attempted && optsErr;
 
   // Typing in a translation marks it hand-edited, which protects it from the
@@ -317,7 +329,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   const retranslate = () => {
     const srcText = text.trim();
     const srcDesc = desc.trim();
-    const srcOpts = type === "multiple" ? opts : [];
+    const srcOpts = hasOpts ? opts : [];
     if (!srcText) return;
     const key = srcText + " " + srcDesc + " " + srcOpts.join("|");
     if (key === lastSource.current) return;
@@ -344,7 +356,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
 
   // Discard a hand-edited translation and take the fresh automatic one.
   const retranslateOne = (lang) =>
-    runAuto([lang], text.trim(), desc.trim(), type === "multiple" ? opts : []);
+    runAuto([lang], text.trim(), desc.trim(), hasOpts ? opts : []);
 
   const submit = () => {
     setAttempted(true);
@@ -354,7 +366,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
       id: question ? question.id : "c" + Date.now(),
       topic, theme: question ? question.theme : null, bench: false, type, custom: true,
       text: text.trim(), desc: desc.trim() || undefined,
-      options: type === "multiple" ? cleanOpts : undefined,
+      options: hasOpts ? cleanOpts : undefined,
     };
     submitFn(nq);
   };
@@ -370,9 +382,15 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
     submit();
   };
 
-  const typeItems = Object.entries(QTYPES).filter(([, m]) => m.creatable).map(([k, m]) => ({
-    value: k, label: m.label, lead: <QTypeIcon type={k} size={24} />,
-  }));
+  // Standard answer categories ship with the platform; Custom ones are the
+  // single place where answer options are the coordinator's own.
+  const typeItem = (k) => ({ value: k, label: QTYPES[k].label, lead: <QTypeIcon type={k} size={24} /> });
+  const typeItems = [
+    { header: true, label: "Standard" },
+    ...["scale5", "text"].filter(k => QTYPES[k] && QTYPES[k].creatable).map(typeItem),
+    { header: true, label: "Custom" },
+    ...["multiple", "single"].filter(k => QTYPES[k] && QTYPES[k].creatable).map(typeItem),
+  ];
   const topicItems = topicList;
   const langOption = l => ({
     value: l.code, label: l.label, sub: l.country, lead: <Flag lang={l} />,
@@ -507,11 +525,21 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                       {type === "text" ? (
                         <textarea className="ta" rows={4} disabled placeholder={scaleFor(active).open}
                           style={{ background: "var(--bg-secondary)", resize: "none", minHeight: 96 }} />
-                      ) : type === "multiple" ? (
+                      ) : hasOpts ? (
                         <div className="cq-opts">
                           {shownOpts.map((o, i) => (
                             <div key={i} className="cq-opt">
-                              <Icon name="single-answer" size={18} style={{ color: "var(--content-subtle)", flex: "none" }} />
+                              <Tooltip label={type === "single" ? "Participants pick one" : "Participants pick any"} pos="is-above" float>
+                                <button type="button"
+                                  className={"cq-mark " + (type === "single" ? "is-radio" : "is-check") + (previewPick.has(i) ? " is-on" : "")}
+                                  role={type === "single" ? "radio" : "checkbox"} aria-checked={previewPick.has(i)}
+                                  aria-label={"Preview answer option " + (i + 1)}
+                                  onClick={() => togglePreview(i)}>
+                                  {type !== "single" && previewPick.has(i) && (
+                                    <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                  )}
+                                </button>
+                              </Tooltip>
                               <input className={"cq-opt-input" + (isPrimary && showOptsErr && !o.trim() && i < 2 ? " is-error" : "")}
                                 value={o} placeholder={`Answer option ${i + 1}`}
                                 onChange={e => setOptAt(i, e.target.value)}

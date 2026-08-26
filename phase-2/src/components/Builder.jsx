@@ -698,15 +698,11 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                 <div className="menu ctxbar-menu is-right" role="menu">
                   <div className="menu-item" role="menuitem" onClick={() => { setBarMenu(null); onEditQuestions(); }}>
                     <span className="menu-item-icon"><Icon name="list-unordered" size={16} /></span>
-                    <span className="menu-item-body"><span className="menu-item-title">Add questions from library</span></span>
-                  </div>
-                  <div className="menu-item" role="menuitem" onClick={() => { setBarMenu(null); onNewCustom && onNewCustom(); }}>
-                    <span className="menu-item-icon"><Icon name="edit" size={16} /></span>
-                    <span className="menu-item-body"><span className="menu-item-title">Add custom question</span></span>
+                    <span className="menu-item-body"><span className="menu-item-title">Add questions</span></span>
                   </div>
                   <div className="menu-item" role="menuitem" onClick={() => { setBarMenu(null); setTopicDialog({ creating: true }); }}>
                     <span className="menu-item-icon"><Icon name="folder" size={16} /></span>
-                    <span className="menu-item-body"><span className="menu-item-title">Add custom subject</span></span>
+                    <span className="menu-item-body"><span className="menu-item-title">Add custom topic</span></span>
                   </div>
                 </div>
               </>

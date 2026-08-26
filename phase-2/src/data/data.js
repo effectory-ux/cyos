@@ -8,6 +8,7 @@ import { libraryPool, templatePoolQuestions } from "./qlib.js";
 export const QTYPES = {
   scale5:   { label: "5-point scale",   icon: "point-scale",  bg: "var(--bg-accent-turquoise-subtle)", fg: "var(--content-accent-turquoise)", creatable: true },
   multiple: { label: "Multiple choice", icon: "check-square",  bg: "var(--bg-highlight-subtle)",        fg: "var(--content-highlight)",        creatable: true },
+  single:   { label: "Single choice",   icon: "single-answer", bg: "var(--bg-highlight-subtle)",        fg: "var(--content-highlight)",        creatable: true },
   text:     { label: "Text answer",     icon: "text-entry",    bg: "var(--bg-accent-purple-subtle)",    fg: "var(--border-accent-purple-base)",     creatable: true },
 };
 

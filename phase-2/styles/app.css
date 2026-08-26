@@ -1232,3 +1232,16 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .cq-suggest-use, .cq-suggest-in { grid-column: 2; grid-row: 1 / 3; }
 .cq-suggest-in { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500;
   color: var(--content-positive-secondary); }
+
+/* ---- Custom answer marks (multiple = checkbox, single = radio) -------------
+   Interactive in the preview only: clicking shows the pick behavior without
+   touching anything real. */
+.cq-mark { flex: none; width: 18px; height: 18px; padding: 0; display: grid; place-items: center;
+  border: 1.5px solid var(--border-action); background: var(--bg-base); cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+.cq-mark.is-check { border-radius: 4px; color: var(--content-on-brand-base); }
+.cq-mark.is-check.is-on { background: var(--bg-brand); border-color: var(--border-brand); }
+.cq-mark.is-radio { border-radius: 50%; }
+.cq-mark.is-radio.is-on { border-color: var(--border-brand); }
+.cq-mark.is-radio.is-on::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--bg-brand); }
+.cq-mark:hover { border-color: var(--border-brand); }
