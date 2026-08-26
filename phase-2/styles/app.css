@@ -970,9 +970,15 @@ button.sel-btn.cq-sel { font-size: 14px; }
   justify-content: flex-end; align-items: center; }
 .bmq-float .bmq-kind { width: 100%; max-width: 694px; justify-content: flex-start; padding-bottom: 8px; }
 .cq-preview .bmq-float .bmq-kind { max-width: none; }
-/* On a design-colored (dark-scrimmed) backdrop the neutral tags need their
-   surface to stay legible. */
+/* On the preview backdrops (grey or design-colored) the tags share one size
+   and carry a white ring, so the row reads as one set on any background. */
+.bmq-preview .bmq-kind :is(.infotag, .tag), .cq-preview .bmq-kind :is(.infotag, .tag) {
+  height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; line-height: 1; border-radius: var(--radius-base);
+  border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(25, 39, 67, .18); }
 .bmq-preview .infotag, .cq-preview .infotag { background: var(--bg-base); }
+.bmq-preview .infotag.is-standard, .cq-preview .infotag.is-standard { background: var(--bg-accent-turquoise-subtle); }
+.bmq-preview .infotag.is-custom, .cq-preview .infotag.is-custom { background: var(--bg-accent-blue-subtle); }
 .bmq-card { background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-xl);
   box-shadow: 0 4px 6px rgba(25,39,67,.08); padding: 24px; width: 100%; max-width: 694px;
   display: flex; flex-direction: column; gap: 16px; align-items: center; }
@@ -1035,7 +1041,7 @@ button.sel-btn.cq-sel { font-size: 14px; }
   background-image: radial-gradient(rgba(255,255,255,.28) 3px, transparent 3.5px),
     radial-gradient(rgba(20,66,63,.22) 3px, transparent 3.5px);
   background-size: 104px 104px, 104px 104px; background-position: 0 0, 52px 52px; }
-.tpd-title-input { width: 100%; max-width: 560px; padding: 6px 12px; background: rgba(255,255,255,.10);
+.tpd-title-input { width: 100%; max-width: 620px; padding: 6px 12px; background: rgba(255,255,255,.10);
   border: 1.5px dashed rgba(255,255,255,.55); border-radius: var(--radius-md); outline: none;
   color: #fff; font-family: inherit; font-size: 28px; font-weight: 700; line-height: 1.3; text-align: center;
   transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
@@ -1207,3 +1213,15 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .dw-impact { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px;
   font-size: 14px; line-height: 1.6; color: var(--content-secondary); }
 .dw-impact b { color: var(--content-base); }
+
+/* ---- Similar-question check (create custom question) ---------------------- */
+.cq-suggest { gap: var(--spacing-tight); }
+.cq-suggest-empty { margin: 0; padding: 4px 8px; font-size: 12.5px; line-height: 1.6; color: var(--content-secondary); }
+.cq-suggest-item { display: flex; flex-direction: column; gap: 8px; padding: var(--spacing-base-tight);
+  border: 1px solid var(--border-base); border-radius: var(--radius-md); background: var(--bg-base); }
+.cq-suggest-text { font-size: 13px; font-weight: 500; line-height: 1.5; color: var(--content-base); }
+.cq-suggest-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.cq-suggest-tags .infotag { padding: 3px 8px; font-size: 11.5px; }
+.cq-suggest-use { align-self: flex-start; }
+.cq-suggest-in { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500;
+  color: var(--content-positive-secondary); }

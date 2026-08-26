@@ -722,6 +722,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       </div>
 
       {customOpen && <CustomQuestionDialog topics={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
+        pool={pool} selectedIds={[...sel]}
+        onUseSuggestion={(q) => { setMany([q.id], true); setCustomOpen(false); }}
         onCancel={() => setCustomOpen(false)} onAdd={addCustom} />}
       {editCustomQ && <CustomQuestionDialog question={editCustomQ}
         topics={[...new Set(pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}

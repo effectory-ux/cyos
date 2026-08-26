@@ -125,10 +125,6 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   const [desc, setDesc] = useState(meta.desc);
   const [topic, setTopic] = useState(topicKey || q.topic);
   const [lang, setLang] = useState("en");
-  // Language panel hidden by default (Figma 6304:27970); hiding returns the
-  // preview to the primary language.
-  const [showTr, setShowTr] = useState(false);
-  const toggleTr = () => { if (showTr) setLang("en"); setShowTr(v => !v); };
   const [topicOpen, setTopicOpen] = useState(false);
   const [detachAsk, setDetachAsk] = useState(false);
   // A description can be one of the approved ones OR free text (it clarifies the
@@ -220,10 +216,6 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               <Icon name="chevron-down" size={16} />
             </div>
           </div>
-          <button className="btn btn-secondary cq-tr-toggle" aria-expanded={showTr} onClick={toggleTr}>
-            <Icon name="language" size={16} />
-            {showTr ? "Hide translations" : `Show translations (${LANGUAGES.length - 1})`}
-          </button>
         </div>
 
         <div className="bmq-stage">
@@ -319,7 +311,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             </div>
             <div className="bmq-float" aria-hidden="true" />
           </div>
-          {showTr && <div className="bmq-langs">
+          <div className="bmq-langs">
             <div className="bmq-langs-head">Primary language</div>
             {LANGUAGES.filter(l => l.primary).map(l => (
               <button key={l.code} className={"bmq-lang" + (lang === l.code ? " is-selected" : "")} onClick={() => setLang(l.code)}>
@@ -335,7 +327,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               </button>
             ))}
             {!primary && <div className="bmq-lang-note">Translations of benchmarked questions are provided by Effectory. Change the wording in the primary language.</div>}
-          </div>}
+          </div>
         </div>
 
         <div className="dialog-footer">

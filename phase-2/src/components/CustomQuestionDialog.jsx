@@ -12,10 +12,11 @@
 // Translation model: the primary language is the source of truth. Leaving a
 // primary field re-translates every other language automatically. Every
 // translation stays editable, always.
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "./Icon.jsx";
 import { QTypeIcon, Tooltip } from "./shared.jsx";
 import { QTYPES, TOPICS } from "../data/data.js";
+import { similarQuestions } from "../data/similar.js";
 import {
   LANGUAGES, PRIMARY_LANGUAGE, OTHER_LANGUAGES, flagSrc, autoTranslation, scaleFor,
 } from "../data/i18n.js";
@@ -217,7 +218,7 @@ function ManualConflictDialog({ langs, onKeep, onOverwrite }) {
   );
 }
 
-export function CustomQuestionDialog({ question, topics, design, onCancel, onAdd, onSubmit, onDelete }) {
+export function CustomQuestionDialog({ question, topics, design, pool = [], selectedIds = [], onUseSuggestion, onAddAndTranslate, onCancel, onAdd, onSubmit, onDelete }) {
   const editing = !!question;
   const submitFn = onSubmit || onAdd;
   // Only offer topics that actually exist in this survey (as {value,label} —
@@ -243,14 +244,20 @@ export function CustomQuestionDialog({ question, topics, design, onCancel, onAdd
   const [conflict, setConflict] = useState(null);
 
   const compact = useMediaQuery(COMPACT_QUERY);
-  // Translations are secondary to writing the question, so the language panel
-  // starts hidden (Figma 6304:27970) and a button in the selects row reveals
-  // it. Hiding it returns the preview to the primary language.
-  const [showTr, setShowTr] = useState(false);
-  const toggleTr = () => {
-    if (showTr) selectLanguage(PRIMARY_LANGUAGE.code);
-    setShowTr(v => !v);
-  };
+  // EDITING: the language panel is always there — translating an existing
+  // question is core work. CREATING: no translations yet (they come once the
+  // question exists — "Create & translate" continues straight into them);
+  // the right rail is used for the similar-question check instead, so a
+  // benchmarked or already-written duplicate is caught before it is born.
+  const [simText, setSimText] = useState("");
+  useEffect(() => {
+    if (editing) return;
+    const t = setTimeout(() => setSimText(text), 350);
+    return () => clearTimeout(t);
+  }, [text, editing]);
+  const matches = useMemo(
+    () => (editing ? [] : similarQuestions(simText, pool)),
+    [simText, pool, editing]);
   const timers = useRef([]);
   const lastSource = useRef("");
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
@@ -346,16 +353,17 @@ export function CustomQuestionDialog({ question, topics, design, onCancel, onAdd
   const retranslateOne = (lang) =>
     runAuto([lang], text.trim(), desc.trim(), type === "multiple" ? opts : []);
 
-  const submit = () => {
+  const submit = (andTranslate) => {
     setAttempted(true);
     if (textErr || topicErr || optsErr) return;
-    submitFn({
+    const nq = {
       ...(question || {}),
       id: question ? question.id : "c" + Date.now(),
       topic, theme: question ? question.theme : null, bench: false, type, custom: true,
       text: text.trim(), desc: desc.trim() || undefined,
       options: type === "multiple" ? cleanOpts : undefined,
-    });
+    };
+    if (andTranslate && onAddAndTranslate) onAddAndTranslate(nq); else submitFn(nq);
   };
 
   const typeItems = Object.entries(QTYPES).filter(([, m]) => m.creatable).map(([k, m]) => ({
@@ -425,16 +433,12 @@ export function CustomQuestionDialog({ question, topics, design, onCancel, onAdd
               <span className="cq-lbl">Answer type</span>
               <MiniSelect ariaLabel="Answer type" value={type} items={typeItems} onChange={setType} block />
             </div>
-            <button className="btn btn-secondary cq-tr-toggle" aria-expanded={showTr} onClick={toggleTr}>
-              <Icon name="language" size={16} />
-              {showTr ? "Hide translations" : `Show translations (${OTHER_LANGUAGES.length})`}
-            </button>
           </div>
 
           <div className={"cq-frame" + (compact ? " is-compact" : "")}>
             {/* ---- preview (left on wide, whole frame on compact) ---- */}
             <div className="cq-preview" style={design ? { background: `linear-gradient(rgba(18,18,18,.30), rgba(18,18,18,.30)), ${design.photo || design.color}` } : undefined}>
-              {compact && showTr && (
+              {compact && editing && (
                 <div className="cq-field cq-langsel">
                   <span className="cq-lbl">Languages</span>
                   <MiniSelect ariaLabel="Languages" value={active} items={langItems}
@@ -537,8 +541,40 @@ export function CustomQuestionDialog({ question, topics, design, onCancel, onAdd
               )}
             </div>
 
-            {/* ---- languages (right, wide only; revealed on demand) ---- */}
-            {!compact && showTr && (
+            {/* ---- right rail: languages when editing, the similar-question
+                 check while creating ---- */}
+            {!compact && !editing && (
+              <div className="cq-langs cq-suggest">
+                <div className="cq-langs-head">Similar questions</div>
+                {matches.length === 0 ? (
+                  <p className="cq-suggest-empty">
+                    While you write, questions that already exist show up here —
+                    a benchmarked match makes your results comparable with other
+                    organizations.
+                  </p>
+                ) : matches.map(m => {
+                  const inSurvey = selectedIds.includes(m.id);
+                  return (
+                    <div key={m.id} className="cq-suggest-item">
+                      <div className="cq-suggest-text">{m.text}</div>
+                      <div className="cq-suggest-tags">
+                        {m.bench
+                          ? <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
+                          : <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>}
+                        {m.theme && <span className="infotag is-alt">{m.theme}</span>}
+                      </div>
+                      {inSurvey
+                        ? <span className="cq-suggest-in"><Icon name="check" size={14} />Already in this survey</span>
+                        : onUseSuggestion && (
+                          <button className="btn btn-secondary cq-suggest-use" onClick={() => onUseSuggestion(m)}>
+                            Use this question</button>
+                        )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {!compact && editing && (
               <div className="cq-langs">
                 <div className="cq-langs-head">Primary language</div>
                 <LangRow lang={PRIMARY_LANGUAGE} isActive={isPrimary}
@@ -566,7 +602,11 @@ export function CustomQuestionDialog({ question, topics, design, onCancel, onAdd
           <div className="spacer" />
           {benchNote}
           <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-          <button className="btn btn-primary" onClick={submit}>
+          {!editing && onAddAndTranslate && (
+            <button className="btn btn-secondary" onClick={() => submit(true)}>
+              <Icon name="language" size={16} />Create &amp; translate</button>
+          )}
+          <button className="btn btn-primary" onClick={() => submit(false)}>
             {editing ? "Save changes" : "Create"}</button>
         </div>
       </div>
