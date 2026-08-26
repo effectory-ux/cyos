@@ -966,17 +966,12 @@ button.sel-btn.cq-sel { font-size: 14px; }
    is room and degrades to a normal scroll when there isn't — no fixed spacers,
    so the preview never shows a scrollbar unless content truly overflows. */
 .bmq-inner { margin: auto; width: 100%; display: flex; flex-direction: column; align-items: center; }
-.bmq-inner > .bmq-kind { width: 100%; max-width: 694px; justify-content: flex-start; padding-bottom: 8px; }
-.cq-preview .bmq-inner > .bmq-kind { max-width: none; }
-/* On the preview backdrops (grey or design-colored) the tags share one size
-   and carry a white ring, so the row reads as one set on any background. */
-.bmq-preview .bmq-kind :is(.infotag, .tag), .cq-preview .bmq-kind :is(.infotag, .tag) {
+
+/* In the dialog header the tags share one 28px size so the row reads as one
+   set next to the title. */
+.dialog-header .bmq-kind :is(.infotag, .tag) {
   height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12px; line-height: 1; border-radius: var(--radius-base);
-  border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(25, 39, 67, .18); }
-.bmq-preview .infotag, .cq-preview .infotag { background: var(--bg-base); }
-.bmq-preview .infotag.is-standard, .cq-preview .infotag.is-standard { background: var(--bg-accent-turquoise-subtle); }
-.bmq-preview .infotag.is-custom, .cq-preview .infotag.is-custom { background: var(--bg-accent-blue-subtle); }
+  font-size: 12px; line-height: 1; border-radius: var(--radius-base); }
 .bmq-card { background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-xl);
   box-shadow: 0 4px 6px rgba(25,39,67,.08); padding: 24px; width: 100%; max-width: 694px;
   display: flex; flex-direction: column; gap: 16px; align-items: center; }

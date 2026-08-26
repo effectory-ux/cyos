@@ -185,6 +185,12 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
+          <div className="bmq-kind">
+            <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
+            {variant && <span className="infotag is-alt">Alternative wording</span>}
+            {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below" />}
+            {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
+          </div>
           <h2 className="dialog-title" id="bmq-title" data-t={"q-" + q.id}>{title}</h2>
           <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
         </div>
@@ -237,15 +243,6 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                 to a normal scroll when there isn't — no fixed spacers, so the
                 container never scrolls unless the content truly overflows. */}
             <div className="bmq-inner">
-              {/* What kind of question this is: it describes the thing being
-                  previewed, so it sits attached to the card. The answer type
-                  is not repeated — the Answer type select above says it. */}
-              <div className="bmq-kind">
-                <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
-                {variant && <span className="infotag is-alt">Alternative wording</span>}
-                {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below" />}
-                {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
-              </div>
               <div className="bmq-card">
               {/* A translation is derived from the primary language, so it is
                   shown as text: offering a select there would imply the

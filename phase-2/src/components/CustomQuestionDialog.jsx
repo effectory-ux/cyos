@@ -12,7 +12,7 @@
 // Translation model: the primary language is the source of truth. Leaving a
 // primary field re-translates every other language automatically. Every
 // translation stays editable, always.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./Icon.jsx";
 import { QTypeIcon, Tooltip } from "./shared.jsx";
 import { QTYPES, TOPICS } from "../data/data.js";
@@ -218,7 +218,7 @@ function ManualConflictDialog({ langs, onKeep, onOverwrite }) {
   );
 }
 
-export function CustomQuestionDialog({ question, topics, design, pool = [], selectedIds = [], onUseSuggestion, onAddAndTranslate, onCancel, onAdd, onSubmit, onDelete }) {
+export function CustomQuestionDialog({ question, topics, design, pool = [], selectedIds = [], onUseSuggestion, onCancel, onAdd, onSubmit, onDelete }) {
   const editing = !!question;
   const submitFn = onSubmit || onAdd;
   // Only offer topics that actually exist in this survey (as {value,label} —
@@ -244,20 +244,13 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   const [conflict, setConflict] = useState(null);
 
   const compact = useMediaQuery(COMPACT_QUERY);
-  // EDITING: the language panel is always there — translating an existing
-  // question is core work. CREATING: no translations yet (they come once the
-  // question exists — "Create & translate" continues straight into them);
-  // the right rail is used for the similar-question check instead, so a
-  // benchmarked or already-written duplicate is caught before it is born.
-  const [simText, setSimText] = useState("");
-  useEffect(() => {
-    if (editing) return;
-    const t = setTimeout(() => setSimText(text), 350);
-    return () => clearTimeout(t);
-  }, [text, editing]);
-  const matches = useMemo(
-    () => (editing ? [] : similarQuestions(simText, pool)),
-    [simText, pool, editing]);
+  // CREATING runs a check before anything is born: the primary button first
+  // looks for similar existing questions and, if it finds any, shows them in
+  // this dialog — pick one, or confirm creating the new question. `checked`
+  // null = still writing; an array = the check step with its matches. Any
+  // change to the draft drops back to writing (the next Create re-checks).
+  const [checked, setChecked] = useState(null);
+  useEffect(() => { setChecked(null); }, [text, desc, type, topic]);
   const timers = useRef([]);
   const lastSource = useRef("");
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
@@ -353,7 +346,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   const retranslateOne = (lang) =>
     runAuto([lang], text.trim(), desc.trim(), type === "multiple" ? opts : []);
 
-  const submit = (andTranslate) => {
+  const submit = () => {
     setAttempted(true);
     if (textErr || topicErr || optsErr) return;
     const nq = {
@@ -363,7 +356,18 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
       text: text.trim(), desc: desc.trim() || undefined,
       options: type === "multiple" ? cleanOpts : undefined,
     };
-    if (andTranslate && onAddAndTranslate) onAddAndTranslate(nq); else submitFn(nq);
+    submitFn(nq);
+  };
+  // The primary action while creating: check first, create when the check is
+  // clean or already confirmed.
+  const checkThenSubmit = () => {
+    setAttempted(true);
+    if (textErr || topicErr || optsErr) return;
+    if (!editing && checked === null) {
+      const m = similarQuestions(text, pool);
+      if (m.length) { setChecked(m); return; }
+    }
+    submit();
   };
 
   const typeItems = Object.entries(QTYPES).filter(([, m]) => m.creatable).map(([k, m]) => ({
@@ -414,6 +418,10 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
             dialogs: the question's own text once there is any, with a tag row
             saying what kind of question it is (the title can't carry that). */}
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
+          <div className="bmq-kind">
+            <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>
+            <span className="infotag is-alt">No benchmark</span>
+          </div>
           <h2 className="dialog-title" id="cq-title" data-t={question ? "q-" + question.id : undefined}>{text.trim() || (editing ? "Custom question" : "New custom question")}</h2>
           <p className="dialog-subtitle">Write your own question and choose how people answer it. Use this for specific questions that are only valid for your context.</p>
         </div>
@@ -460,13 +468,6 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                 </div>
               ) : (
                 <div className="bmq-inner">
-                  {/* Kind tags sit attached to the previewed card — they
-                      describe what is being previewed. The answer type is not
-                      repeated: the Answer type select above already says it. */}
-                  <div className="bmq-kind">
-                    <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>
-                    <span className="infotag is-alt">No benchmark</span>
-                  </div>
                   <div className={"cq-card" + (working ? " is-working" : "")} aria-busy={working || undefined}>
                     {showManual && (
                       <div className="cq-card-note">
@@ -534,13 +535,15 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                       ) : <ScalePreview lang={active} />}
                     </div>
                   </div>
-                  {/* The check, right where the typing happens: Type question >
-                      Check question > (once created) Translate. No panel when
-                      there is nothing to say. */}
-                  {!editing && matches.length > 0 && (
+                  {/* The check step: shown after Create found similar existing
+                      questions — pick one, or press "Create new question" to
+                      continue with the draft. Editing anything returns to
+                      writing and the next Create re-checks. */}
+                  {!editing && checked && checked.length > 0 && (
                     <div className="cq-suggest is-inline">
-                      <div className="cq-suggest-head"><Icon name="lightbulb" size={14} />Similar questions already exist</div>
-                      {matches.map(m => {
+                      <div className="cq-suggest-head"><Icon name="lightbulb" size={14} />
+                        Similar questions already exist — pick one, or create yours anyway</div>
+                      {checked.map(m => {
                         const inSurvey = selectedIds.includes(m.id);
                         return (
                           <div key={m.id} className="cq-suggest-item">
@@ -597,12 +600,8 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
           <div className="spacer" />
           {benchNote}
           <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-          {!editing && onAddAndTranslate && (
-            <button className="btn btn-secondary" onClick={() => submit(true)}>
-              <Icon name="language" size={16} />Create &amp; translate</button>
-          )}
-          <button className="btn btn-primary" onClick={() => submit(false)}>
-            {editing ? "Save changes" : "Create"}</button>
+          <button className="btn btn-primary" onClick={checkThenSubmit}>
+            {editing ? "Save changes" : checked ? "Create new question" : "Create"}</button>
         </div>
       </div>
 

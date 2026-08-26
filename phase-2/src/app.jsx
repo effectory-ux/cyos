@@ -287,13 +287,6 @@ export function App() {
     setSurvey(s => ({ ...s, pool: [...s.pool, nq], selectedIds: [...s.selectedIds, nq.id] }));
     setNewCustom(false);
   };
-  // "Create & translate": the question is added like above, then its edit
-  // dialog opens straight on the translations — the natural next step.
-  const addCustomAndTranslate = (nq) => {
-    setSurvey(s => ({ ...s, pool: [...s.pool, nq], selectedIds: [...s.selectedIds, nq.id] }));
-    setNewCustom(false);
-    setEditCustom(nq);
-  };
   // The similar-question check found a match: select the existing question
   // instead of creating a duplicate.
   const useSuggested = (q) => {
@@ -458,7 +451,7 @@ export function App() {
         onRemove={() => { removeFromSurvey(removeConfirm.q); setRemoveConfirm(null); }} />}
       {newCustom && survey && <CustomQuestionDialog topics={surveyTopicOptions()} design={designById(survey.design)}
         pool={survey.pool} selectedIds={survey.selectedIds}
-        onUseSuggestion={useSuggested} onAddAndTranslate={addCustomAndTranslate}
+        onUseSuggestion={useSuggested}
         onCancel={() => setNewCustom(false)} onAdd={addCustomDirect} />}
       {editCustom && <CustomQuestionDialog question={editCustom} design={survey ? designById(survey.design) : null}
         topics={surveyTopicOptions()}
