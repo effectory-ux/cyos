@@ -459,15 +459,13 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                   </button>
                 </div>
               ) : (
-                <>
-                  {/* Kind tags float in the space above the previewed card —
-                      they describe what is being previewed. The answer type is
-                      not repeated: the Answer type select above already says it. */}
-                  <div className="bmq-float">
-                    <div className="bmq-kind">
-                      <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>
-                      <span className="infotag is-alt">No benchmark</span>
-                    </div>
+                <div className="bmq-inner">
+                  {/* Kind tags sit attached to the previewed card — they
+                      describe what is being previewed. The answer type is not
+                      repeated: the Answer type select above already says it. */}
+                  <div className="bmq-kind">
+                    <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>
+                    <span className="infotag is-alt">No benchmark</span>
                   </div>
                   <div className={"cq-card" + (working ? " is-working" : "")} aria-busy={working || undefined}>
                     {showManual && (
@@ -536,44 +534,41 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                       ) : <ScalePreview lang={active} />}
                     </div>
                   </div>
-                  <div className="bmq-float" aria-hidden="true" />
-                </>
+                  {/* The check, right where the typing happens: Type question >
+                      Check question > (once created) Translate. No panel when
+                      there is nothing to say. */}
+                  {!editing && matches.length > 0 && (
+                    <div className="cq-suggest is-inline">
+                      <div className="cq-suggest-head"><Icon name="lightbulb" size={14} />Similar questions already exist</div>
+                      {matches.map(m => {
+                        const inSurvey = selectedIds.includes(m.id);
+                        return (
+                          <div key={m.id} className="cq-suggest-item">
+                            <div className="cq-suggest-text">{m.text}</div>
+                            <div className="cq-suggest-tags">
+                              {m.bench
+                                ? <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
+                                : <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>}
+                              {m.theme && <span className="infotag is-alt">{m.theme}</span>}
+                            </div>
+                            {inSurvey
+                              ? <span className="cq-suggest-in"><Icon name="check" size={14} />Already in this survey</span>
+                              : onUseSuggestion && (
+                                <button className="btn btn-secondary cq-suggest-use" onClick={() => onUseSuggestion(m)}>
+                                  Use this question</button>
+                              )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
-            {/* ---- right rail: languages when editing, the similar-question
-                 check while creating ---- */}
-            {!compact && !editing && (
-              <div className="cq-langs cq-suggest">
-                <div className="cq-langs-head">Similar questions</div>
-                {matches.length === 0 ? (
-                  <p className="cq-suggest-empty">
-                    While you write, questions that already exist show up here —
-                    a benchmarked match makes your results comparable with other
-                    organizations.
-                  </p>
-                ) : matches.map(m => {
-                  const inSurvey = selectedIds.includes(m.id);
-                  return (
-                    <div key={m.id} className="cq-suggest-item">
-                      <div className="cq-suggest-text">{m.text}</div>
-                      <div className="cq-suggest-tags">
-                        {m.bench
-                          ? <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
-                          : <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>}
-                        {m.theme && <span className="infotag is-alt">{m.theme}</span>}
-                      </div>
-                      {inSurvey
-                        ? <span className="cq-suggest-in"><Icon name="check" size={14} />Already in this survey</span>
-                        : onUseSuggestion && (
-                          <button className="btn btn-secondary cq-suggest-use" onClick={() => onUseSuggestion(m)}>
-                            Use this question</button>
-                        )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {/* ---- languages (right, wide only): editing only — while
+                 CREATING there is no side panel at all; translations follow
+                 once the question exists ("Create & translate"). ---- */}
             {!compact && editing && (
               <div className="cq-langs">
                 <div className="cq-langs-head">Primary language</div>

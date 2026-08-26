@@ -233,19 +233,20 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
 
         <div className="bmq-stage">
           <div className="bmq-preview" style={design ? { background: `linear-gradient(rgba(18,18,18,.30), rgba(18,18,18,.30)), ${design.photo || design.color}` } : undefined}>
-            {/* What kind of question this is, floating over the preview: it
-                describes the thing being previewed, so it lives with it. The
-                answer type is not repeated here — the Answer type select above
-                already says it. */}
-            <div className="bmq-float">
+            {/* margin:auto centers the group when there is room and degrades
+                to a normal scroll when there isn't — no fixed spacers, so the
+                container never scrolls unless the content truly overflows. */}
+            <div className="bmq-inner">
+              {/* What kind of question this is: it describes the thing being
+                  previewed, so it sits attached to the card. The answer type
+                  is not repeated — the Answer type select above says it. */}
               <div className="bmq-kind">
                 <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
                 {variant && <span className="infotag is-alt">Alternative wording</span>}
                 {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below" />}
                 {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
               </div>
-            </div>
-            <div className="bmq-card">
+              <div className="bmq-card">
               {/* A translation is derived from the primary language, so it is
                   shown as text: offering a select there would imply the
                   alternatives exist per language, which they don't. */}
@@ -300,8 +301,8 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                   <span className="bmq-idk">{t("I don't know")}</span>
                 </div>
               )}
+              </div>
             </div>
-            <div className="bmq-float" aria-hidden="true" />
           </div>
           <div className="bmq-langs">
             <div className="bmq-langs-head">Primary language</div>
