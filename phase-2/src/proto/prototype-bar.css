@@ -92,11 +92,12 @@
 }
 
 /* ---- Inline copy editing (copyEdit.js) ------------------------------------ */
+.pbar-spacer { flex: 1; min-width: 8px; }
 .pbar-btn.is-editing { background: #1f6f66; color: #d9fef9; }
 .pbar-btn.is-editing:hover { background: #268277; }
-.pbar-save { flex: none; font-size: 11px; color: #8b93a2; padding: 0 2px; }
-.pbar-save.is-saving { color: #d9b96a; }
-.pbar-save.is-error { color: #e08b8b; }
+.pbar-btn.is-error { background: #5b2c2c; color: #f0b9b9; }
+.pbar-icon:disabled, .pbar-icon.is-disabled { opacity: .35; cursor: default; }
+.pbar-icon:disabled:hover { background: transparent; }
 /* While edit mode is on: show what's editable, keep the caret visible, and
    make it obvious the app itself is frozen. The ring is two layers — a white
    halo under a teal outline — so it reads on ANY background, light, dark or

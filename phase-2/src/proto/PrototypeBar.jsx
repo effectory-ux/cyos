@@ -15,7 +15,7 @@
 // their tooltips.
 import { useState, useEffect } from "react";
 import { Ic } from "./icons.jsx";
-import { initCopyEdits, enableEdit, disableEdit, discardEdits, editCount } from "./copyEdit.js";
+import { initCopyEdits, enableEdit, disableEdit, discardEdits, editCount, undoEdit, redoEdit, canUndo, canRedo } from "./copyEdit.js";
 import "./prototype-bar.css";
 
 // Per-project localStorage keys, so two prototypes on one origin don't share
@@ -45,7 +45,8 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
   const [canEdit, setCanEdit] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saveState, setSaveState] = useState("clean"); // clean | saving | saved | error
-  useEffect(() => { initCopyEdits(setSaveState).then(setCanEdit); }, []);
+  const [, setTick] = useState(0); // re-render on undo/redo stack changes
+  useEffect(() => { initCopyEdits(setSaveState, () => setTick(t => t + 1)).then(setCanEdit); }, []);
   const toggleEdit = () => {
     if (editing) { disableEdit(); setEditing(false); }
     else { enableEdit(); setEditing(true); }
@@ -70,7 +71,6 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
     return () => window.removeEventListener("keydown", h);
   }, [storagePrefix]);
 
-  const url = window.location.hash || "#/";
   const copy = () => {
     try { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch (_) {}
   };
@@ -166,37 +166,44 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
         </div>
       )}
 
+      <span className="pbar-spacer" aria-hidden="true" />
+
       {canEdit && (
         <>
-          <button className={"pbar-btn" + (editing ? " is-editing" : "")} data-tip={editing ? "Save and stop editing" : "Edit texts inline"}
+          {editing && (
+            <>
+              <button className={"pbar-icon pbar-tt is-right" + (canUndo() ? "" : " is-disabled")}
+                onClick={undoEdit} disabled={!canUndo()} data-tip="Undo (Ctrl+Z)" aria-label="Undo text edit">
+                <Ic name="undo" size={14} />
+              </button>
+              <button className={"pbar-icon pbar-tt is-right" + (canRedo() ? "" : " is-disabled")}
+                onClick={redoEdit} disabled={!canRedo()} data-tip="Redo (Ctrl+Shift+Z)" aria-label="Redo text edit">
+                <Ic name="undo" size={14} flip />
+              </button>
+              <button className={"pbar-icon pbar-tt is-right" + (editCount() > 0 ? "" : " is-disabled")}
+                onClick={discard} disabled={editCount() === 0} data-tip="Delete all text changes" aria-label="Delete all text changes">
+                <Ic name="trash" size={14} />
+              </button>
+            </>
+          )}
+          <button className={"pbar-btn pbar-tt is-right" + (editing ? " is-editing" : "") + (saveState === "error" ? " is-error" : "")}
+            data-tip={saveState === "error" ? "Not saved — is the dev server running with the proto-edits plugin?" : editing ? "Save and stop editing" : "Edit texts inline"}
             onClick={toggleEdit}>
             <Ic name={editing ? "check" : "edit"} size={14} />
             <span className="pbar-lbl">{editing ? "Save" : "Edit"}</span>
           </button>
-          {editing && (
-            <span className={"pbar-save is-" + saveState}>
-              {saveState === "saving" ? "Saving…" : saveState === "error" ? "Not saved" : editCount() > 0 ? "Saved" : "Click any text"}
-            </span>
-          )}
-          {editing && editCount() > 0 && (
-            <button className="pbar-icon pbar-tt" onClick={discard} data-tip="Discard all edits" aria-label="Discard all edits">
-              <Ic name="undo" size={14} />
-            </button>
-          )}
+          <span className="pbar-sep" aria-hidden="true" />
         </>
       )}
 
-      <span className="pbar-sep" aria-hidden="true" />
-      <code className="pbar-url" title={url}>{url}</code>
       <button className="pbar-icon pbar-tt is-right" onClick={copy}
         data-tip={copied ? "Copied" : "Copy link to this step"} aria-label="Copy link to this step">
         <Ic name={copied ? "check" : "copy"} size={14} />
       </button>
-      <span className="pbar-hint">Ctrl+`</span>
       <button className="pbar-icon pbar-tt is-right"
         onClick={() => { if (editing) { disableEdit(); setEditing(false); } setHide(true); saveHidden(storagePrefix, true); }}
         data-tip="Collapse toolbar (Ctrl+`)" aria-label="Collapse toolbar">
-        <Ic name="collapse-left" size={14} />
+        <Ic name="collapse-right" size={14} />
       </button>
     </div>
   );

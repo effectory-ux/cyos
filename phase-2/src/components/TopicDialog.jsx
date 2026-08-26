@@ -16,7 +16,7 @@ import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 // The same surface serves the survey's intro screen: participants meet it the
 // same way (a themed screen with a title, a description and a next arrow), so
 // it is edited the same way. `variant="intro"` only changes the framing copy.
-export function TopicDialog({ creating, name: initialName, desc: initialDesc, originalName, isCustom, questionCount = 0, i18nEdits = {}, stringKeyBase, variant, onCancel, onSave }) {
+export function TopicDialog({ creating, name: initialName, desc: initialDesc, originalName, isCustom, questionCount = 0, i18nEdits = {}, stringKeyBase, variant, tidName, tidDesc, onCancel, onSave }) {
   const isIntro = variant === "intro";
   const [name, setName] = useState(initialName || "");
   const [desc, setDesc] = useState(initialDesc || "");
@@ -74,14 +74,14 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
         <div className="bmq-stage">
           <div className="bmq-preview is-participant">
             <div className="tpd-screen">
-              <input className="tpd-title-input" value={primary ? name : tName}
+              <input className="tpd-title-input" data-t={primary ? tidName : undefined} value={primary ? name : tName}
                 placeholder={isIntro ? "Survey title for the participants" : "Topic name"} autoFocus={creating}
                 aria-label={(isIntro ? "Survey title" : "Topic name") + (primary ? "" : " in " + lang.toUpperCase())} maxLength={60}
                 onChange={e => (primary ? setName(e.target.value) : setTrPart("name", e.target.value))} />
               {!isIntro && <div className="tpd-count">{questionCount} {questionCount === 1 ? "question" : "questions"}</div>}
               {/* The description field shows in every language, so a translation
                   can be written by hand right where it appears. */}
-              <textarea className="tpd-desc-input" rows={2} value={primary ? desc : tDesc} maxLength={200}
+              <textarea className="tpd-desc-input" data-t={primary ? tidDesc : undefined} rows={2} value={primary ? desc : tDesc} maxLength={200}
                 placeholder={primary ? "Add a description (optional)" : "Add a description"}
                 aria-label={(isIntro ? "Intro description" : "Topic description") + (primary ? "" : " in " + lang.toUpperCase())}
                 disabled={!primary && !desc.trim()}

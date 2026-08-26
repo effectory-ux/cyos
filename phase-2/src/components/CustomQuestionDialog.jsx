@@ -406,7 +406,7 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
             dialogs: the question's own text once there is any, with a tag row
             saying what kind of question it is (the title can't carry that). */}
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-          <h2 className="dialog-title" id="cq-title">{text.trim() || (editing ? "Custom question" : "New custom question")}</h2>
+          <h2 className="dialog-title" id="cq-title" data-t={question ? "q-" + question.id : undefined}>{text.trim() || (editing ? "Custom question" : "New custom question")}</h2>
           <p className="dialog-subtitle">Write your own question and choose how people answer it. Use this for specific questions that are only valid for your context.</p>
         </div>
 
@@ -481,6 +481,7 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
                     )}
                     <AutoTextarea
                       className={"cq-qfield" + (isPrimary && showTextErr ? " is-error" : "")}
+                      data-t={question && isPrimary ? "q-" + question.id : undefined}
                       autoFocus={isPrimary}
                       value={isPrimary ? text : (state.text || "")}
                       placeholder={working ? "" : "Write a positive statement here"}

@@ -31,8 +31,20 @@ carrying the element path, the new text and the original.
 The same file is fetched at boot and re-applied after every React render, so
 edits survive menus, dialogs, navigation and reloads. Committed, it ships with
 the build — the deployed prototype shows the edited wording read-only (no Edit
-button there). The undo button in edit mode discards everything and restores
-the source wording.
+button there). Edit mode has its own undo/redo (Ctrl+Z / Ctrl+Shift+Z — the
+browser's native undo is disabled because it can't know about manual edits)
+and a trash button that deletes all text changes.
+
+Linking between renders of the same string is EXPLICIT, via text-asset ids:
+the host app marks elements with `data-t` (an opaque id — a number for static
+entities, a model-derived token like `q-<id>` for dynamic ones; never the
+text's own value). Every element sharing the edited entry's id follows the
+edit; the same characters under different ids stay independent — e.g. the
+coordinator-facing survey name and a participant title that defaults to it.
+Form fields carrying the id are synced once per mount through React's own
+value setter, so the host state updates and the dialog's save flow owns the
+commit. Same-ish templates ("1 question" / "2 questions") are a future
+iteration — don't tag those yet.
 
 Because each entry keeps `orig` next to `text`, the file doubles as a work
 order: an agent can fold the new wording into the actual source strings and

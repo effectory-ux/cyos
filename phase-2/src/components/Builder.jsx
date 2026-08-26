@@ -15,7 +15,7 @@ import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 
 // Small rename dialog — used for the survey name and for a topic's
 // questionnaire-specific label. `note` adds one quiet scope line under the field.
-function RenameDialog({ title, label, value, note, onCancel, onSave }) {
+function RenameDialog({ title, label, value, note, tid, onCancel, onSave }) {
   const [v, setV] = useState(value || "");
   const valid = v.trim().length > 0;
   const save = () => { if (valid) onSave(v.trim()); };
@@ -31,7 +31,7 @@ function RenameDialog({ title, label, value, note, onCancel, onSave }) {
         </div>
         <div>
           <span className="cq-lbl">{label}</span>
-          <input className="tf" autoFocus value={v} placeholder={label}
+          <input className="tf" autoFocus value={v} placeholder={label} data-t={tid}
             onChange={e => setV(e.target.value)} onKeyDown={e => { if (e.key === "Enter") save(); }} />
           {note && <div className="qsp-note" style={{ marginTop: 8 }}><Icon name="info" size={14} />{note}</div>}
         </div>
@@ -102,7 +102,7 @@ function TopNav({ name, onRename }) {
       padding: "12px 12px 12px 16px", flex: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <span className="tag tag-draft">Draft</span>
-        <h1 style={{ margin: 0, fontWeight: 600, fontSize: 16, lineHeight: "24px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: "0 1 auto", minWidth: 140, maxWidth: 340 }}>{name}</h1>
+        <h1 data-t="1" style={{ margin: 0, fontWeight: 600, fontSize: 16, lineHeight: "24px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: "0 1 auto", minWidth: 64, maxWidth: 340 }}>{name}</h1>
         <button className="btn btn-link" style={{ padding: "6px 12px", flex: "none" }} onClick={onRename}><Icon name="edit" size={16} />Edit name</button>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "none" }}>
@@ -174,7 +174,7 @@ function BuilderRow({ q, meta, tr, showDesc, onRemove, onEdit, onSettings, onRes
           <Icon name="drag-drop" size={16} /></button>
       </Tooltip>
       <div className="qrow-main">
-        <div style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{text}</div>
+        <div data-t={"q-" + q.id} style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{text}</div>
         {showDesc && desc && <div className="qrow-desc">{tr(`q:${q.id}:desc`, desc)}</div>}
       </div>
       <div className="qrow-meta">
@@ -725,8 +725,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             onClick={e => { if (e.target.closest("button")) return; setIntroOpen(true); }}
             onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIntroOpen(true); } }}>
             <div className="intro-card-body">
-              <div className="intro-card-title">{tr("intro:name", introTitle)}</div>
-              <div className={"intro-card-desc" + (intro.desc ? "" : " is-empty")}>
+              <div className="intro-card-title" data-t="2">{tr("intro:name", introTitle)}</div>
+              <div className={"intro-card-desc" + (intro.desc ? "" : " is-empty")} data-t="3">
                 {intro.desc ? tr("intro:desc", intro.desc) : "Add a short welcome for participants"}
               </div>
             </div>
@@ -773,7 +773,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     onDragStart={startSection(s.key, vi)} onDragEnd={clearDrag} onClick={e => e.preventDefault()}>
                     <Icon name="drag-drop" size={16} /></button>
                 </Tooltip>
-                <h2 className="qsec-title">{tr(`topic:${s.key}:name`, topicName(s.key))}</h2>
+                <h2 className="qsec-title" data-t={"topic-" + s.key}>{tr(`topic:${s.key}:name`, topicName(s.key))}</h2>
                 <div className="spacer" />
                 <span className="qsec-count">{s.items.length} {s.items.length === 1 ? "question" : "questions"}</span>
                 <div className="qsec-menu-wrap">
@@ -878,7 +878,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         <button className="btn btn-secondary is-disabled" disabled><Icon name="send" size={16} />Plan survey</button>
       </div>
 
-      {rename && rename.kind === "survey" && <RenameDialog title="Rename survey" label="Survey name"
+      {rename && rename.kind === "survey" && <RenameDialog title="Rename survey" label="Survey name" tid="1"
         value={rename.value} onCancel={() => setRename(null)}
         onSave={(v) => { onRename && onRename(v); setRename(null); }} />}
       {topicDialog && (() => {
@@ -891,7 +891,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         const key = topicDialog.key;
         const sec = layout.find(x => x.key === key);
         const isCustom = customTopicSet.has(key);
-        return <TopicDialog name={topicName(key)} desc={(topicMeta[key] || {}).desc}
+        return <TopicDialog name={topicName(key)} desc={(topicMeta[key] || {}).desc} tidName={"topic-" + key}
           originalName={key} isCustom={isCustom} questionCount={sec ? sec.items.length : 0}
           i18nEdits={i18nEdits} stringKeyBase={"topic:" + key}
           onCancel={() => setTopicDialog(null)}
@@ -927,7 +927,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
       {topicWarn && <TopicRemoveWarning label={topicName(topicWarn.key)} count={topicWarn.items.length}
         onCancel={() => setTopicWarn(null)}
         onConfirm={(dontShow) => { if (dontShow) { try { localStorage.setItem("cyos.skipTopicRemoveWarn", "1"); } catch (_) {} } doRemoveTopic(topicWarn); setTopicWarn(null); }} />}
-      {introOpen && <TopicDialog variant="intro" name={introTitle} desc={intro.desc}
+      {introOpen && <TopicDialog variant="intro" tidName="2" tidDesc="3" name={introTitle} desc={intro.desc}
         originalName={introTitle} isCustom i18nEdits={i18nEdits} stringKeyBase="intro"
         onCancel={() => setIntroOpen(false)}
         onSave={({ name: nm, desc: ds, translations }) => {
