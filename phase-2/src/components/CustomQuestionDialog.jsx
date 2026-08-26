@@ -259,6 +259,9 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   // null = still writing; an array = the check step with its matches. Any
   // change to the draft drops back to writing (the next Create re-checks).
   const [checked, setChecked] = useState(null);
+  const [checking, setChecking] = useState(false); // the short full-dialog loader
+  const checkTimer = useRef(null);
+  useEffect(() => () => clearTimeout(checkTimer.current), []);
   useEffect(() => { setChecked(null); }, [text, desc, type, topic]);
   const timers = useRef([]);
   const lastSource = useRef("");
@@ -370,14 +373,21 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
     };
     submitFn(nq);
   };
-  // The primary action while creating: check first, create when the check is
-  // clean or already confirmed.
+  // The primary action while creating: "Check question" runs the similarity
+  // check behind a short full-dialog loader. Matches -> the check step (pick
+  // one, or keep your own); a clean check creates right away. Once checked,
+  // the primary becomes "Keep my question" and submits.
   const checkThenSubmit = () => {
     setAttempted(true);
     if (textErr || topicErr || optsErr) return;
     if (!editing && checked === null) {
-      const m = similarQuestions(text, pool);
-      if (m.length) { setChecked(m); return; }
+      setChecking(true);
+      checkTimer.current = setTimeout(() => {
+        setChecking(false);
+        const m = similarQuestions(text, pool);
+        if (m.length) setChecked(m); else submit();
+      }, 1200);
+      return;
     }
     submit();
   };
@@ -427,20 +437,31 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 60 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
-      <div className="dialog dialog-worksurface cq-dialog has-corner-tags" role="dialog" aria-modal="true" aria-labelledby="cq-title"
+      <div className={"dialog dialog-worksurface cq-dialog" + (editing ? " has-corner-tags" : "")} role="dialog" aria-modal="true" aria-labelledby="cq-title"
         style={{ display: "flex", flexDirection: "column" }}>
         <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
+        {checking && (
+          <div className="cq-checking" role="status" aria-live="polite">
+            <span className="block-loader"><span className="spinner spinner-lg"></span>Checking for similar questions…</span>
+          </div>
+        )}
         {/* Titled by the thing itself, like the benchmarked-question and topic
             dialogs: the question's own text once there is any, with a tag row
             saying what kind of question it is (the title can't carry that). */}
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-          <div className="bmq-kind">
-            <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>
-            <span className="infotag is-alt">No benchmark</span>
-          </div>
-          <h2 className="dialog-title" id="cq-title" data-t={question ? "q-" + question.id : undefined}>{text.trim() || (editing ? "Custom question" : "New custom question")}</h2>
+          {/* The kind tags and the text-mirroring title describe a question
+              that EXISTS. While one is being written there is nothing to tag
+              and nothing to mirror — the header stays a plain label. */}
+          {editing && (
+            <div className="bmq-kind">
+              <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>
+              <span className="infotag is-alt">No benchmark</span>
+            </div>
+          )}
+          <h2 className="dialog-title" id="cq-title" data-t={editing && question ? "q-" + question.id : undefined}>
+            {editing ? (text.trim() || "Custom question") : "New custom question"}</h2>
           <p className="dialog-subtitle">Write your own question and choose how people answer it. Use this for specific questions that are only valid for your context.</p>
         </div>
 
@@ -570,7 +591,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                   {!editing && checked && checked.length > 0 && (
                     <div className="cq-suggest is-inline">
                       <div className="cq-suggest-head"><Icon name="lightbulb" size={14} />
-                        Similar questions already exist — pick one, or create yours anyway</div>
+                        Similar questions already exist — pick one, or keep your own</div>
                       {checked.map(m => {
                         const inSurvey = selectedIds.includes(m.id);
                         return (
@@ -628,8 +649,8 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
           <div className="spacer" />
           {benchNote}
           <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-          <button className="btn btn-primary" onClick={checkThenSubmit}>
-            {editing ? "Save changes" : checked ? "Create new question" : "Create"}</button>
+          <button className={"btn btn-primary" + (checking ? " is-disabled" : "")} disabled={checking} onClick={checkThenSubmit}>
+            {editing ? "Save changes" : checked ? "Keep my question" : "Check question"}</button>
         </div>
       </div>
 

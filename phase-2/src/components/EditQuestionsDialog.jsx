@@ -399,11 +399,17 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
   );
 }
 
-export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", onClose, onSave }) {
+// `nav` switches the dialog's navigation (prototype variant, toolbar-driven):
+// "tabs"    — the four tabs on top, search scoped to the active tab (current).
+// "sidebar" — Miro/Qualtrics-style: a left rail to browse (with the topics as
+//             jump anchors) and ONE search on top that looks across questions,
+//             themes and templates, results grouped by where they came from.
+export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", onClose, onSave }) {
   const [pool, setPool] = useState(initialPool);
   const [sel, setSel] = useState(() => new Set(initialSelected));
   const initial = useMemo(() => new Set(initialSelected), []); // selection when the dialog opened
   const [q, setQ] = useState("");
+  const [gq, setGq] = useState("");                 // sidebar variant: the one global query
   const [tab, setTab] = useState(initialTab);
   const [show, setShow] = useState("all");
   const [themeQ, setThemeQ] = useState("");       // Themes tab search
@@ -452,6 +458,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   }, [pool, sel]);
   const detailTheme = themeGroups.find(t => t.name === themeDetails) || null;
   const themeCountFor = (name) => themeGroups.find(t => t.name === name);
+
   // Themes tab: filter cards by search text + completion state.
   const visibleThemes = themeGroups.filter(t => {
     const matchesText = [t.name, t.desc].some(v => (v || "").toLowerCase().includes(themeQ.toLowerCase()));
@@ -468,6 +475,15 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     return { ...t, questions, total: questions.length, selCount, active: questions.length > 0 && selCount === questions.length };
   }), [sel]);
   const detailTemplate = templateCards.find(t => t.id === templateDetail) || null;
+
+  // Sidebar variant: one query across everything. A search should never come
+  // back empty because the match lived under another tab.
+  const gqt = nav === "sidebar" ? gq.trim().toLowerCase() : "";
+  const gRes = gqt ? {
+    questions: pool.filter(x => (x.text || "").toLowerCase().includes(gqt)),
+    themes: themeGroups.filter(t => t.name.toLowerCase().includes(gqt) || (t.desc || "").toLowerCase().includes(gqt)),
+    templates: templateCards.filter(t => t.name.toLowerCase().includes(gqt) || (t.desc || "").toLowerCase().includes(gqt)),
+  } : null;
   const visibleTemplates = templateCards.filter(t => {
     const matchesText = [t.name, t.desc].some(v => (v || "").toLowerCase().includes(tmplQ.toLowerCase()));
     const matchesShow = tmplShow === "all" || (tmplShow === "active" ? t.active : !t.active);
@@ -587,6 +603,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           <h2 className="dialog-title" id="eq-title" style={{ fontSize: 20, lineHeight: "28px" }}>Select questions</h2>
         </div>
 
+        {nav === "tabs" && (
         <div className="tabs" role="tablist">
           <button className={"tab" + (tab === "questions" ? " is-active" : "")} role="tab" aria-selected={tab === "questions"}
             onClick={() => setTab("questions")}><Icon name="list-unordered" size={16} />Library questions</button>
@@ -597,13 +614,46 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           <button className={"tab" + (tab === "templates" ? " is-active" : "")} role="tab" aria-selected={tab === "templates"}
             onClick={() => setTab("templates")}><Icon name="layout" size={16} />Templates</button>
         </div>
+        )}
 
-        {tab === "questions" && (
+        {nav === "sidebar" && (
+          <div className="search-wrap">
+            <span className="search-icon"><Icon name="search" size={16} /></span>
+            <input type="search" className="srch" placeholder="Search questions, themes and templates"
+              value={gq} onChange={e => setGq(e.target.value)} />
+          </div>
+        )}
+
+        <div className={nav === "sidebar" ? "eq-frame" : "eq-col"}>
+        {nav === "sidebar" && (
+          <div className="eq-rail" role="tablist" aria-orientation="vertical">
+            <button className={"eq-rail-item" + (tab === "questions" ? " is-active" : "")} role="tab" aria-selected={tab === "questions"}
+              onClick={() => { setTab("questions"); setGq(""); }}><Icon name="list-unordered" size={16} />Library questions</button>
+            {tab === "questions" && !gqt && groups.map(g => (
+              <button key={g.key} className="eq-rail-sub" onClick={() => {
+                setCollapsed(c => { const n = new Set(c); n.delete(g.key); return n; });
+                requestAnimationFrame(() => { const el = document.getElementById("eq-sec-" + g.key); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); });
+              }}>{g.label}</button>
+            ))}
+            <button className={"eq-rail-item" + (tab === "custom" ? " is-active" : "")} role="tab" aria-selected={tab === "custom"}
+              onClick={() => { setTab("custom"); setGq(""); }}><Icon name="edit" size={16} />Custom questions</button>
+            <div className="eq-rail-div" role="presentation" />
+            <button className={"eq-rail-item" + (tab === "themes" ? " is-active" : "")} role="tab" aria-selected={tab === "themes"}
+              onClick={() => { setTab("themes"); setGq(""); }}><Icon name="themes" size={16} />Themes</button>
+            <button className={"eq-rail-item" + (tab === "templates" ? " is-active" : "")} role="tab" aria-selected={tab === "templates"}
+              onClick={() => { setTab("templates"); setGq(""); }}><Icon name="layout" size={16} />Templates</button>
+          </div>
+        )}
+        <div className="eq-main">
+
+        {tab === "questions" && !gqt && (
           <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
-            <div className="search-wrap" style={{ flex: 1 }}>
-              <span className="search-icon"><Icon name="search" size={16} /></span>
-              <input type="search" className="srch" placeholder="Search" value={q} onChange={e => setQ(e.target.value)} />
-            </div>
+            {nav === "tabs" ? (
+              <div className="search-wrap" style={{ flex: 1 }}>
+                <span className="search-icon"><Icon name="search" size={16} /></span>
+                <input type="search" className="srch" placeholder="Search" value={q} onChange={e => setQ(e.target.value)} />
+              </div>
+            ) : <div className="spacer" />}
             <ShowFilter value={show} onChange={setShow} />
             <button className={"btn btn-secondary" + (secKeys.length === 0 ? " is-disabled" : "")} disabled={secKeys.length === 0}
               style={{ flex: "none" }} onClick={toggleAllSecs}>
@@ -611,7 +661,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           </div>
         )}
 
-        {tab === "custom" && customQs.length > 0 && (
+        {tab === "custom" && !gqt && customQs.length > 0 && (
           <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
             <span className="text-medium text-subdued" style={{ flex: 1 }}>Your own questions for this survey. No benchmark comparisons.</span>
             <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
@@ -619,28 +669,86 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           </div>
         )}
 
-        {tab === "themes" && themeGroups.length > 0 && (
+        {tab === "themes" && !gqt && themeGroups.length > 0 && (
           <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
-            <div className="search-wrap" style={{ flex: 1 }}>
-              <span className="search-icon"><Icon name="search" size={16} /></span>
-              <input type="search" className="srch" placeholder="Search themes" value={themeQ} onChange={e => setThemeQ(e.target.value)} />
-            </div>
+            {nav === "tabs" ? (
+              <div className="search-wrap" style={{ flex: 1 }}>
+                <span className="search-icon"><Icon name="search" size={16} /></span>
+                <input type="search" className="srch" placeholder="Search themes" value={themeQ} onChange={e => setThemeQ(e.target.value)} />
+              </div>
+            ) : <div className="spacer" />}
             <ShowFilter value={themeShow} onChange={setThemeShow} options={THEME_SHOW_OPTIONS} />
           </div>
         )}
 
-        {tab === "templates" && (
+        {tab === "templates" && !gqt && (
           <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
-            <div className="search-wrap" style={{ flex: 1 }}>
-              <span className="search-icon"><Icon name="search" size={16} /></span>
-              <input type="search" className="srch" placeholder="Search templates" value={tmplQ} onChange={e => setTmplQ(e.target.value)} />
-            </div>
+            {nav === "tabs" ? (
+              <div className="search-wrap" style={{ flex: 1 }}>
+                <span className="search-icon"><Icon name="search" size={16} /></span>
+                <input type="search" className="srch" placeholder="Search templates" value={tmplQ} onChange={e => setTmplQ(e.target.value)} />
+              </div>
+            ) : <div className="spacer" />}
             <ShowFilter value={tmplShow} onChange={setTmplShow} options={TEMPLATE_SHOW_OPTIONS} />
           </div>
         )}
 
         <div className="dialog-body scroll-y">
-          {tab === "themes" ? (
+          {gRes ? (
+            gRes.questions.length + gRes.themes.length + gRes.templates.length === 0 ? (
+              <div className="aql-themes-empty">
+                <Icon name="search" size={32} />
+                <div className="text-l5" style={{ color: "var(--content-secondary)" }}>Nothing matches "{gq.trim()}"</div>
+                <div className="text-medium">Searched all questions, themes and templates.</div>
+              </div>
+            ) : (
+              <>
+                {gRes.questions.length > 0 && (
+                  <section className="eq-gres">
+                    <div className="eq-gres-head">Questions <span className="tag tag-count">{gRes.questions.length}</span></div>
+                    {gRes.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
+                      leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
+                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
+                      onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
+                  </section>
+                )}
+                {gRes.themes.length > 0 && (
+                  <section className="eq-gres">
+                    <div className="eq-gres-head">Themes <span className="tag tag-count">{gRes.themes.length}</span></div>
+                    {gRes.themes.map(t => (
+                      <div key={t.name} className="eq-gres-row" role="button" tabIndex={0}
+                        onClick={() => setThemeDetails(t.name)}
+                        onKeyDown={(e) => { if (e.key === "Enter") setThemeDetails(t.name); }}>
+                        <Icon name="themes" size={16} style={{ color: "var(--content-subtle)", flex: "none" }} />
+                        <span className="eq-gres-name">{t.name}</span>
+                        <span className="eq-gres-sub">{t.kept} of {t.total} questions selected</span>
+                        <div className="spacer" />
+                        <SelectAllTopic allOn={t.total > 0 && t.kept >= t.total} total={t.total}
+                          onToggle={() => setMany(t.questions.map(x => x.id), t.kept < t.total)} />
+                        <button className="btn btn-tertiary" onClick={(e) => { e.stopPropagation(); setThemeDetails(t.name); }}>View details</button>
+                      </div>
+                    ))}
+                  </section>
+                )}
+                {gRes.templates.length > 0 && (
+                  <section className="eq-gres">
+                    <div className="eq-gres-head">Templates <span className="tag tag-count">{gRes.templates.length}</span></div>
+                    {gRes.templates.map(t => (
+                      <div key={t.id} className="eq-gres-row" role="button" tabIndex={0}
+                        onClick={() => setTemplateDetail(t.id)}
+                        onKeyDown={(e) => { if (e.key === "Enter") setTemplateDetail(t.id); }}>
+                        <Icon name="layout" size={16} style={{ color: "var(--content-subtle)", flex: "none" }} />
+                        <span className="eq-gres-name">{t.name}</span>
+                        <span className="eq-gres-sub">{t.selCount > 0 ? `${t.selCount} of ${t.total} questions selected` : `${t.total} questions`}</span>
+                        <div className="spacer" />
+                        <button className="btn btn-tertiary" onClick={(e) => { e.stopPropagation(); setTemplateDetail(t.id); }}>View details</button>
+                      </div>
+                    ))}
+                  </section>
+                )}
+              </>
+            )
+          ) : tab === "themes" ? (
             themeGroups.length === 0 ? (
               <div className="aql-themes-empty">
                 <Icon name="themes" size={32} />
@@ -698,7 +806,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 const nSel = g.items.filter(x => sel.has(x.id)).length;
                 const isColl = collapsed.has(g.key);
                 return (
-                  <section key={g.key} className={"aql-sec" + (isColl ? " is-collapsed" : "")}>
+                  <section key={g.key} id={"eq-sec-" + g.key} className={"aql-sec" + (isColl ? " is-collapsed" : "")}>
                     <div className="aql-sechead">
                       <h3>{g.label}</h3>
                       <div className="spacer" />
@@ -722,6 +830,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               )}
             </>
           )}
+        </div>
+        </div>
         </div>
         </>
         )}

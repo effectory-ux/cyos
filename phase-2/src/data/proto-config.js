@@ -25,3 +25,10 @@ export const USE_CASES = [
   { key: "topic-custom", label: "Custom topic", desc: "A topic added in this survey" },
   { key: "translations", label: "Translations", desc: "Machine-translated strings to review" },
 ];
+
+// Design variants under exploration (the toolbar's Variants menu). Once one
+// wins, it becomes the default and leaves this list.
+export const VARIANTS = [
+  { key: "dialogSidebarNav", label: "Select questions: sidebar navigation",
+    desc: "Left rail to browse (topics as jump anchors) + one search across questions, themes and templates. Off = the four tabs." },
+];

@@ -1245,3 +1245,38 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .cq-mark.is-radio.is-on { border-color: var(--border-brand); }
 .cq-mark.is-radio.is-on::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--bg-brand); }
 .cq-mark:hover { border-color: var(--border-brand); }
+
+/* Full-dialog loader while the similar-question check runs. */
+.cq-checking { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
+  background: rgba(255,255,255,0.88); border-radius: var(--radius-xl); }
+
+/* ---- Select questions: sidebar navigation variant --------------------------
+   Left rail = browse (topics double as jump anchors); the one search on top
+   looks across everything and never scopes to the rail selection. */
+.eq-col { display: flex; flex-direction: column; gap: var(--spacing-loose); flex: 1; min-height: 0; }
+.eq-frame { display: flex; gap: var(--spacing-loose); flex: 1; min-height: 0; }
+.eq-rail { width: 216px; flex: none; display: flex; flex-direction: column; gap: 2px; overflow-y: auto;
+  padding-right: var(--spacing-base-tight); border-right: 1px solid var(--border-base); }
+.eq-rail-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: none;
+  border-radius: var(--radius-md); background: transparent; font-family: inherit; font-size: 14px;
+  font-weight: 500; color: var(--content-secondary); text-align: left; cursor: pointer; }
+.eq-rail-item:hover { background: var(--bg-base-hover); }
+.eq-rail-item.is-active { background: var(--bg-brand-subtle); color: var(--content-base); font-weight: 600; }
+.eq-rail-sub { display: block; padding: 6px 12px 6px 38px; border: none; border-radius: var(--radius-md);
+  background: transparent; font-family: inherit; font-size: 13px; color: var(--content-secondary);
+  text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eq-rail-sub:hover { background: var(--bg-base-hover); color: var(--content-base); }
+.eq-rail-div { height: 1px; margin: 8px 12px; background: var(--border-base); flex: none; }
+.eq-main { display: flex; flex-direction: column; gap: var(--spacing-loose); flex: 1; min-width: 0; min-height: 0; }
+.eq-main .dialog-body { flex: 1; min-height: 0; }
+
+/* Grouped global-search results */
+.eq-gres { display: flex; flex-direction: column; }
+.eq-gres + .eq-gres { margin-top: var(--spacing-super-loose); }
+.eq-gres-head { display: flex; align-items: center; gap: 8px; padding: 0 0 12px; font-size: 14px;
+  font-weight: 600; color: var(--content-base); }
+.eq-gres-row { display: flex; align-items: center; gap: 10px; padding: 10px 8px;
+  border-top: 1px solid var(--border-base); cursor: pointer; }
+.eq-gres-row:hover { background: var(--bg-base-hover); }
+.eq-gres-name { font-size: 14px; font-weight: 500; color: var(--content-base); }
+.eq-gres-sub { font-size: 12.5px; color: var(--content-subtle); }

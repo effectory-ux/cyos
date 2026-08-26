@@ -33,9 +33,11 @@ const saveHidden = (prefix, v) => { try { localStorage.setItem(hideKey(prefix), 
 //   useCases    [{key, label, desc}]   — states to jump to (onUseCase(key))
 //   edgeCases   [{key, label, desc, on}] — toggles (edges map + onToggleEdge(key))
 //   startPoints [{key, label}]         — where the prototype opens next time
+//   variants    [{key, label, desc}]   — design variants under exploration
+//                                        (varState map + onToggleVariant(key))
 //   storagePrefix                      — localStorage namespace, e.g. "cyos"
-export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
-  edges = {}, onUseCase = () => {}, onToggleEdge = () => {}, storagePrefix = "proto" }) {
+export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], variants = [],
+  edges = {}, varState = {}, onUseCase = () => {}, onToggleEdge = () => {}, onToggleVariant = () => {}, storagePrefix = "proto" }) {
   const [hidden, setHide] = useState(() => getHidden(storagePrefix));
   const [menu, setMenu] = useState(null); // "cases" | "start" | "edges" | null
   const [start, setStart] = useState(() => getStartAt(storagePrefix, startPoints[0] && startPoints[0].key));
@@ -132,6 +134,33 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [],
                 {edgeCases.map(c => (
                   <button key={c.key} className={"pbar-item" + (edges[c.key] ? " is-on" : "")}
                     role="switch" aria-checked={!!edges[c.key]} onClick={() => onToggleEdge(c.key)}>
+                    <span className="pbar-item-label">{c.label}</span>
+                    <span className="pbar-switch" aria-hidden="true" />
+                    <span className="pbar-item-desc">{c.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {variants.length > 0 && (
+        <div className="pbar-menu-wrap">
+          <button className={"pbar-btn" + (menu === "variants" ? " is-open" : "")} data-tip="Variants"
+            onClick={() => setMenu(m => (m === "variants" ? null : "variants"))}>
+            <Ic name="sliders" size={14} /><span className="pbar-lbl">Variants</span>
+            <span className="pbar-chev"><Ic name="chevron-down" size={14} /></span>
+          </button>
+          {menu === "variants" && (
+            <>
+              <div className="pbar-scrim" onMouseDown={() => setMenu(null)} />
+              <div className="pbar-menu">
+                <div className="pbar-menu-head">Design variants under exploration</div>
+                <div className="pbar-menu-note">Flip between candidate designs to compare them live. One becomes the default later.</div>
+                {variants.map(c => (
+                  <button key={c.key} className={"pbar-item" + (varState[c.key] ? " is-on" : "")}
+                    role="switch" aria-checked={!!varState[c.key]} onClick={() => onToggleVariant(c.key)}>
                     <span className="pbar-item-label">{c.label}</span>
                     <span className="pbar-switch" aria-hidden="true" />
                     <span className="pbar-item-desc">{c.desc}</span>
