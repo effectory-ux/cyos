@@ -1,0 +1,167 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Poppins', system-ui, sans-serif; color: #192743; }
+    a { color: #0a9d99; } a:hover { color: #0c827f; }
+  </style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #ffffff; overflow: hidden">
+
+  <!-- Sidebar -->
+  <div style="width: 232px; display: flex; flex-direction: column; gap: 4px; padding: 16px 12px; border-right: 1px solid #e1e4e8">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 12px">
+      <span style="width: 36px; height: 36px; border-radius: 8px; background: #4cb7b4; color: #ffffff; display: grid; place-items: center; font-weight: 700; font-size: 15px">C</span>
+      <span style="font-size: 15px; font-weight: 600; flex: 1">Coordinator</span>
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="rgba(25,39,67,0.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.8)">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M3 9l7-6 7 6v8a1 1 0 01-1 1h-4v-5H8v5H4a1 1 0 01-1-1V9z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      Home
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 14px; font-weight: 600">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="4" y="2.5" width="12" height="15" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7.5 7h5M7.5 10h5M7.5 13h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Surveys
+      <span style="flex: 1"></span>
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 12l5-5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div style="padding: 10px 12px 10px 38px; border-radius: 8px; background: #d2f8f6; font-size: 14px; font-weight: 600">All surveys</div>
+    <div style="padding: 10px 12px 10px 38px; border-radius: 8px; font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.8)">Projects</div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.8)">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M16 4a7 7 0 10 1.5 7.5M17 2v4h-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      360° Feedback
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.8)">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M3 6h14M5 10h10M7 14h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Organization
+      <span style="flex: 1"></span>
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div style="flex: 1"></div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.8)">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M8 7.8c.2-1 1-1.8 2-1.8 1.2 0 2 .8 2 1.9 0 1.4-2 1.6-2 3.1M10 14.2v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Help &amp; learn
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid #e1e4e8">
+      <span style="width: 32px; height: 32px; border-radius: 50%; background: #d6e6ff; color: #205bb9; display: grid; place-items: center; font-size: 12px; font-weight: 700">JR</span>
+      <div style="display: flex; flex-direction: column; min-width: 0">
+        <span style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Jamal van Rooijen</span>
+        <span style="font-size: 11.5px; color: rgba(25,39,67,0.65)">Effectory B.V.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div style="flex: 1; display: flex; flex-direction: column; gap: 28px; padding: 32px 40px; overflow: hidden; background: #ffffff">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 28px; font-weight: 700; line-height: 36px">Surveys</h1>
+        <p style="margin: 0; font-size: 14px; color: rgba(25,39,67,0.8)">See your most recent surveys and projects</p>
+      </div>
+      <div style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid #0c827f; border-radius: 6px; background: #0a9d99; font-size: 14px; font-weight: 500; color: #ffffff">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Create survey
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 600">Latest projects</h2>
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.8)">
+          Go to projects
+          <span style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e1e4e8; display: grid; place-items: center; color: rgba(25,39,67,0.4)"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #bcc1cd; display: grid; place-items: center"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M8 4l6 6-6 6" stroke="#192743" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+        <div style="display: flex; flex-direction: column; gap: 28px; padding: 20px; border: 1px solid #e1e4e8; border-radius: 8px; box-shadow: 0 2px 4px rgba(25,39,67,0.04)">
+          <div style="font-size: 15px; font-weight: 600">Central Employee Listening</div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: rgba(25,39,67,0.8)">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><rect x="4" y="2.5" width="12" height="15" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7.5 7h5M7.5 10h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            3 surveys
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 28px; padding: 20px; border: 1px solid #e1e4e8; border-radius: 8px; box-shadow: 0 2px 4px rgba(25,39,67,0.04)">
+          <div style="font-size: 15px; font-weight: 600">Employee lifecycle</div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: rgba(25,39,67,0.8)">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><rect x="4" y="2.5" width="12" height="15" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7.5 7h5M7.5 10h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            3 surveys
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 28px; padding: 20px; border: 1px solid #e1e4e8; border-radius: 8px; box-shadow: 0 2px 4px rgba(25,39,67,0.04)">
+          <div style="font-size: 15px; font-weight: 600">Team pulses</div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: rgba(25,39,67,0.8)">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><rect x="4" y="2.5" width="12" height="15" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7.5 7h5M7.5 10h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            2 surveys
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; min-height: 0">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 600">All surveys</h2>
+      <div style="display: flex; flex-direction: column; border: 1px solid #e1e4e8; border-radius: 8px; overflow: hidden">
+        <div style="display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-bottom: 1px solid #e1e4e8">
+          <div style="display: flex; align-items: center; gap: 8px; color: rgba(25,39,67,0.65); font-size: 14px; flex: 1">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.6"/><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            Search
+          </div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: rgba(25,39,67,0.8)"><span style="width: 16px; height: 16px; border: 1.5px solid #bcc1cd; border-radius: 4px"></span>Show only my surveys</label>
+          <span style="font-size: 13.5px; color: rgba(25,39,67,0.8)"><b style="font-weight: 600">Sort by:</b> Created last</span>
+          <span style="font-size: 13.5px; color: rgba(25,39,67,0.8)"><b style="font-weight: 600">Status:</b> All (4)</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-bottom: 1px solid #e1e4e8">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 600">Employee Engagement 2025</span>
+            <span style="font-size: 12.5px; color: rgba(25,39,67,0.65)">Central Employee Listening</span>
+          </div>
+          <span style="padding: 4px 8px; border-radius: 4px; background: #fdbd12; color: #192743; font-size: 12px; line-height: 16px"><b style="font-weight: 600">Running</b> until 14 Jun</span>
+          <span style="font-size: 14px; font-weight: 600; width: 52px; text-align: right">72%</span>
+          <span style="width: 72px; height: 6px; border-radius: 3px; background: #e1e4e8; overflow: hidden; display: block"><span style="display: block; width: 72%; height: 100%; background: #3174db"></span></span>
+          <span style="width: 36px; height: 36px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/></svg></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-bottom: 1px solid #e1e4e8">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 600">Onboarding pulse — Q2</span>
+            <span style="font-size: 12.5px; color: rgba(25,39,67,0.65)">Employee lifecycle</span>
+          </div>
+          <span style="padding: 4px 8px; border-radius: 4px; background: #192743; color: #ffffff; font-size: 12px; line-height: 16px"><b style="font-weight: 600">Starts</b> on 9 Jun</span>
+          <span style="font-size: 14px; font-weight: 600; width: 52px; text-align: right">0%</span>
+          <span style="width: 72px; height: 6px; border-radius: 3px; background: #e1e4e8; display: block"></span>
+          <span style="width: 36px; height: 36px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/></svg></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-bottom: 1px solid #e1e4e8">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 600">Smart Organization Scan</span>
+            <span style="font-size: 12.5px; color: rgba(25,39,67,0.65)">Central Employee Listening</span>
+          </div>
+          <span style="padding: 4px 8px; border-radius: 4px; background: #e1e4e8; color: rgba(25,39,67,0.8); font-size: 12px; font-weight: 600; line-height: 16px">Draft</span>
+          <span style="font-size: 14px; font-weight: 600; width: 52px; text-align: right">0%</span>
+          <span style="width: 72px; height: 6px; border-radius: 3px; background: #e1e4e8; display: block"></span>
+          <span style="width: 36px; height: 36px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/></svg></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px; padding: 14px 16px">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 600">DEI baseline</span>
+            <span style="font-size: 12.5px; color: rgba(25,39,67,0.65)">Central Employee Listening</span>
+          </div>
+          <span style="padding: 4px 8px; border-radius: 4px; background: #278747; color: #ffffff; font-size: 12px; line-height: 16px"><b style="font-weight: 600">Completed</b> on 2 May</span>
+          <span style="font-size: 14px; font-weight: 600; width: 52px; text-align: right">81%</span>
+          <span style="width: 72px; height: 6px; border-radius: 3px; background: #e1e4e8; overflow: hidden; display: block"><span style="display: block; width: 81%; height: 100%; background: #3174db"></span></span>
+          <span style="width: 36px; height: 36px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/></svg></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

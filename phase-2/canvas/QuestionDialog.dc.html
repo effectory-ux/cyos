@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Poppins', system-ui, sans-serif; color: #192743; }
+    a { color: #0a9d99; } a:hover { color: #0c827f; }
+  </style>
+</helmet>
+<div style="width: 1240px; height: 900px; display: grid; place-items: center; background: rgba(25,39,67,0.5); overflow: hidden">
+  <div style="width: 1080px; height: 820px; display: flex; flex-direction: column; gap: 20px; padding: 32px; box-sizing: border-box; background: #ffffff; border-radius: 16px; box-shadow: 0 4px 12px rgba(25,39,67,0.08); position: relative">
+
+    <span style="position: absolute; top: 15px; right: 15px; width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+
+    <!-- Header: kind tags + title -->
+    <div style="display: flex; flex-direction: column; gap: 6px; padding-right: 16px">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+        <span style="height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; background: #b6f2f1; color: #166764; font-size: 12px; font-weight: 600">
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M4 16V9M10 16V4M16 16v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Benchmarked
+        </span>
+        <span style="height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; background: #278747; color: #ffffff; font-size: 12px; font-weight: 600">Engagement</span>
+      </div>
+      <h2 style="margin: 0; font-size: 18px; font-weight: 600; line-height: 1.5">Day to day, I find my work enjoyable</h2>
+      <p style="margin: 0; font-size: 14px; line-height: 1.6; color: rgba(25,39,67,0.8)">Defined by our professionals and compared to relevant benchmarks.</p>
+    </div>
+
+    <!-- Selects row -->
+    <div style="display: flex; gap: 16px">
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600">Add to topic
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="rgba(25,39,67,0.5)" stroke-width="1.5"/><path d="M10 9v4M10 6.6v.2" stroke="rgba(25,39,67,0.5)" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
+        <div style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px solid #bcc1cd; border-radius: 6px; background: #ffffff; font-size: 14px">
+          Job satisfaction
+          <span style="flex: 1"></span>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="#192743" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 13px; font-weight: 600">Answer type</span>
+        <div style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px solid #e1e4e8; border-radius: 6px; background: #f8f8f9; font-size: 14px; color: rgba(25,39,67,0.5)">
+          <span style="width: 24px; height: 24px; border-radius: 4px; background: #b6f2f1; display: grid; place-items: center; opacity: 0.6"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="4" cy="10" r="1.6" fill="#166764"/><circle cx="10" cy="10" r="1.6" fill="#166764"/><circle cx="16" cy="10" r="1.6" fill="#166764"/></svg></span>
+          5-point scale
+          <span style="flex: 1"></span>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="rgba(25,39,67,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage: participant preview + languages -->
+    <div style="flex: 1; display: flex; border: 1px solid #e1e4e8; border-radius: 12px; overflow: hidden; min-height: 0">
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; background: #e1e4e8">
+        <div style="width: 100%; max-width: 694px; display: flex; flex-direction: column; gap: 16px; align-items: center; padding: 24px; box-sizing: border-box; background: #ffffff; border: 1px solid #e1e4e8; border-radius: 16px; box-shadow: 0 4px 6px rgba(25,39,67,0.08)">
+          <div style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; box-sizing: border-box; border: 1px solid #bcc1cd; border-radius: 6px">
+            <span style="font-size: 16px; font-weight: 600; line-height: 24px">Day to day, I find my work enjoyable</span>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="#192743" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div style="width: 100%; display: flex; align-items: center; justify-content: center; padding: 10px 12px; box-sizing: border-box; border: 1px solid #bcc1cd; border-radius: 6px; font-size: 14px; color: rgba(25,39,67,0.65)">Add a description (optional)</div>
+          <div style="display: flex; align-items: center; gap: 16px; padding-top: 8px">
+            <span style="font-size: 14px; font-weight: 500">Strongly disagree</span>
+            <span style="width: 26px; height: 26px; border-radius: 50%; border: 3px solid #8c2f39; display: block"></span>
+            <span style="width: 26px; height: 26px; border-radius: 50%; border: 3px solid #da2128; display: block"></span>
+            <span style="width: 26px; height: 26px; border-radius: 50%; border: 3px solid #fa8324; display: block"></span>
+            <span style="width: 26px; height: 26px; border-radius: 50%; border: 3px solid #6cbf6c; display: block"></span>
+            <span style="width: 26px; height: 26px; border-radius: 50%; border: 3px solid #278747; display: block"></span>
+            <span style="font-size: 14px; font-weight: 500">Strongly agree</span>
+          </div>
+          <span style="font-size: 14px; color: rgba(25,39,67,0.8)">I don't know</span>
+        </div>
+      </div>
+      <div style="width: 260px; display: flex; flex-direction: column; gap: 8px; padding: 16px; box-sizing: border-box; border-left: 1px solid #e1e4e8; overflow: hidden">
+        <div style="font-size: 13px; font-weight: 600; color: rgba(25,39,67,0.8)">Primary language</div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: #d2f8f6">
+          <span style="width: 22px; height: 16px; border-radius: 3px; background: linear-gradient(180deg, #1c3f94 33%, #ffffff 33%, #ffffff 66%, #c8102e 66%)"></span>
+          <div style="display: flex; flex-direction: column">
+            <span style="font-size: 13.5px; font-weight: 600">English</span>
+            <span style="font-size: 12px; color: rgba(25,39,67,0.65)">United Kingdom</span>
+          </div>
+        </div>
+        <div style="font-size: 13px; font-weight: 600; color: rgba(25,39,67,0.8); padding-top: 10px">Translations (2)</div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px">
+          <span style="width: 22px; height: 16px; border-radius: 3px; background: linear-gradient(180deg, #ae1c28 33%, #ffffff 33%, #ffffff 66%, #21468b 66%)"></span>
+          <div style="display: flex; flex-direction: column">
+            <span style="font-size: 13.5px; font-weight: 600">Dutch</span>
+            <span style="font-size: 12px; color: rgba(25,39,67,0.65)">The Netherlands</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px">
+          <span style="width: 22px; height: 16px; border-radius: 3px; background: linear-gradient(180deg, #000000 33%, #dd0000 33%, #dd0000 66%, #ffce00 66%)"></span>
+          <div style="display: flex; flex-direction: column">
+            <span style="font-size: 13.5px; font-weight: 600">German</span>
+            <span style="font-size: 12px; color: rgba(25,39,67,0.65)">Germany</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px">
+      <div style="display: inline-flex; align-items: center; height: 36px; padding: 0 12px; border: 1px solid #bcc1cd; border-radius: 6px; background: #ffffff; font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.8)">Cancel</div>
+      <div style="display: inline-flex; align-items: center; height: 36px; padding: 0 12px; border-radius: 6px; background: rgba(25,39,67,0.1); font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.3)">Save</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
