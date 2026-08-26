@@ -169,3 +169,16 @@ export const SEED_SURVEYS = [
   { id: "s9", name: "Wellbeing check-in Q1", proj: "Team pulses", status: "Closed", resp: "68%", date: "Closed 5 Feb", mine: false },
   { id: "s10", name: "UX research screener", proj: "Example projects", status: "Draft", resp: "—", date: "Edited 2 days ago", mine: true },
 ];
+
+// Custom questions created OUTSIDE this survey — by other coordinators, in
+// other surveys of this organization. Shown split from the library (the
+// library is Effectory's; these are the customer's own), so a coordinator can
+// reuse a colleague's question instead of writing a near-duplicate.
+export const ORG_CUSTOM = [
+  { id: "oc-1", topic: "Tools & resources", theme: null, bench: false, custom: true, required: false,
+    type: "scale5", text: "The new intranet helps me find what I need", from: "Onboarding pulse — Q2" },
+  { id: "oc-2", topic: "Working together", theme: null, bench: false, custom: true, required: false,
+    type: "scale5", text: "Hybrid meetings work well for people joining remotely", from: "Employee Engagement 2025" },
+  { id: "oc-3", topic: "Job satisfaction", theme: null, bench: false, custom: true, required: false,
+    type: "text", text: "What would make our office worth the commute?", from: "DEI baseline" },
+];

@@ -8,7 +8,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { Icon } from "./Icon.jsx";
 import { themeStatus, themesOf, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag, RequiredMarker } from "./shared.jsx";
 import { CustomQuestionDialog } from "./CustomQuestionDialog.jsx";
-import { THEMES, POOL, TEMPLATES, BADGE_COLORS } from "../data/data.js";
+import { THEMES, POOL, TEMPLATES, BADGE_COLORS, ORG_CUSTOM } from "../data/data.js";
 import { templatePoolQuestions, TEMPLATE_META } from "../data/qlib.js";
 
 // Two-line tooltip for a "select the whole subject" checkbox — names the current
@@ -301,6 +301,18 @@ const TEMPLATE_SHOW_OPTIONS = [
   { value: "active", label: "Active" },
   { value: "inactive", label: "Not active" },
 ];
+// Sidebar variant: the filter row sits next to the ONE global search and works
+// on whichever section is open, so its labels stay general ("Show: All").
+const GENERIC_SHOW = {
+  questions: [
+    { value: "all", label: "All" }, { value: "selected", label: "Selected" }, { value: "unselected", label: "Not selected" }],
+  custom: [
+    { value: "all", label: "All" }, { value: "selected", label: "Selected" }, { value: "unselected", label: "Not selected" }],
+  themes: [
+    { value: "all", label: "All" }, { value: "complete", label: "Complete" }, { value: "incomplete", label: "Incomplete" }],
+  templates: [
+    { value: "all", label: "All" }, { value: "active", label: "Active" }, { value: "inactive", label: "Not active" }],
+};
 function ShowFilter({ value, onChange, options = SHOW_OPTIONS }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -574,6 +586,15 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   };
 
   const customQs = pool.filter(x => x.custom);
+  // Custom questions created OUTSIDE this survey (other coordinators/surveys):
+  // shown as their own group — customer content stays split from the library,
+  // and from this survey's own customs. Adding one pulls it into this survey.
+  const poolIds = useMemo(() => new Set(pool.map(x => x.id)), [pool]);
+  const orgCustomQs = ORG_CUSTOM.filter(x => !poolIds.has(x.id));
+  const addOrgQuestion = (oq) => {
+    setPool(p => [...p, oq]);
+    setSel(s2 => new Set([...s2, oq.id]));
+  };
   const visible = pool.filter(x => !x.custom)
     .filter(x => [x.text, x.theme, x.topic].some(v => (v || "").toLowerCase().includes(q.toLowerCase())))
     .filter(x => (show === "all" ? true : show === "selected" ? sel.has(x.id) : !sel.has(x.id)) || leaving.has(x.id));
@@ -588,7 +609,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
 
   return (
     <div className="overlay" onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
-      <div className="dialog dialog-l dialog-worksurface" role="dialog" aria-modal="true" aria-labelledby="eq-title"
+      <div className={"dialog dialog-l dialog-worksurface" + (nav === "sidebar" ? " eq-wide" : "")} role="dialog" aria-modal="true" aria-labelledby="eq-title"
         style={{ display: "flex", flexDirection: "column", height: "min(940px, calc(100vh - 64px))" }}>
         <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
           <button className="dialog-close" aria-label="Close" onClick={close}><Icon name="cross" /></button>
@@ -617,10 +638,25 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         )}
 
         {nav === "sidebar" && (
-          <div className="search-wrap">
-            <span className="search-icon"><Icon name="search" size={16} /></span>
-            <input type="search" className="srch" placeholder="Search questions, themes and templates"
-              value={gq} onChange={e => setGq(e.target.value)} />
+          <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
+            <div className="search-wrap" style={{ flex: 1 }}>
+              <span className="search-icon"><Icon name="search" size={16} /></span>
+              <input type="search" className="srch" placeholder="Search questions, themes and templates"
+                value={gq} onChange={e => setGq(e.target.value)} />
+            </div>
+            {!gqt && (
+              <ShowFilter
+                value={tab === "themes" ? themeShow : tab === "templates" ? tmplShow : show}
+                onChange={tab === "themes" ? setThemeShow : tab === "templates" ? setTmplShow : setShow}
+                options={GENERIC_SHOW[tab] || GENERIC_SHOW.questions} />
+            )}
+            {!gqt && tab === "questions" && (
+              <button className={"btn btn-secondary" + (secKeys.length === 0 ? " is-disabled" : "")} disabled={secKeys.length === 0}
+                style={{ flex: "none" }} onClick={toggleAllSecs}>
+                <Icon name={allCollapsed ? "double-chevron-down" : "double-chevron-up"} size={16} />{allCollapsed ? "Expand all" : "Collapse all"}</button>
+            )}
+            <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
+              <Icon name="plus" size={16} />Custom question</button>
           </div>
         )}
 
@@ -629,12 +665,6 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           <div className="eq-rail" role="tablist" aria-orientation="vertical">
             <button className={"eq-rail-item" + (tab === "questions" ? " is-active" : "")} role="tab" aria-selected={tab === "questions"}
               onClick={() => { setTab("questions"); setGq(""); }}><Icon name="list-unordered" size={16} />Library questions</button>
-            {tab === "questions" && !gqt && groups.map(g => (
-              <button key={g.key} className="eq-rail-sub" onClick={() => {
-                setCollapsed(c => { const n = new Set(c); n.delete(g.key); return n; });
-                requestAnimationFrame(() => { const el = document.getElementById("eq-sec-" + g.key); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); });
-              }}>{g.label}</button>
-            ))}
             <button className={"eq-rail-item" + (tab === "custom" ? " is-active" : "")} role="tab" aria-selected={tab === "custom"}
               onClick={() => { setTab("custom"); setGq(""); }}><Icon name="edit" size={16} />Custom questions</button>
             <div className="eq-rail-div" role="presentation" />
@@ -646,14 +676,12 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         )}
         <div className="eq-main">
 
-        {tab === "questions" && !gqt && (
+        {nav === "tabs" && tab === "questions" && (
           <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
-            {nav === "tabs" ? (
-              <div className="search-wrap" style={{ flex: 1 }}>
-                <span className="search-icon"><Icon name="search" size={16} /></span>
-                <input type="search" className="srch" placeholder="Search" value={q} onChange={e => setQ(e.target.value)} />
-              </div>
-            ) : <div className="spacer" />}
+            <div className="search-wrap" style={{ flex: 1 }}>
+              <span className="search-icon"><Icon name="search" size={16} /></span>
+              <input type="search" className="srch" placeholder="Search" value={q} onChange={e => setQ(e.target.value)} />
+            </div>
             <ShowFilter value={show} onChange={setShow} />
             <button className={"btn btn-secondary" + (secKeys.length === 0 ? " is-disabled" : "")} disabled={secKeys.length === 0}
               style={{ flex: "none" }} onClick={toggleAllSecs}>
@@ -661,7 +689,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           </div>
         )}
 
-        {tab === "custom" && !gqt && customQs.length > 0 && (
+        {nav === "tabs" && tab === "custom" && customQs.length > 0 && (
           <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
             <span className="text-medium text-subdued" style={{ flex: 1 }}>Your own questions for this survey. No benchmark comparisons.</span>
             <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
@@ -669,26 +697,22 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           </div>
         )}
 
-        {tab === "themes" && !gqt && themeGroups.length > 0 && (
+        {nav === "tabs" && tab === "themes" && themeGroups.length > 0 && (
           <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
-            {nav === "tabs" ? (
-              <div className="search-wrap" style={{ flex: 1 }}>
-                <span className="search-icon"><Icon name="search" size={16} /></span>
-                <input type="search" className="srch" placeholder="Search themes" value={themeQ} onChange={e => setThemeQ(e.target.value)} />
-              </div>
-            ) : <div className="spacer" />}
+            <div className="search-wrap" style={{ flex: 1 }}>
+              <span className="search-icon"><Icon name="search" size={16} /></span>
+              <input type="search" className="srch" placeholder="Search themes" value={themeQ} onChange={e => setThemeQ(e.target.value)} />
+            </div>
             <ShowFilter value={themeShow} onChange={setThemeShow} options={THEME_SHOW_OPTIONS} />
           </div>
         )}
 
-        {tab === "templates" && !gqt && (
+        {nav === "tabs" && tab === "templates" && (
           <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
-            {nav === "tabs" ? (
-              <div className="search-wrap" style={{ flex: 1 }}>
-                <span className="search-icon"><Icon name="search" size={16} /></span>
-                <input type="search" className="srch" placeholder="Search templates" value={tmplQ} onChange={e => setTmplQ(e.target.value)} />
-              </div>
-            ) : <div className="spacer" />}
+            <div className="search-wrap" style={{ flex: 1 }}>
+              <span className="search-icon"><Icon name="search" size={16} /></span>
+              <input type="search" className="srch" placeholder="Search templates" value={tmplQ} onChange={e => setTmplQ(e.target.value)} />
+            </div>
             <ShowFilter value={tmplShow} onChange={setTmplShow} options={TEMPLATE_SHOW_OPTIONS} />
           </div>
         )}
@@ -715,35 +739,23 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 {gRes.themes.length > 0 && (
                   <section className="eq-gres">
                     <div className="eq-gres-head">Themes <span className="tag tag-count">{gRes.themes.length}</span></div>
-                    {gRes.themes.map(t => (
-                      <div key={t.name} className="eq-gres-row" role="button" tabIndex={0}
-                        onClick={() => setThemeDetails(t.name)}
-                        onKeyDown={(e) => { if (e.key === "Enter") setThemeDetails(t.name); }}>
-                        <Icon name="themes" size={16} style={{ color: "var(--content-subtle)", flex: "none" }} />
-                        <span className="eq-gres-name">{t.name}</span>
-                        <span className="eq-gres-sub">{t.kept} of {t.total} questions selected</span>
-                        <div className="spacer" />
-                        <SelectAllTopic allOn={t.total > 0 && t.kept >= t.total} total={t.total}
-                          onToggle={() => setMany(t.questions.map(x => x.id), t.kept < t.total)} />
-                        <button className="btn btn-tertiary" onClick={(e) => { e.stopPropagation(); setThemeDetails(t.name); }}>View details</button>
-                      </div>
-                    ))}
+                    <div className="thm-grid">
+                      {gRes.themes.map(t => <ChoiceCard key={t.name} variant="theme"
+                        title={t.name} desc={t.desc} selCount={t.kept} total={t.total}
+                        onToggle={() => setMany(t.questions.map(x => x.id), t.kept < t.total)}
+                        onDetails={() => setThemeDetails(t.name)} />)}
+                    </div>
                   </section>
                 )}
                 {gRes.templates.length > 0 && (
                   <section className="eq-gres">
                     <div className="eq-gres-head">Templates <span className="tag tag-count">{gRes.templates.length}</span></div>
-                    {gRes.templates.map(t => (
-                      <div key={t.id} className="eq-gres-row" role="button" tabIndex={0}
-                        onClick={() => setTemplateDetail(t.id)}
-                        onKeyDown={(e) => { if (e.key === "Enter") setTemplateDetail(t.id); }}>
-                        <Icon name="layout" size={16} style={{ color: "var(--content-subtle)", flex: "none" }} />
-                        <span className="eq-gres-name">{t.name}</span>
-                        <span className="eq-gres-sub">{t.selCount > 0 ? `${t.selCount} of ${t.total} questions selected` : `${t.total} questions`}</span>
-                        <div className="spacer" />
-                        <button className="btn btn-tertiary" onClick={(e) => { e.stopPropagation(); setTemplateDetail(t.id); }}>View details</button>
-                      </div>
-                    ))}
+                    <div className="thm-grid">
+                      {gRes.templates.map(t => <ChoiceCard key={t.id} variant="template"
+                        title={t.name} desc={t.desc} illus={BADGE_COLORS[t.badge]} selCount={t.selCount} total={t.total}
+                        onToggle={() => setTemplate(t, !t.active)}
+                        onDetails={() => setTemplateDetail(t.id)} />)}
+                    </div>
                   </section>
                 )}
               </>
@@ -770,7 +782,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               </>
             )
           ) : tab === "custom" ? (
-            customQs.length === 0 ? (
+            customQs.length === 0 && orgCustomQs.length === 0 ? (
               <div className="aql-themes-empty">
                 <Icon name="edit" size={32} />
                 <div className="text-l5" style={{ color: "var(--content-secondary)" }}>No custom questions yet</div>
@@ -780,10 +792,38 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               </div>
             ) : (
               <>
+                {customQs.length > 0 && orgCustomQs.length > 0 && (
+                  <div className="aql-sechead"><h3>In this survey</h3></div>
+                )}
+                {customQs.length === 0 && orgCustomQs.length > 0 && (
+                  <div className="aql-sechead">
+                    <h3>In this survey</h3>
+                    <span className="text-medium text-subdued">None yet — write one, or reuse a colleague's below</span>
+                  </div>
+                )}
                 {customQs.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
                   leaving={leaving.has(qq.id)} themeInfo={null}
                   onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
                   onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
+                {orgCustomQs.length > 0 && (
+                  <>
+                    <div className="aql-sechead" style={{ marginTop: "var(--spacing-super-loose)" }}>
+                      <h3>From your organization</h3>
+                      <span className="text-medium text-subdued">Custom questions colleagues wrote in other surveys</span>
+                    </div>
+                    {orgCustomQs.map(oq => (
+                      <div key={oq.id} className="aql-row" onClick={() => addOrgQuestion(oq)}>
+                        <Tooltip label="Add to questionnaire" pos="is-above" float>
+                          <Checkbox on={false} large onClick={(e) => { e.stopPropagation(); addOrgQuestion(oq); }} />
+                        </Tooltip>
+                        <div className="aql-text">{oq.text}</div>
+                        <span className="text-medium text-subdued" style={{ flex: "none" }}>{oq.from}</span>
+                        <CustomTag label="Custom question" pos="is-above" float />
+                        <QTypeIcon type={oq.type} size={24} tip pos="is-above" float />
+                      </div>
+                    ))}
+                  </>
+                )}
               </>
             )
           ) : tab === "templates" ? (
