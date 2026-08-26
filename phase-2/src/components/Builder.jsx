@@ -883,7 +883,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         onSave={(v) => { onRename && onRename(v); setRename(null); }} />}
       {topicDialog && (() => {
         if (topicDialog.creating) {
-          return <TopicDialog creating isCustom questionCount={0}
+          return <TopicDialog creating isCustom questionCount={0} design={design}
             onCancel={() => setTopicDialog(null)}
             onAdd={undefined}
             onSave={(t) => { onAddTopic && onAddTopic(t); setTopicDialog(null); }} />;
@@ -891,7 +891,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         const key = topicDialog.key;
         const sec = layout.find(x => x.key === key);
         const isCustom = customTopicSet.has(key);
-        return <TopicDialog name={topicName(key)} desc={(topicMeta[key] || {}).desc} tidName={"topic-" + key}
+        return <TopicDialog design={design} name={topicName(key)} desc={(topicMeta[key] || {}).desc} tidName={"topic-" + key}
           originalName={key} isCustom={isCustom} questionCount={sec ? sec.items.length : 0}
           i18nEdits={i18nEdits} stringKeyBase={"topic:" + key}
           onCancel={() => setTopicDialog(null)}
@@ -910,7 +910,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
       {settingsQId && (() => {
         const q = pool.find(p => p.id === settingsQId);
         return q ? (
-          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]}
+          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]} design={design}
             topicOptions={visibleSections.map(x => ({ value: x.key, label: topicName(x.key) }))}
             onCancel={() => setSettingsQId(null)}
             onDetach={({ text, topic }) => { setSettingsQId(null); onDetachQuestion && onDetachQuestion(q, text, topic); }}
@@ -927,7 +927,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
       {topicWarn && <TopicRemoveWarning label={topicName(topicWarn.key)} count={topicWarn.items.length}
         onCancel={() => setTopicWarn(null)}
         onConfirm={(dontShow) => { if (dontShow) { try { localStorage.setItem("cyos.skipTopicRemoveWarn", "1"); } catch (_) {} } doRemoveTopic(topicWarn); setTopicWarn(null); }} />}
-      {introOpen && <TopicDialog variant="intro" tidName="2" tidDesc="3" name={introTitle} desc={intro.desc}
+      {introOpen && <TopicDialog variant="intro" tidName="2" tidDesc="3" design={design}
+        questionCount={chosen.length} minutes={estMinutes} name={introTitle} desc={intro.desc}
         originalName={introTitle} isCustom i18nEdits={i18nEdits} stringKeyBase="intro"
         onCancel={() => setIntroOpen(false)}
         onSave={({ name: nm, desc: ds, translations }) => {

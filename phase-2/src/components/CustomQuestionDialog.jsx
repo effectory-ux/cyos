@@ -217,7 +217,7 @@ function ManualConflictDialog({ langs, onKeep, onOverwrite }) {
   );
 }
 
-export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubmit, onDelete }) {
+export function CustomQuestionDialog({ question, topics, design, onCancel, onAdd, onSubmit, onDelete }) {
   const editing = !!question;
   const submitFn = onSubmit || onAdd;
   // Only offer topics that actually exist in this survey (as {value,label} —
@@ -433,7 +433,7 @@ export function CustomQuestionDialog({ question, topics, onCancel, onAdd, onSubm
 
           <div className={"cq-frame" + (compact ? " is-compact" : "")}>
             {/* ---- preview (left on wide, whole frame on compact) ---- */}
-            <div className="cq-preview">
+            <div className="cq-preview" style={design ? { background: `linear-gradient(rgba(18,18,18,.30), rgba(18,18,18,.30)), ${design.photo || design.color}` } : undefined}>
               {compact && showTr && (
                 <div className="cq-field cq-langsel">
                   <span className="cq-lbl">Languages</span>

@@ -962,10 +962,17 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .bmq-stage { flex: 1; min-height: 0; display: flex; border: 1px solid var(--border-base); border-radius: 12px; overflow: hidden; }
 .bmq-preview { flex: 1; min-width: 0; background: var(--bg-tertiary); display: flex; flex-direction: column;
   align-items: center; justify-content: center; padding: 40px; overflow-y: auto; }
-/* The kind tags float in the empty space between the container's top edge and
-   the previewed card: two symmetric flex gaps keep the card itself centered. */
-.bmq-float { flex: 1 0 0; min-height: 32px; display: flex; align-items: center; justify-content: center; }
-.bmq-float .bmq-kind { justify-content: center; }
+/* The kind tags sit ANCHORED to the previewed card — bottom of the top gap,
+   flush with the card's left edge — so they read as labels ON the thing being
+   previewed instead of floating in the void. The two flex gaps still keep the
+   card itself vertically centered. */
+.bmq-float { flex: 1 0 0; min-height: 40px; width: 100%; display: flex; flex-direction: column;
+  justify-content: flex-end; align-items: center; }
+.bmq-float .bmq-kind { width: 100%; max-width: 694px; justify-content: flex-start; padding-bottom: 8px; }
+.cq-preview .bmq-float .bmq-kind { max-width: none; }
+/* On a design-colored (dark-scrimmed) backdrop the neutral tags need their
+   surface to stay legible. */
+.bmq-preview .infotag, .cq-preview .infotag { background: var(--bg-base); }
 .bmq-card { background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-xl);
   box-shadow: 0 4px 6px rgba(25,39,67,.08); padding: 24px; width: 100%; max-width: 694px;
   display: flex; flex-direction: column; gap: 16px; align-items: center; }
@@ -1184,3 +1191,19 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 /* What kind of question this is — the title only carries its text. */
 .bmq-kind { display: flex; align-items: center; gap: var(--spacing-tight); flex-wrap: wrap; }
 .infotag.is-alt { background: var(--bg-tertiary); color: var(--content-secondary); }
+
+/* ---- Intro-screen preview: the real participant anatomy ------------------- */
+.tpd-meta { display: flex; gap: 44px; justify-content: center; margin-top: 20px; }
+.tpd-meta-item { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 170px; }
+.tpd-meta-ic { width: 52px; height: 52px; border-radius: 50%; border: 2px solid rgba(255,255,255,.9);
+  display: grid; place-items: center; color: #fff; }
+.tpd-meta-txt { font-size: 12.5px; line-height: 1.5; color: rgba(255,255,255,.95); text-align: center; }
+.tpd-meta-link { display: inline-flex; align-items: center; gap: 4px; text-decoration: underline; }
+.tpd-cta { display: inline-flex; align-items: center; gap: 8px; margin-top: 24px; padding: 12px 28px;
+  border-radius: 999px; font-size: 16px; font-weight: 600; box-shadow: 0 2px 6px rgba(25,39,67,.25); }
+
+/* Detach warning: the tag flip and the impact list */
+.dw-flip { display: flex; align-items: center; gap: 10px; }
+.dw-impact { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px;
+  font-size: 14px; line-height: 1.6; color: var(--content-secondary); }
+.dw-impact b { color: var(--content-base); }

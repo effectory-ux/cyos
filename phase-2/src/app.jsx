@@ -13,6 +13,7 @@ import { PrototypeBar, getStartAt } from "./proto/PrototypeBar.jsx";
 import { PROTO_STORAGE_PREFIX, START_POINTS, USE_CASES } from "./data/proto-config.js";
 import { serialize, writeRoute, parse } from "./data/routes.js";
 import { defaultEdges, EDGE_CASES } from "./data/edgecases.js";
+import { designById } from "./data/designs.js";
 
 // Behaviour the design iterations landed on: removing the last question of a
 // complete theme soft-locks (asks first), and "Add custom question" lives in
@@ -442,9 +443,9 @@ export function App() {
       {removeConfirm && <ThemeConfirm q={removeConfirm.q} themes={removeConfirm.themes} pool={survey && survey.pool}
         onKeep={() => setRemoveConfirm(null)}
         onRemove={() => { removeFromSurvey(removeConfirm.q); setRemoveConfirm(null); }} />}
-      {newCustom && survey && <CustomQuestionDialog topics={surveyTopicOptions()}
+      {newCustom && survey && <CustomQuestionDialog topics={surveyTopicOptions()} design={designById(survey.design)}
         onCancel={() => setNewCustom(false)} onAdd={addCustomDirect} />}
-      {editCustom && <CustomQuestionDialog question={editCustom}
+      {editCustom && <CustomQuestionDialog question={editCustom} design={survey ? designById(survey.design) : null}
         topics={surveyTopicOptions()}
         onCancel={() => setEditCustom(null)} onSubmit={saveCustomEdit}
         onDelete={(q) => { removeFromSurvey(q); setEditCustom(null); }} />}

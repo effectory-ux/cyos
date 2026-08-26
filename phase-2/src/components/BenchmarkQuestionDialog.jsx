@@ -63,35 +63,12 @@ function PreviewSelect({ value, display, options, big, placeholder, disabled, fo
 const SKIP_KEY = "cyos.skipDetachWarn";
 const skipDetachWarn = () => { try { return localStorage.getItem(SKIP_KEY) === "1"; } catch (_) { return false; } };
 
-function DetachWarning({ theme, themeCount, onCancel, onConfirm }) {
+// One dialog, graded impact: converting to custom always breaks the benchmark
+// (the tag flips from Benchmarked to Custom); when the question belongs to a
+// theme the loss is bigger — the theme connection goes too, and if it was the
+// last question holding the theme complete, the composite score breaks.
+function DetachWarning({ theme, completes, themeCount, onCancel, onConfirm }) {
   const [dontShow, setDontShow] = useState(false);
-  // Wording your own question also drops it out of its theme. When it is the
-  // last question holding that theme complete, lead with the theme (the same
-  // framing as the theme guardrail) — that is the bigger loss.
-  if (theme) return (
-    <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 82 }}
-      onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
-      <div className="dialog dialog-s" role="dialog" aria-modal="true" aria-labelledby="dwt-title">
-        <div className="dialog-header is-sm">
-          <h3 className="dialog-title" id="dwt-title">Keep the “{theme}” theme complete?</h3>
-          <p className="dialog-subtitle">
-            This is the last question holding the theme complete. You need all {themeCount} questions to
-            get its composite score. Writing your own wording takes this question out of the theme, and
-            out of the benchmark.
-          </p>
-        </div>
-        <label className="cb-label-wrap" style={{ display: "flex", alignItems: "center", gap: "var(--spacing-tight)", cursor: "pointer" }}>
-          <span className="cb-wrap"><input type="checkbox" className="cb" checked={dontShow} onChange={e => setDontShow(e.target.checked)} /></span>
-          <span className="text-medium">Don't show this again</span>
-        </label>
-        <div className="dialog-footer">
-          <div className="spacer" />
-          <button className="btn btn-secondary" onClick={() => onConfirm(dontShow)}>Write my own anyway</button>
-          <button className="btn btn-primary" onClick={onCancel}>Keep question</button>
-        </div>
-      </div>
-    </div>
-  );
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 82 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
@@ -99,28 +76,50 @@ function DetachWarning({ theme, themeCount, onCancel, onConfirm }) {
         <div className="dialog-header is-sm">
           <div className="dialog-header-top">
             <Icon name="alert-triangle" size={20} className="dialog-header-icon is-warning" />
-            <h3 className="dialog-title" id="dw-title">Write your own wording?</h3>
+            <h3 className="dialog-title" id="dw-title">
+              {completes ? `Keep the “${theme}” theme complete?` : "Write your own wording?"}
+            </h3>
           </div>
-          <p className="dialog-subtitle">
-            You can word it however you like. It becomes your own custom question and <b>loses its
-            benchmark</b>, so its results can no longer be compared with other organizations.
-          </p>
+          <p className="dialog-subtitle">You can word it however you like — this is what changes:</p>
         </div>
+        {/* the tag flip, shown with the same tags the dialogs carry */}
+        <div className="dw-flip" aria-hidden="true">
+          <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
+          <Icon name="arrow-right" size={16} style={{ color: "var(--content-subtle)" }} />
+          <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>
+        </div>
+        <ul className="dw-impact">
+          <li><b>Loses the benchmark</b> — its results can no longer be compared with other organizations.</li>
+          {theme && (
+            <li><b>Leaves the “{theme}” theme</b>{completes
+              ? ` — it was the last question holding the theme complete, so the composite score breaks (the theme needs all ${themeCount} questions).`
+              : " — it no longer counts toward the theme."}</li>
+          )}
+        </ul>
         <label className="cb-label-wrap" style={{ display: "flex", alignItems: "center", gap: "var(--spacing-tight)", cursor: "pointer" }}>
           <span className="cb-wrap"><input type="checkbox" className="cb" checked={dontShow} onChange={e => setDontShow(e.target.checked)} /></span>
           <span className="text-medium">Don't show this again</span>
         </label>
         <div className="dialog-footer">
           <div className="spacer" />
-          <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-          <button className="btn btn-primary" onClick={() => onConfirm(dontShow)}>Write my own wording</button>
+          {completes ? (
+            <>
+              <button className="btn btn-secondary" onClick={() => onConfirm(dontShow)}>Write my own anyway</button>
+              <button className="btn btn-primary" onClick={onCancel}>Keep question</button>
+            </>
+          ) : (
+            <>
+              <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
+              <button className="btn btn-primary" onClick={() => onConfirm(dontShow)}>Write my own wording</button>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, onCancel, onSave, onDetach }) {
+export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, onCancel, onSave, onDetach }) {
   // Staged edits — committed on Save only.
   const [variant, setVariant] = useState(meta.variant);
   const [desc, setDesc] = useState(meta.desc);
@@ -228,7 +227,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
         </div>
 
         <div className="bmq-stage">
-          <div className="bmq-preview">
+          <div className="bmq-preview" style={design ? { background: `linear-gradient(rgba(18,18,18,.30), rgba(18,18,18,.30)), ${design.photo || design.color}` } : undefined}>
             {/* What kind of question this is, floating over the preview: it
                 describes the thing being previewed, so it lives with it. The
                 answer type is not repeated here — the Answer type select above
@@ -238,6 +237,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                 <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
                 {variant && <span className="infotag is-alt">Alternative wording</span>}
                 {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below" />}
+                {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
               </div>
             </div>
             <div className="bmq-card">
@@ -345,7 +345,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
         </div>
       </div>
       {detachAsk && <DetachWarning onCancel={() => setDetachAsk(false)} onConfirm={doDetach}
-        theme={completesTheme ? q.theme : undefined} themeCount={themeInfo && themeInfo.total} />}
+        theme={q.theme || undefined} completes={completesTheme} themeCount={themeInfo && themeInfo.total} />}
     </div>
   );
 }

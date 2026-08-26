@@ -16,8 +16,18 @@ import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 // The same surface serves the survey's intro screen: participants meet it the
 // same way (a themed screen with a title, a description and a next arrow), so
 // it is edited the same way. `variant="intro"` only changes the framing copy.
-export function TopicDialog({ creating, name: initialName, desc: initialDesc, originalName, isCustom, questionCount = 0, i18nEdits = {}, stringKeyBase, variant, tidName, tidDesc, onCancel, onSave }) {
+export function TopicDialog({ creating, name: initialName, desc: initialDesc, originalName, isCustom, questionCount = 0, minutes = 0, i18nEdits = {}, stringKeyBase, variant, tidName, tidDesc, design, onCancel, onSave }) {
   const isIntro = variant === "intro";
+  // The participant screens wear the survey's design: its color (or photo)
+  // behind a light dark scrim so the white text stays readable on any color.
+  // Without a design the preview keeps its neutral default backdrop.
+  const screenStyle = design ? {
+    background: `linear-gradient(rgba(18,18,18,.35), rgba(18,18,18,.35)), ${design.photo || design.color}`,
+  } : undefined;
+  // CTA in the design's accent; light accents flip to dark text.
+  const cta = (design && design.button) || "#0a9d99";
+  const light = /^#([0-9a-f]{6})$/i.test(cta) &&
+    (0.299 * parseInt(cta.slice(1, 3), 16) + 0.587 * parseInt(cta.slice(3, 5), 16) + 0.114 * parseInt(cta.slice(5, 7), 16)) > 186;
   const [name, setName] = useState(initialName || "");
   const [desc, setDesc] = useState(initialDesc || "");
   const [lang, setLang] = useState("en");
@@ -73,7 +83,7 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
 
         <div className="bmq-stage">
           <div className="bmq-preview is-participant">
-            <div className="tpd-screen">
+            <div className="tpd-screen" style={screenStyle}>
               <input className="tpd-title-input" data-t={primary ? tidName : undefined} value={primary ? name : tName}
                 placeholder={isIntro ? "Survey title for the participants" : "Topic name"} autoFocus={creating}
                 aria-label={(isIntro ? "Survey title" : "Topic name") + (primary ? "" : " in " + lang.toUpperCase())} maxLength={60}
@@ -86,7 +96,32 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
                 aria-label={(isIntro ? "Intro description" : "Topic description") + (primary ? "" : " in " + lang.toUpperCase())}
                 disabled={!primary && !desc.trim()}
                 onChange={e => (primary ? setDesc(e.target.value) : setTrPart("desc", e.target.value))} />
-              <span className="tpd-next" aria-hidden="true"><Icon name="arrow-down" size={18} /></span>
+              {isIntro ? (
+                <>
+                  {/* The three reassurances every intro screen carries (fixed
+                      product strings; counts come from this questionnaire). */}
+                  <div className="tpd-meta" aria-hidden="true">
+                    <div className="tpd-meta-item">
+                      <span className="tpd-meta-ic"><Icon name="Clock" size={22} /></span>
+                      <span className="tpd-meta-txt">{questionCount} questions<br />approx. {minutes} {minutes === 1 ? "minute" : "minutes"}</span>
+                    </div>
+                    <div className="tpd-meta-item">
+                      <span className="tpd-meta-ic"><Icon name="desktop" size={22} /></span>
+                      <span className="tpd-meta-txt">Saves the answers<br />automatically</span>
+                    </div>
+                    <div className="tpd-meta-item">
+                      <span className="tpd-meta-ic"><Icon name="privacy" size={22} /></span>
+                      <span className="tpd-meta-txt">Confidentiality guaranteed<br />
+                        <span className="tpd-meta-link"><Icon name="info" size={12} /> Privacy Statement</span></span>
+                    </div>
+                  </div>
+                  <span className="tpd-cta" aria-hidden="true"
+                    style={{ background: cta, color: light ? "#192743" : "#fff" }}>
+                    Get started!<Icon name="play" size={14} /></span>
+                </>
+              ) : (
+                <span className="tpd-next" aria-hidden="true"><Icon name="arrow-down" size={18} /></span>
+              )}
             </div>
           </div>
           <div className="bmq-langs">
