@@ -180,7 +180,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 70 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
-      <div className="dialog dialog-worksurface bmq-dialog" role="dialog" aria-modal="true" aria-labelledby="bmq-title">
+      <div className="dialog dialog-worksurface bmq-dialog has-corner-tags" role="dialog" aria-modal="true" aria-labelledby="bmq-title">
         <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>

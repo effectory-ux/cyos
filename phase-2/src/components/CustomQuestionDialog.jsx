@@ -409,7 +409,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 60 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
-      <div className="dialog dialog-worksurface cq-dialog" role="dialog" aria-modal="true" aria-labelledby="cq-title"
+      <div className="dialog dialog-worksurface cq-dialog has-corner-tags" role="dialog" aria-modal="true" aria-labelledby="cq-title"
         style={{ display: "flex", flexDirection: "column" }}>
         <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
