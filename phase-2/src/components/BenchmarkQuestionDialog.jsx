@@ -6,12 +6,13 @@
 // description in the preview are selects whose dropdowns list the
 // Effectory-approved alternatives (Figma 6271:9052). Everything is staged and
 // committed with Save; all changes are survey-scoped.
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 import { QTypeIcon, Tooltip, ThemeTag } from "./shared.jsx";
 import { QTYPES, SCALE_LABELS } from "../data/data.js";
 import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
-import { variantsOf, descVariantsOf } from "../data/variants.js";
+import { variantsOf } from "../data/variants.js";
 
 const SCALE_DOTS = [
   "var(--bg-distribution-strongly-disagree)",
@@ -26,18 +27,33 @@ const SCALE_DOTS = [
 // undefined means "no selection" (used for removing the description).
 function PreviewSelect({ value, display, options, big, placeholder, disabled, footer, onChange }) {
   const [open, setOpen] = useState(false);
+  // The dropdown is PORTALLED to a fixed layer: its ancestors (the preview
+  // scroller, the stage, the dialog) all clip overflow, so an in-place
+  // absolute menu gets cut off. `at` holds the trigger's measured position.
+  const [at, setAt] = useState(null);
+  const btnRef = useRef(null);
+  const toggle = () => {
+    if (open) { setOpen(false); return; }
+    const r = btnRef.current.getBoundingClientRect();
+    const below = window.innerHeight - r.bottom;
+    const maxH = Math.min(320, Math.max(below, r.top) - 16);
+    setAt(below >= Math.min(320, maxH) + 8 || below >= r.top
+      ? { left: r.left, top: r.bottom + 4, width: r.width, maxHeight: maxH }
+      : { left: r.left, bottom: window.innerHeight - r.top + 4, width: r.width, maxHeight: maxH });
+    setOpen(true);
+  };
   return (
     <div className={"bmq-sel-wrap" + (big ? " is-big" : "")}>
-      <button type="button" className={"bmq-sel" + (open ? " is-open" : "") + (disabled ? " is-disabled" : "")}
+      <button type="button" ref={btnRef} className={"bmq-sel" + (open ? " is-open" : "") + (disabled ? " is-disabled" : "")}
         aria-haspopup="listbox" aria-expanded={open} disabled={disabled}
-        onClick={() => setOpen(o => !o)}>
+        onClick={toggle}>
         <span className={"bmq-sel-text" + (display ? "" : " is-placeholder")}>{display || placeholder}</span>
         <Icon name="chevron-down" size={16} />
       </button>
-      {open && (
+      {open && createPortal(
         <>
-          <div className="cq-menu-scrim" onMouseDown={() => setOpen(false)} />
-          <div className="bmq-dropdown" role="listbox">
+          <div className="cq-menu-scrim" style={{ zIndex: 1200 }} onMouseDown={() => setOpen(false)} />
+          <div className={"bmq-dropdown is-portal" + (big ? " is-big" : "")} role="listbox" style={at}>
             {options.map((opt, i) => {
               const on = (opt.value ?? undefined) === (value ?? undefined);
               return (
@@ -51,8 +67,7 @@ function PreviewSelect({ value, display, options, big, placeholder, disabled, fo
             })}
             {footer && <div className="bmq-dd-foot">{footer}</div>}
           </div>
-        </>
-      )}
+        </>, document.body)}
     </div>
   );
 }
@@ -127,10 +142,9 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   const [lang, setLang] = useState("en");
   const [topicOpen, setTopicOpen] = useState(false);
   const [detachAsk, setDetachAsk] = useState(false);
-  // A description can be one of the approved ones OR free text (it clarifies the
-  // question, it doesn't carry the benchmark), so it gets the same escape hatch
-  // as the wording — minus the consequence.
-  const [descFree, setDescFree] = useState(() => !!meta.desc && !descVariantsOf(q.text).includes(meta.desc));
+  // A description is ALWAYS the coordinator's own text: it clarifies the
+  // question for this survey and never carries the benchmark, so there is no
+  // approved list to pick from — just write it (or leave it empty).
   const detach = () => { if (skipDetachWarn() && !completesTheme) doDetach(false); else setDetachAsk(true); };
   const doDetach = (remember) => {
     if (remember) { try { localStorage.setItem(SKIP_KEY, "1"); } catch (_) {} }
@@ -140,7 +154,6 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
 
   const wording = variant || q.text;
   const variants = variantsOf(q.text);
-  const descOptions = descVariantsOf(q.text);
   const primary = lang === "en";
   const t = (text) => (primary || !text ? text : autoTranslation(text, lang));
 
@@ -256,32 +269,11 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                 <div className="bmq-locked is-big">{t(wording)}</div>
               )}
 
-              {primary ? (descFree ? (
-                <div className="bmq-descfree">
-                  <textarea className="bmq-descfield" rows={2} value={desc || ""} autoFocus
-                    placeholder="Write a description for participants" aria-label="Description"
-                    onChange={e => setDesc(e.target.value)} />
-                  <button className="bmq-descfree-back" onClick={() => { setDescFree(false); setDesc(undefined); }}>
-                    Use an approved description
-                  </button>
-                </div>
-              ) : (
-                <PreviewSelect value={desc} display={desc} placeholder="Add a description"
-                  options={[
-                    ...descOptions.map(d => ({ value: d, label: d })),
-                    { value: undefined, label: "No description", muted: true },
-                  ]}
-                  footer={
-                    <button className="bmq-dd-detach" onClick={() => { setDescFree(true); setDesc(""); }}>
-                      <Icon name="edit" size={14} />
-                      <span>
-                        <b>Write your own description</b>
-                        <span>Free text. The benchmark is not affected.</span>
-                      </span>
-                    </button>
-                  }
-                  onChange={setDesc} />
-              )) : ((desc || "").trim() ? <div className="bmq-locked">{t(desc)}</div> : null)}
+              {primary ? (
+                <textarea className="bmq-descfield" rows={2} value={desc || ""}
+                  placeholder="Add a description (optional)" aria-label="Description"
+                  onChange={e => setDesc(e.target.value)} />
+              ) : ((desc || "").trim() ? <div className="bmq-locked">{t(desc)}</div> : null)}
 
               {/* The real answer type, with every point named — answer
                   categories are participant-facing text, so they translate too. */}

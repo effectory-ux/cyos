@@ -997,7 +997,9 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .bmq-sel-text.is-placeholder { color: var(--content-placeholder); }
 .bmq-sel-wrap.is-big .bmq-sel { padding: 12px; }
 .bmq-sel-wrap.is-big .bmq-sel-text { font-size: 16px; font-weight: 600; line-height: 24px; }
-.bmq-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 3; padding: 8px;
+/* Portalled to <body> (the preview scroller and the dialog both clip
+   overflow); position + width come measured from the trigger, inline. */
+.bmq-dropdown { position: fixed; z-index: 1201; padding: 8px;
   background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-base);
   box-shadow: var(--sh-popovers); display: flex; flex-direction: column; gap: 1px; max-height: 320px; overflow-y: auto; }
 .bmq-dd-explain { padding: 12px; font-size: 12px; line-height: 19.2px; color: var(--content-secondary); text-align: left; }
