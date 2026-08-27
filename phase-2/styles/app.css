@@ -1299,8 +1299,30 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .eq-rail-item.is-active { background: var(--bg-brand-subtle-selected); color: var(--content-action-pressed); font-weight: 600; }
 .eq-rail-group { padding: 16px 12px 4px; font-size: 16px; font-weight: 600; line-height: 24px;
   color: var(--content-base); flex: none; }
-/* The content column names the section you are in — or the live query. */
+/* The content column names the section you are in — or the live query — and
+   carries that page's own action on the right. */
+.eq-section-row { display: flex; align-items: center; gap: var(--spacing-base-tight); }
 .eq-section-title { margin: 0; font-size: 20px; font-weight: 600; line-height: 28px; color: var(--content-base); }
+
+/* Search: why a row matched. */
+.eq-hl { background: var(--bg-highlight-subtle); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+/* Questions that matched through their THEME or TOPIC name — collapsed, since
+   the match is the group they belong to, not their own wording. */
+.eq-ind { border-top: 1px solid var(--border-base); }
+.eq-ind-head { display: flex; align-items: center; gap: var(--spacing-tight); width: 100%;
+  padding: var(--spacing-base-tight) 8px; border: none; background: transparent; font-family: inherit;
+  font-size: 13.5px; color: var(--content-secondary); text-align: left; cursor: pointer; }
+.eq-ind-head:hover { background: var(--bg-base-hover); }
+.eq-ind-txt mark { font-weight: 600; }
+.eq-ind-actions { display: flex; justify-content: flex-end; padding: 0 8px 8px; }
+
+/* Full, centred empty state. */
+.eq-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--spacing-base-tight); padding: var(--spacing-extra-loose); text-align: center; }
+.eq-empty-art { width: 300px; max-width: 70%; height: auto; margin-bottom: var(--spacing-tight); }
+.eq-empty-title { font-size: 18px; font-weight: 600; line-height: 1.5; color: var(--content-base); }
+.eq-empty-body { margin: 0 0 8px; max-width: 440px; font-size: 14px; line-height: 1.6; color: var(--content-secondary); }
 .eq-main { display: flex; flex-direction: column; gap: var(--spacing-loose); flex: 1; min-width: 0; min-height: 0; }
 .eq-main .dialog-body { flex: 1; min-height: 0; }
 

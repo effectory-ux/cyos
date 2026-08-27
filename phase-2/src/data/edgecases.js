@@ -8,6 +8,12 @@
 // Defaults match the "normal" account the rest of the prototype assumes.
 export const EDGE_CASES = [
   {
+    key: "orgCustoms",
+    label: "Custom questions elsewhere in the org",
+    desc: "Colleagues have written custom questions in other surveys, ready to reuse. A first survey in a fresh account has none.",
+    on: true,
+  },
+  {
     key: "required",
     label: "Org-required questions",
     desc: "Some questions are set as required and can't be removed. Not every account has them.",

@@ -455,7 +455,8 @@ export function App() {
         needsProject={!pending.survey.proj} project={pending.survey.proj}
         onBack={cancelName} onConfirm={confirmName} />}
       {editing && survey && (
-        <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds} tweaks={TWEAKS}
+        <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds}
+          tweaks={{ ...TWEAKS, orgCustoms: edges.orgCustoms }}
           initialTab={editTab} nav={variantsOn.dialogSidebarNav ? "sidebar" : "tabs"}
           onClose={() => setEditing(false)} onSave={saveQuestions} />
       )}
