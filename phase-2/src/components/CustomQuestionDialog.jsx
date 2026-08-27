@@ -14,7 +14,7 @@
 // translation stays editable, always.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, Tooltip } from "./shared.jsx";
+import { QTypeIcon, Tooltip, useMediaQuery } from "./shared.jsx";
 import { QTYPES, TOPICS } from "../data/data.js";
 import { similarQuestions } from "../data/similar.js";
 import {
@@ -23,29 +23,6 @@ import {
 
 // Below this the dialog can't hold a 240px side list next to the preview.
 const COMPACT_QUERY = "(max-width: 1160px)";
-
-function useMediaQuery(query) {
-  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const on = () => setMatches(mq.matches);
-    on();
-    // `change` alone is enough in a real browser, but neither it nor `resize`
-    // fires reliably when the viewport is resized by devtools/emulation — and
-    // resizing mid-demo is exactly how this breakpoint gets shown. Observing
-    // the root element catches what the events miss.
-    mq.addEventListener("change", on);
-    window.addEventListener("resize", on);
-    const ro = new ResizeObserver(on);
-    ro.observe(document.documentElement);
-    return () => {
-      mq.removeEventListener("change", on);
-      window.removeEventListener("resize", on);
-      ro.disconnect();
-    };
-  }, [query]);
-  return matches;
-}
 
 // ---- compact DS select (sel-btn trigger + .menu popover) ----------------
 // An item with `header: true` renders as a DS group label instead of an option,
@@ -547,33 +524,35 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
             {phase === "picking" && (
               <>
                 <div className="cq-step-head">
-                  <h3 className="cq-step-title">Select the question you want to add</h3>
-                  <p className="cq-step-sub">Questions like yours already exist. Reuse one to keep your results comparable, or keep your own wording.</p>
+                  <h3 className="cq-step-title">We found similar existing questions</h3>
+                  <p className="cq-step-sub is-wide">Reusing an existing question keeps your results comparable with the rest of the organisation and with earlier surveys. Keeping your own wording is fine too: it just won't have a benchmark to compare against.</p>
                 </div>
-                {/* Topic sits above the choice: which topic fits can change
-                    with the question you pick. */}
-                <div className="cq-field cq-step-topic">
-                  <span className="cq-lbl">Add to topic</span>
-                  <MiniSelect ariaLabel="Add to topic" value={topic} placeholder="Topic name"
-                    items={topicItems} onChange={setTopic} block />
-                </div>
+                {/* Two named sections, so the choice reads as "mine or one of
+                    theirs" instead of one list where your question happens to
+                    be first. Rows follow the question rows in the rest of the
+                    product (control left, text, tags right) but keep the radio
+                    card, because exactly one of them is added. */}
                 <div className="cq-step-opts" role="radiogroup" aria-label="Question to add">
-                  <button type="button" className={"cq-opt-card" + (pick === "mine" ? " is-on" : "")}
-                    role="radio" aria-checked={pick === "mine"} onClick={() => setPick("mine")}>
-                    <span className="cq-opt-mark" aria-hidden="true" />
-                    <span className="cq-opt-body">
+                  <div className="cq-opt-sec">
+                    <h4 className="cq-opt-sechead">Your new question</h4>
+                    <button type="button" className={"cq-opt-card" + (pick === "mine" ? " is-on" : "")}
+                      role="radio" aria-checked={pick === "mine"} onClick={() => setPick("mine")}>
+                      <span className="cq-opt-mark" aria-hidden="true" />
                       <span className="cq-opt-text">{text.trim()}</span>
                       <span className="cq-opt-tags">
                         <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Your question</span>
                         <span className="infotag is-alt">No benchmark</span>
                       </span>
-                    </span>
-                  </button>
-                  {(checked || []).map(m => (
-                    <button type="button" key={m.id} className={"cq-opt-card" + (pick === m.id ? " is-on" : "")}
-                      role="radio" aria-checked={pick === m.id} onClick={() => setPick(m.id)}>
-                      <span className="cq-opt-mark" aria-hidden="true" />
-                      <span className="cq-opt-body">
+                      <QTypeIcon type={type} size={24} tip />
+                    </button>
+                  </div>
+                  <div className="cq-opt-sec">
+                    <h4 className="cq-opt-sechead">Similar questions
+                      <span className="tag tag-count">{(checked || []).length}</span></h4>
+                    {(checked || []).map(m => (
+                      <button type="button" key={m.id} className={"cq-opt-card" + (pick === m.id ? " is-on" : "")}
+                        role="radio" aria-checked={pick === m.id} onClick={() => setPick(m.id)}>
+                        <span className="cq-opt-mark" aria-hidden="true" />
                         <span className="cq-opt-text">{m.text}</span>
                         <span className="cq-opt-tags">
                           {m.bench
@@ -582,13 +561,16 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                           {m.theme && <span className="infotag is-alt">{m.theme}</span>}
                           {m.from && <span className="infotag is-alt">Used in {m.from}</span>}
                         </span>
-                      </span>
-                    </button>
-                  ))}
+                        <QTypeIcon type={m.type} size={24} tip />
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="cq-step-foot">
-                  <button className="btn btn-secondary" onClick={() => { setPhase(null); setChecked(null); }}>Back</button>
-                  <button className="btn btn-primary" onClick={addPicked}>Add question</button>
+                  <button className="btn btn-secondary" onClick={() => { setPhase(null); setChecked(null); }}>
+                    <Icon name="arrow-left" size={16} />Back</button>
+                  <span className="spacer" />
+                  <button className="btn btn-primary" onClick={addPicked}>Confirm &amp; add</button>
                 </div>
               </>
             )}

@@ -7,9 +7,7 @@ import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
 import { TranslationsDialog } from "./TranslationsDialog.jsx";
-import { SuggestionsPanel, SuggestionsPreflight } from "./SuggestionsPanel.jsx";
 import { THEMES } from "../data/data.js";
-import { buildSuggestions } from "../data/suggestions.js";
 import { DESIGNS, designById } from "../data/designs.js";
 import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 
@@ -296,8 +294,6 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   const [settingsQId, setSettingsQId] = useState(null); // standard question whose dialog is open
   const [translationsOpen, setTranslationsOpen] = useState(false);
   const [introOpen, setIntroOpen] = useState(false);   // participant intro screen
-  const [suggestOpen, setSuggestOpen] = useState(false);
-  const [preflight, setPreflight] = useState(false);   // suggestions shown on "Next step"
   // Context-bar menus (one open at a time) and the two view settings they hold.
   // Both are VIEW state: they change what this page shows, never the survey.
   const [barMenu, setBarMenu] = useState(null);        // "display" | "add" | null
@@ -315,9 +311,9 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     else if (translationsOpen) onDialogChange({ dialog: "translations" });
     else if (themeDetail) onDialogChange({ dialog: "theme", arg: themeDetail });
     else if (introOpen) onDialogChange({ dialog: "intro-screen" });
-    else if (suggestOpen) onDialogChange({ dialog: "suggestions" });
+
     else onDialogChange(null);
-  }, [settingsQId, topicDialog, translationsOpen, themeDetail, introOpen, suggestOpen]); // eslint-disable-line
+  }, [settingsQId, topicDialog, translationsOpen, themeDetail, introOpen]); // eslint-disable-line
   useEffect(() => {
     if (!openDialog) return;
     const { dialog, arg } = openDialog;
@@ -327,7 +323,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     else if (dialog === "translations") setTranslationsOpen(true);
     else if (dialog === "theme" && arg) setThemeDetail(arg);
     else if (dialog === "intro-screen") setIntroOpen(true);
-    else if (dialog === "suggestions") setSuggestOpen(true);
+
   }, [openDialog]); // eslint-disable-line
 
   const sel = new Set(selectedIds);
@@ -363,16 +359,10 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // what earns a composite score in the results.
   const activeThemes = themeGroups.filter(t => t.total > 0 && t.kept >= t.total).length;
 
-  // Guidance, derived — never stored. See data/suggestions.js for the rules.
-  const suggestions = buildSuggestions({ themeGroups, pool, selectedIds, minutes: estMinutes });
 
-  // A suggestion's action never invents a surface: it opens the one that
-  // already fixes it, so acting on it teaches where that thing lives.
-  const actOnSuggestion = (sg) => {
-    setSuggestOpen(false);
-    if (sg.kind === "theme") setThemeDetail(sg.theme);
-    else if (sg.kind === "custom") onEditQuestions && onEditQuestions("custom");
-  };
+  // Suggestions (the guidance panel + its pre-flight on "Next step") are out
+  // for now — the rules in data/suggestions.js and SuggestionsPanel.jsx are
+  // left in place, unused, until we know what guidance this step should give.
 
   // Preview language: a reviewed translation if there is one, otherwise the
   // automatic one. Standard library text ships pre-translated in production;
@@ -601,17 +591,6 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           </div>
 
           <div className="spacer" />
-
-          {/* Suggestions leads the button group (Figma "sentiment-button"): a
-              white button with an informative blue border — visually louder
-              than Display/Design but not an action color. Hidden at zero: a
-              clean bar is the reward. */}
-          {suggestions.length > 0 && (
-            <button className="ctxbar-sugg" onClick={() => setSuggestOpen(true)}>
-              <Icon name="zap" size={16} />
-              Suggestions ({suggestions.length})
-            </button>
-          )}
 
           {/* Display and Design are SETTINGS menus: picking an option keeps
               them open (compare languages or designs in quick succession);
@@ -873,7 +852,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         <span className="text-medium text-subdued">Last saved: just now</span>
         <button className="btn btn-secondary" onClick={onSaveClose}>Save &amp; close</button>
         <button className={"btn btn-primary" + (chosen.length === 0 ? " is-disabled" : "")} disabled={chosen.length === 0}
-          onClick={() => { if (suggestions.length) setPreflight(true); }}>Next step<Icon name="arrow-right" size={16} /></button>
+          onClick={() => {}}>Next step<Icon name="arrow-right" size={16} /></button>
         <button className="btn btn-secondary is-disabled" disabled><Icon name="send" size={16} />Plan survey</button>
       </div>
 
@@ -937,11 +916,6 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             onSaveTranslation && onSaveTranslation(code, `intro:${part}`, text));
           setIntroOpen(false);
         }} />}
-      {suggestOpen && <SuggestionsPanel items={suggestions} onAct={actOnSuggestion}
-        onClose={() => setSuggestOpen(false)} />}
-      {preflight && <SuggestionsPreflight items={suggestions}
-        onReview={() => { setPreflight(false); setSuggestOpen(true); }}
-        onContinue={() => setPreflight(false)} />}
       {detailTheme && <ThemeDetailsDialog theme={detailTheme} sel={sel}
         onToggle={(id) => onToggleQuestion && onToggleQuestion(id)}
         onToggleAll={(on) => onSetManyQuestions && onSetManyQuestions(detailTheme.questions.map(x => x.id), on)}

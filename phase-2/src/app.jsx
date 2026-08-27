@@ -456,7 +456,8 @@ export function App() {
         onBack={cancelName} onConfirm={confirmName} />}
       {editing && survey && (
         <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds}
-          tweaks={{ ...TWEAKS, orgCustoms: edges.orgCustoms, similarAlways: edges.similarAlways }}
+          tweaks={{ ...TWEAKS, orgCustoms: edges.orgCustoms, similarAlways: edges.similarAlways, altWordings: edges.altWordings }}
+          qMeta={survey.qMeta} onUpdateQMeta={updateQMeta} onMoveTopic={moveQuestionTopic}
           initialTab={editTab} nav={variantsOn.dialogSidebarNav ? "sidebar" : "tabs"}
           onClose={() => setEditing(false)} onSave={saveQuestions} />
       )}

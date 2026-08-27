@@ -4,10 +4,11 @@
 // and custom topics live in the questionnaire (and the Custom questions tab),
 // never in the library view. Rows keep selection in the checkbox with hover
 // tooltips.
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, Fragment } from "react";
 import { Icon } from "./Icon.jsx";
-import { themeStatus, themesOf, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag, RequiredMarker } from "./shared.jsx";
+import { themeStatus, themesOf, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag, RequiredMarker, useMediaQuery } from "./shared.jsx";
 import { CustomQuestionDialog } from "./CustomQuestionDialog.jsx";
+import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
 import { THEMES, POOL, TEMPLATES, BADGE_COLORS, ORG_CUSTOM } from "../data/data.js";
 import { templatePoolQuestions, TEMPLATE_META } from "../data/qlib.js";
 
@@ -72,7 +73,50 @@ function UsedInTag({ survey }) {
   );
 }
 
-function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom, usedInTag, hl }) {
+// Everything a row can do beyond the checkbox, in the same place the
+// questionnaire keeps it: an icon button on the right. The first item opens the
+// question's own dialog — where its wording, description and translations live.
+function RowMenu({ q, on, onToggle, onSettings, onEditCustom }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const close = () => setOpen(false);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) close(); };
+    document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  const item = (icon, label, act) => (
+    <div className="menu-item" role="menuitem" onClick={(e) => { e.stopPropagation(); close(); act(); }}>
+      <span className="menu-item-icon"><Icon name={icon} size={16} /></span>
+      <span className="menu-item-body"><span className="menu-item-title">{label}</span></span>
+    </div>
+  );
+  return (
+    <div className="qrow-menu-wrap" ref={ref} onClick={e => e.stopPropagation()}>
+      <Tooltip label="Question actions">
+        <button className="ib ib-36 ib-tertiary" aria-label="Question actions" aria-haspopup="menu" aria-expanded={open}
+          onClick={() => setOpen(o => !o)}><Icon name="more-vertical" size={16} /></button>
+      </Tooltip>
+      {open && (
+        <div className="menu" role="menu" style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, width: 264, zIndex: 30 }}>
+          {q.custom
+            ? (onEditCustom ? item("edit", "Edit question", () => onEditCustom(q)) : null)
+            : (onSettings ? item("sliders", "Question settings", () => onSettings(q)) : null)}
+          {!q.required && (
+            <>
+              <div className="menu-divider" />
+              {on
+                ? item("minus", "Remove from questionnaire", onToggle)
+                : item("plus", "Add to questionnaire", onToggle)}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom, onSettings, usedInTag, hl }) {
   const required = q.required;
   // Required questions keep an INTERACTIVE (checked) checkbox — pressing it can't
   // uncheck it; instead it surfaces a live info notification explaining why. A
@@ -95,6 +139,7 @@ function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, on
           : q.custom ? <CustomTag label="Custom question" pos="is-above" float onOpen={onEditCustom ? () => onEditCustom(q) : undefined} /> : null}
       {required && <RequiredMarker size={24} />}
       <QTypeIcon type={q.type} size={24} tip pos="is-above" float />
+      <RowMenu q={q} on={on} onToggle={onToggle} onSettings={onSettings} onEditCustom={onEditCustom} />
     </div>
   );
 }
@@ -345,6 +390,18 @@ const RESULT_FILTERS = [
   { value: "themes", label: "Themes" },
   { value: "templates", label: "Templates" },
 ];
+// The dialog's pages, in rail order. `group` starts a labelled group ("Question
+// sets"), which the compact menu repeats so both navigations read the same.
+const EQ_PAGES = [
+  { value: "questions", label: "Library questions", icon: "list-unordered" },
+  { value: "custom", label: "Custom questions", icon: "edit" },
+  { value: "themes", label: "Themes", icon: "themes", group: "Question sets" },
+  { value: "templates", label: "Templates", icon: "layout" },
+];
+// Under this the dialog can't hold the 280px rail next to a usable list, so the
+// rail becomes a menu button on the left of the search field.
+const EQ_COMPACT = "(max-width: 1120px)";
+
 const GENERIC_SHOW = {
   questions: [
     { value: "all", label: "All" }, { value: "selected", label: "Selected" }, { value: "unselected", label: "Not selected" }],
@@ -355,6 +412,92 @@ const GENERIC_SHOW = {
   templates: [
     { value: "all", label: "All" }, { value: "active", label: "Active" }, { value: "inactive", label: "Not active" }],
 };
+// The rail as a menu, for when the dialog is too narrow to hold it. Same pages,
+// same order, same group label — and the page you are on is selected.
+function PagesMenu({ tab, onPick }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  const cur = EQ_PAGES.find(p => p.value === tab);
+  return (
+    <div ref={ref} style={{ position: "relative", flex: "none" }}>
+      <Tooltip label={cur ? "Pages: " + cur.label : "Pages"}>
+        <button className={"ib ib-36 ib-tertiary" + (open ? " is-pressed" : "")} aria-label="Pages"
+          aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+          <Icon name="menu" size={16} />
+        </button>
+      </Tooltip>
+      {open && (
+        <div className="menu" role="menu" style={{ position: "absolute", left: 0, top: 44, width: 240, zIndex: 30 }}>
+          {EQ_PAGES.map(p => (
+            <Fragment key={p.value}>
+              {p.group && <div className="menu-group-lbl" role="presentation">{p.group}</div>}
+              <div className={"menu-item" + (p.value === tab ? " is-selected" : "")} role="menuitem"
+                onClick={() => { onPick(p.value); setOpen(false); }}>
+                <span className="menu-item-icon"><Icon name={p.icon} size={16} /></span>
+                <span className="menu-item-body"><span className="menu-item-title">{p.label}</span></span>
+                {p.value === tab && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
+              </div>
+            </Fragment>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// One "Filter" button holding every narrowing the page offers: what to show of
+// this page, plus (while a search is running) which kind of result to keep. The
+// count badge says how many are actually narrowing anything — "All" on both is
+// the default and counts for nothing.
+function FilterMenu({ show, showOptions, onShow, kind, kindOptions, onKind }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  const active = (show && show !== "all" ? 1 : 0) + (kindOptions && kind && kind !== "all" ? 1 : 0);
+  const group = (label, value, options, onPick) => (
+    <>
+      <div className="menu-group-lbl" role="presentation">{label}</div>
+      {options.map(o => (
+        <div key={o.value} className={"menu-item" + (o.value === value ? " is-selected" : "")}
+          onClick={() => { onPick(o.value); setOpen(false); }}>
+          <span className="menu-item-body"><span className="menu-item-title">{o.label}</span></span>
+          {o.value === value && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
+        </div>
+      ))}
+    </>
+  );
+  return (
+    <div ref={ref} style={{ position: "relative", flex: "none" }}>
+      <button className={"sel-btn" + (open ? " is-pressed" : "")} aria-haspopup="menu" aria-expanded={open}
+        onClick={() => setOpen(o => !o)}>
+        <Icon name="filter" size={16} style={{ color: "var(--content-secondary)" }} />
+        <span className="sel-btn-name">Filter</span>
+        {active > 0 && <span className="eq-filter-count">{active}</span>}
+      </button>
+      {open && (
+        <div className="menu" role="menu" style={{ position: "absolute", right: 0, top: 44, width: 240, zIndex: 30 }}>
+          {group("Show", show, showOptions, onShow)}
+          {kindOptions && (
+            <>
+              <div className="menu-divider" />
+              {group("Type of content", kind, kindOptions, onKind)}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ShowFilter({ value, onChange, options = SHOW_OPTIONS, label = "Show:" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -458,7 +601,8 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
 // "sidebar" — Miro/Qualtrics-style: a left rail to browse (with the topics as
 //             jump anchors) and ONE search on top that looks across questions,
 //             themes and templates, results grouped by where they came from.
-export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", onClose, onSave }) {
+export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", qMeta = {}, onUpdateQMeta, onMoveTopic, onClose, onSave }) {
+  const compact = useMediaQuery(EQ_COMPACT);
   const [pool, setPool] = useState(initialPool);
   const [sel, setSel] = useState(() => new Set(initialSelected));
   const initial = useMemo(() => new Set(initialSelected), []); // selection when the dialog opened
@@ -483,7 +627,12 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const [reqNotice, setReqNotice] = useState(0);    // key: increments each time a required question is pressed (re-announces)
   const [reqCount, setReqCount] = useState(1);      // how many required questions the notice is about
   const [themeDetails, setThemeDetails] = useState(null); // theme name whose details dialog is open
-  const [editCustomQ, setEditCustomQ] = useState(null);   // custom question being edited (via its tag)
+  const [editCustomQ, setEditCustomQ] = useState(null);
+  // A library question's own dialog, opened from a row's menu: wording,
+  // description, topic and translations. Its edits are survey-scoped meta, so
+  // they go straight to the survey (the dialog has its own Save/Cancel) rather
+  // than riding along with the selection.
+  const [settingsQ, setSettingsQ] = useState(null);   // custom question being edited (via its tag)
   const [collapsed, setCollapsed] = useState(() => new Set()); // collapsed Question-tab section keys
   // Rows the active filter is about to hide (a question toggled under the
   // Selected / Not-selected filter): kept in view briefly so they ease out
@@ -558,7 +707,10 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // other content types follow in their own groups below.
   const bySource = (a, b) => (b.bench ? 1 : 0) - (a.bench ? 1 : 0);
   const gRes = gqt ? (() => {
-    const direct = pool.filter(x => (x.text || "").toLowerCase().includes(gqt)).sort(bySource);
+    // "Show" narrows search results too — one Filter button, so every option in
+    // it has to actually do something while a query is live.
+    const byShow = (x) => (show === "selected" ? sel.has(x.id) : show === "unselected" ? !sel.has(x.id) : true);
+    const direct = pool.filter(x => (x.text || "").toLowerCase().includes(gqt)).filter(byShow).sort(bySource);
     const seen = new Set(direct.map(x => x.id));
     // A theme or topic whose NAME matches brings its questions along. The
     // reason they matched is the group they sit in, not their own wording, so
@@ -570,14 +722,14 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     const viaTopic = topicNames
       .filter(n => n.toLowerCase().includes(gqt))
       .map(n => ({ kind: "topic", key: "tp:" + n, name: n,
-        questions: pool.filter(x => x.topic === n && !seen.has(x.id)) }))
+        questions: pool.filter(x => x.topic === n && !seen.has(x.id)).filter(byShow) }))
       .filter(g => g.questions.length);
     viaTopic.forEach(g => g.questions.forEach(x => seen.add(x.id)));
     return {
       questions: direct,
       // One pool for search: org-created customs join the results,
       // differentiated by their tags and source — never excluded.
-      orgQuestions: orgCustomQs.filter(x => !poolIds.has(x.id) && x.text.toLowerCase().includes(gqt)),
+      orgQuestions: orgCustomQs.filter(x => !poolIds.has(x.id) && x.text.toLowerCase().includes(gqt)).filter(byShow),
       indirect: viaTopic,
       themes: themeGroups.filter(t => t.name.toLowerCase().includes(gqt) || (t.desc || "").toLowerCase().includes(gqt)),
       templates: templateCards.filter(t => t.name.toLowerCase().includes(gqt) || (t.desc || "").toLowerCase().includes(gqt)),
@@ -736,43 +888,43 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         )}
 
         <div className={nav === "sidebar" ? "eq-frame" : "eq-col"}>
-        {nav === "sidebar" && (
+        {nav === "sidebar" && !compact && (
           <div className="eq-rail" role="tablist" aria-orientation="vertical">
             <div className="eq-rail-title" id="eq-title">Add questions</div>
             {/* Source is a place (Library / Custom); the global search is the
                 everything view. While a query is live NO rail item is active —
-                the results belong to the whole library, not to a section. */}
-            <button className={"eq-rail-item" + (tab === "questions" && !gqt ? " is-active" : "")} role="tab" aria-selected={tab === "questions"}
-              onClick={() => { setTab("questions"); setGq(""); setResFilter("all"); }}><Icon name="list-unordered" size={16} />Library questions</button>
-            <button className={"eq-rail-item" + (tab === "custom" && !gqt ? " is-active" : "")} role="tab" aria-selected={tab === "custom"}
-              onClick={() => { setTab("custom"); setGq(""); setResFilter("all"); }}><Icon name="edit" size={16} />Custom questions</button>
-            {/* Questions are atoms; themes and templates SELECT sets of them.
-                Naming the group teaches the library's structure instead of
+                the results belong to the whole library, not to a section.
+                Questions are atoms; themes and templates SELECT sets of them,
+                so naming that group teaches the library's structure instead of
                 listing four equal destinations. */}
-            <div className="eq-rail-group">Question sets</div>
-            <button className={"eq-rail-item" + (tab === "themes" && !gqt ? " is-active" : "")} role="tab" aria-selected={tab === "themes"}
-              onClick={() => { setTab("themes"); setGq(""); setResFilter("all"); }}><Icon name="themes" size={16} />Themes</button>
-            <button className={"eq-rail-item" + (tab === "templates" && !gqt ? " is-active" : "")} role="tab" aria-selected={tab === "templates"}
-              onClick={() => { setTab("templates"); setGq(""); setResFilter("all"); }}><Icon name="layout" size={16} />Templates</button>
+            {EQ_PAGES.map(p => (
+              <Fragment key={p.value}>
+                {p.group && <div className="eq-rail-group">{p.group}</div>}
+                <button className={"eq-rail-item" + (tab === p.value && !gqt ? " is-active" : "")}
+                  role="tab" aria-selected={tab === p.value}
+                  onClick={() => { setTab(p.value); setGq(""); setResFilter("all"); }}>
+                  <Icon name={p.icon} size={16} />{p.label}</button>
+              </Fragment>
+            ))}
           </div>
         )}
         <div className="eq-main">
         {nav === "sidebar" && (
           <div className="eq-toolbar">
+            {/* With no room for the rail, the pages move into a menu that sits
+                where the rail was: left of the search field. */}
+            {compact && <PagesMenu tab={tab} onPick={(v) => { setTab(v); setGq(""); setResFilter("all"); }} />}
             <div className="search-wrap eq-toolbar-search">
               <span className="search-icon"><Icon name="search" size={16} /></span>
               <input type="search" className="srch" placeholder="Search questions, themes and templates"
                 value={gq} onChange={e => setGq(e.target.value)} />
             </div>
-            {gqt && (
-              <ShowFilter label="Filter by:" value={resFilter} onChange={setResFilter} options={RESULT_FILTERS} />
-            )}
-            {!gqt && (
-              <ShowFilter
-                value={tab === "themes" ? themeShow : tab === "templates" ? tmplShow : show}
-                onChange={tab === "themes" ? setThemeShow : tab === "templates" ? setTmplShow : setShow}
-                options={GENERIC_SHOW[tab] || GENERIC_SHOW.questions} />
-            )}
+            <FilterMenu
+              show={tab === "themes" ? themeShow : tab === "templates" ? tmplShow : show}
+              onShow={tab === "themes" ? setThemeShow : tab === "templates" ? setTmplShow : setShow}
+              showOptions={GENERIC_SHOW[tab] || GENERIC_SHOW.questions}
+              kind={resFilter} onKind={setResFilter}
+              kindOptions={gqt ? RESULT_FILTERS : null} />
             {/* Creating a custom question is reachable from every page: it is
                 the answer when the library does not cover something, and that
                 is a realisation you have while browsing it. */}
@@ -790,7 +942,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
             title row instead, tertiary, hard right. */}
         {nav === "sidebar" && (
           <div className="eq-section-row">
-            <h3 className="eq-section-title">{gqt
+            {/* With the rail collapsed, this row's title is the dialog's
+                accessible name. */}
+            <h3 className="eq-section-title" id={compact ? "eq-title" : undefined}>{gqt
               ? `Results for “${gq.trim()}”`
               : tab === "questions" ? "Library questions"
               : tab === "custom" ? "Custom questions"
@@ -873,7 +1027,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                         + gRes.indirect.reduce((n, g) => n + g.questions.length, 0)}</span></div>
                     {gRes.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} hl={gqt}
                       leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
-                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
+                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
                     {gRes.orgQuestions.map(oq => (
                       <div key={oq.id} className="aql-row" onClick={() => toggleOrgQuestion(oq)}>
@@ -910,7 +1064,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                           </div>
                           {open && g.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
                             leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
-                            onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
+                            onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ}
                             onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
                         </section>
                       );
@@ -1001,7 +1155,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                     </div>
                     {!collapsed.has("cq:own") && customShown.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} usedInTag
                       leaving={leaving.has(qq.id)} themeInfo={null}
-                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
+                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
                   </section>
                 )}
@@ -1026,6 +1180,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                         <div className="aql-text">{oq.text}</div>
                         <UsedInTag survey={oq.from} />
                         <QTypeIcon type={oq.type} size={24} tip pos="is-above" float />
+                        <RowMenu q={oq} on={sel.has(oq.id)} onToggle={() => toggleOrgQuestion(oq)} onEditCustom={setEditCustomQ} />
                       </div>
                     ))}
                   </section>
@@ -1066,7 +1221,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                     </div>
                     {!isColl && g.items.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
                       leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
-                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
+                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
                   </section>
                 );
@@ -1099,6 +1254,23 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       {editCustomQ && <CustomQuestionDialog question={editCustomQ}
         topics={[...new Set(pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
         onCancel={() => setEditCustomQ(null)} onSubmit={saveCustomEdit} onDelete={deleteCustomQ} />}
+      {settingsQ && (() => {
+        const meta = qMeta[settingsQ.id] || {};
+        const t = themeGroups.find(g => g.name === settingsQ.theme);
+        return (
+          <BenchmarkQuestionDialog q={settingsQ} meta={meta}
+            topicKey={meta.topic || settingsQ.topic}
+            themeInfo={t ? { kept: t.kept, total: t.total } : undefined}
+            allVariants={!!tweaks.altWordings}
+            topicOptions={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))].map(x => ({ value: x, label: x }))}
+            onCancel={() => setSettingsQ(null)}
+            onSave={({ qMeta: patch, topic }) => {
+              onUpdateQMeta && onUpdateQMeta(settingsQ.id, patch);
+              if (topic) onMoveTopic && onMoveTopic(settingsQ.id, topic);
+              setSettingsQ(null);
+            }} />
+        );
+      })()}
       {confirm && <ThemeConfirm q={confirm.q} themes={confirm.themes} pool={pool} onKeep={() => setConfirm(null)} onRemove={() => doRemove(confirm.q)} />}
       {detailTheme && <ThemeDetailsDialog theme={detailTheme} sel={sel}
         onToggle={plainToggle} onToggleAll={(on) => setMany(detailTheme.questions.map(x => x.id), on)}

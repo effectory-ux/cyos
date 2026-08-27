@@ -253,7 +253,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                     { value: undefined, label: q.text },
                     ...variants.map(v => ({ value: v, label: v })),
                   ]}
-                  footer={
+                  footer={onDetach ? (
                     <button className="bmq-dd-detach" onClick={detach}>
                       <Icon name="edit" size={14} />
                       <span>
@@ -261,7 +261,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                         <span>Becomes a custom question. Loses the benchmark.</span>
                       </span>
                     </button>
-                  }
+                  ) : null}
                   onChange={setVariant} />
               ) : (
                 <div className="bmq-locked is-big">{t(wording)}</div>

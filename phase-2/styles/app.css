@@ -122,7 +122,9 @@ button.sel-btn.cq-sel { font-size: 14px; }
 /* ---- preview side ---- */
 .cq-preview { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: var(--spacing-base); padding: var(--spacing-loose); overflow: auto; }
-.cq-card { width: 100%; display: flex; flex-direction: column; gap: var(--spacing-base); padding: var(--spacing-loose);
+/* The card holds a survey question, so it keeps a readable measure instead of
+   stretching to the grey stage; it only narrows when the dialog does. */
+.cq-card { width: 100%; max-width: 694px; display: flex; flex-direction: column; gap: var(--spacing-base); padding: var(--spacing-loose);
   background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-xl); }
 .cq-card-note { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;
   font-size: 12px; line-height: 19.2px; color: var(--content-secondary); }
@@ -1278,26 +1280,34 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .cq-step-head { display: flex; flex-direction: column; gap: 4px; }
 .cq-step-title { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.5; color: var(--content-base); }
 .cq-step-sub { margin: 0; font-size: 14px; line-height: 1.6; color: var(--content-secondary); max-width: 620px; }
+/* On the similar-questions step the description explains a trade-off, so it
+   runs the width of the step instead of a centred measure. */
+.cq-step-sub.is-wide { max-width: none; }
 .cq-step-topic { max-width: 340px; }
 .cq-step-opts { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column;
-  gap: var(--spacing-tight); padding-top: 4px; }
-/* One option = a radio card: the mark, the wording, and the tags that say what
-   picking it costs or buys. */
-.cq-opt-card { display: flex; align-items: flex-start; gap: var(--spacing-base-tight); width: 100%;
+  gap: var(--spacing-loose); padding-top: 4px; }
+/* Named groups: your question, then what already exists. */
+.cq-opt-sec { display: flex; flex-direction: column; gap: var(--spacing-tight); }
+.cq-opt-sechead { margin: 0; display: flex; align-items: center; gap: var(--spacing-tight);
+  font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
+/* One option = a radio card laid out like a question row anywhere else in the
+   product: control left, wording, then the tags that say what picking it costs
+   or buys, and the answer type. The card styling stays, because exactly one of
+   these is added. */
+.cq-opt-card { display: flex; align-items: center; gap: var(--spacing-base-tight); width: 100%;
   padding: var(--spacing-base-tight) var(--spacing-base); border: 1px solid var(--border-base);
   border-radius: var(--radius-md); background: var(--bg-base); font-family: inherit; text-align: left;
   cursor: pointer; transition: border-color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard); }
 .cq-opt-card:hover { background: var(--bg-base-hover); }
 .cq-opt-card.is-on { border-color: var(--border-brand); background: var(--bg-brand-subtle); }
-.cq-opt-mark { flex: none; width: 18px; height: 18px; margin-top: 3px; border-radius: 50%;
+.cq-opt-mark { flex: none; width: 18px; height: 18px; border-radius: 50%;
   border: 1.5px solid var(--border-action); background: var(--bg-base); display: grid; place-items: center; }
 .cq-opt-card.is-on .cq-opt-mark { border-color: var(--border-brand); }
 .cq-opt-card.is-on .cq-opt-mark::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--bg-brand); }
-.cq-opt-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.cq-opt-text { font-size: 15px; font-weight: 500; line-height: 22.4px; color: var(--content-base); }
-.cq-opt-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.cq-opt-text { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; line-height: 22.4px; color: var(--content-base); }
+.cq-opt-tags { flex: none; display: flex; align-items: center; gap: 6px; }
 .cq-opt-tags .infotag { padding: 3px 8px; font-size: 11.5px; }
-.cq-step-foot { display: flex; align-items: center; justify-content: flex-end; gap: var(--spacing-tight); }
+.cq-step-foot { display: flex; align-items: center; gap: var(--spacing-tight); }
 
 /* ---- Select questions: sidebar navigation variant --------------------------
    Left rail = browse (topics double as jump anchors); the one search on top
@@ -1378,3 +1388,8 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
    is squeezed, and the search never collapses to an icon. */
 .eq-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-base-tight); }
 .eq-toolbar-search { flex: 1 1 240px; min-width: 240px; }
+/* How many filters are actually narrowing something. Same grey pill the counts
+   elsewhere use, sized to a circle for single digits. */
+.eq-filter-count { flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--radius-full);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg-secondary); color: var(--content-secondary); font-size: 12px; font-weight: 600; }

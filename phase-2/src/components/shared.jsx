@@ -236,3 +236,28 @@ export function SortBy({ value, options, onChange }) {
     </div>
   );
 }
+
+// ---- viewport queries ----------------------------------------------------
+// Used by dialogs that drop a side column when they can no longer hold it.
+export function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setMatches(mq.matches);
+    on();
+    // `change` alone is enough in a real browser, but neither it nor `resize`
+    // fires reliably when the viewport is resized by devtools/emulation — and
+    // resizing mid-demo is exactly how this breakpoint gets shown. Observing
+    // the root element catches what the events miss.
+    mq.addEventListener("change", on);
+    window.addEventListener("resize", on);
+    const ro = new ResizeObserver(on);
+    ro.observe(document.documentElement);
+    return () => {
+      mq.removeEventListener("change", on);
+      window.removeEventListener("resize", on);
+      ro.disconnect();
+    };
+  }, [query]);
+  return matches;
+}
