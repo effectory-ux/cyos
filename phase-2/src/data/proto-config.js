@@ -30,5 +30,5 @@ export const USE_CASES = [
 // wins, it becomes the default and leaves this list.
 export const VARIANTS = [
   { key: "dialogSidebarNav", label: "Select questions: sidebar navigation",
-    desc: "Left rail to browse (topics as jump anchors) + one search across questions, themes and templates. Off = the four tabs." },
+    desc: "DEFAULT — rail with All questions / Library / Custom + Question sets, one search across everything. Off = the old four tabs." },
 ];

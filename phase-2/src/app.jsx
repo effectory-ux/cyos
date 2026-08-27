@@ -35,7 +35,9 @@ export function App() {
   const [removeConfirm, setRemoveConfirm] = useState(null);
   const [editCustom, setEditCustom] = useState(null);
   // Design variants (toolbar): flip between candidate designs live.
-  const [variantsOn, setVariantsOn] = useState({});
+  // The sidebar dialog (Figma 6316:27977) is the default now; flipping the
+  // variant off brings the old tabbed dialog back for comparison.
+  const [variantsOn, setVariantsOn] = useState({ dialogSidebarNav: true });
   const toggleVariant = (key) => setVariantsOn(v => ({ ...v, [key]: !v[key] }));
   const [newCustom, setNewCustom] = useState(false); // create-from-builder ("Add" menu)
   // A survey-in-progress awaiting its name. Set after a template is chosen or

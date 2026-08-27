@@ -422,7 +422,11 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const initial = useMemo(() => new Set(initialSelected), []); // selection when the dialog opened
   const [q, setQ] = useState("");
   const [gq, setGq] = useState("");                 // sidebar variant: the one global query
-  const [tab, setTab] = useState(initialTab);
+  // The frame (6316:27977) lands on "All questions": library + custom in one
+  // topic-grouped list, tags carrying the source. It is also the home of
+  // search results, so the rail never claims you are in a section while
+  // showing matches from everywhere.
+  const [tab, setTab] = useState(nav === "sidebar" && initialTab === "questions" ? "all" : initialTab);
   const [show, setShow] = useState("all");
   const [themeQ, setThemeQ] = useState("");       // Themes tab search
   const [themeShow, setThemeShow] = useState("all"); // Themes tab completion filter
@@ -602,7 +606,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     setPool(p => [...p, oq]);
     setSel(s2 => new Set([...s2, oq.id]));
   };
-  const visible = pool.filter(x => !x.custom)
+  // "All questions" mixes sources; "Library questions" is library only.
+  const sourceOf = (x) => (tab === "all" ? true : !x.custom);
+  const visible = pool.filter(sourceOf)
     .filter(x => [x.text, x.theme, x.topic].some(v => (v || "").toLowerCase().includes(q.toLowerCase())))
     .filter(x => (show === "all" ? true : show === "selected" ? sel.has(x.id) : !sel.has(x.id)) || leaving.has(x.id));
   const groups = groupQuestions(visible, "library");
@@ -618,18 +624,22 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     <div className="overlay" onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
       <div className={"dialog dialog-l dialog-worksurface" + (nav === "sidebar" ? " eq-wide" : "")} role="dialog" aria-modal="true" aria-labelledby="eq-title"
         style={{ display: "flex", flexDirection: "column", height: "min(940px, calc(100vh - 64px))" }}>
-        <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
-          <button className="dialog-close" aria-label="Close" onClick={close}><Icon name="cross" /></button>
-        </Tooltip>
+        {nav === "tabs" && (
+          <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
+            <button className="dialog-close" aria-label="Close" onClick={close}><Icon name="cross" /></button>
+          </Tooltip>
+        )}
         {templateDetail && detailTemplate ? (
           <TemplateDetailView t={detailTemplate} sel={sel} onBack={() => setTemplateDetail(null)}
             onToggleQuestion={(id) => toggleTemplateQuestion(detailTemplate, id)}
             onSelectAll={(on) => setTemplate(detailTemplate, on)} />
         ) : (
         <>
-        <div className="dialog-header" style={{ paddingRight: 24 }}>
-          <h2 className="dialog-title" id="eq-title" style={{ fontSize: 20, lineHeight: "28px" }}>Select questions</h2>
-        </div>
+        {nav === "tabs" && (
+          <div className="dialog-header" style={{ paddingRight: 24 }}>
+            <h2 className="dialog-title" id="eq-title" style={{ fontSize: 20, lineHeight: "28px" }}>Select questions</h2>
+          </div>
+        )}
 
         {nav === "tabs" && (
         <div className="tabs" role="tablist">
@@ -644,9 +654,33 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         </div>
         )}
 
+        <div className={nav === "sidebar" ? "eq-frame" : "eq-col"}>
         {nav === "sidebar" && (
-          <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
-            <div className="search-wrap" style={{ flex: 1 }}>
+          <div className="eq-rail" role="tablist" aria-orientation="vertical">
+            <div className="eq-rail-title" id="eq-title">Add questions</div>
+            {/* Search lives HERE (Miro's model): a query highlights All
+                questions, so the rail always tells the truth about where the
+                results came from. */}
+            <button className={"eq-rail-item" + (tab === "all" || gqt ? " is-active" : "")} role="tab" aria-selected={tab === "all"}
+              onClick={() => { setTab("all"); setGq(""); }}><Icon name="globe" size={16} />All questions</button>
+            <button className={"eq-rail-item" + (tab === "questions" && !gqt ? " is-active" : "")} role="tab" aria-selected={tab === "questions"}
+              onClick={() => { setTab("questions"); setGq(""); }}><Icon name="list-unordered" size={16} />Library questions</button>
+            <button className={"eq-rail-item" + (tab === "custom" && !gqt ? " is-active" : "")} role="tab" aria-selected={tab === "custom"}
+              onClick={() => { setTab("custom"); setGq(""); }}><Icon name="edit" size={16} />Custom questions</button>
+            {/* Questions are atoms; themes and templates SELECT sets of them.
+                Naming the group teaches the library's structure instead of
+                listing four equal destinations. */}
+            <div className="eq-rail-group">Question sets</div>
+            <button className={"eq-rail-item" + (tab === "themes" && !gqt ? " is-active" : "")} role="tab" aria-selected={tab === "themes"}
+              onClick={() => { setTab("themes"); setGq(""); }}><Icon name="themes" size={16} />Themes</button>
+            <button className={"eq-rail-item" + (tab === "templates" && !gqt ? " is-active" : "")} role="tab" aria-selected={tab === "templates"}
+              onClick={() => { setTab("templates"); setGq(""); }}><Icon name="layout" size={16} />Templates</button>
+          </div>
+        )}
+        <div className="eq-main">
+        {nav === "sidebar" && (
+          <div className="eq-toolbar">
+            <div className="search-wrap eq-toolbar-search">
               <span className="search-icon"><Icon name="search" size={16} /></span>
               <input type="search" className="srch" placeholder="Search questions, themes and templates"
                 value={gq} onChange={e => setGq(e.target.value)} />
@@ -657,34 +691,29 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 onChange={tab === "themes" ? setThemeShow : tab === "templates" ? setTmplShow : setShow}
                 options={GENERIC_SHOW[tab] || GENERIC_SHOW.questions} />
             )}
-            {!gqt && tab === "questions" && (
+            {!gqt && (tab === "questions" || tab === "all") && (
               <button className={"btn btn-secondary" + (secKeys.length === 0 ? " is-disabled" : "")} disabled={secKeys.length === 0}
                 style={{ flex: "none" }} onClick={toggleAllSecs}>
-                <Icon name={allCollapsed ? "double-chevron-down" : "double-chevron-up"} size={16} />{allCollapsed ? "Expand all" : "Collapse all"}</button>
+                <Icon name={allCollapsed ? "double-chevron-down" : "double-chevron-up"} size={16} />{allCollapsed ? "Expand" : "Collapse"}</button>
             )}
             <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
               <Icon name="plus" size={16} />Custom question</button>
+            <span className="eq-tool-div" aria-hidden="true" />
+            <Tooltip label="Close" pos="is-left">
+              <button className="ib ib-36 ib-tertiary" aria-label="Close" onClick={close}><Icon name="cross" size={16} /></button>
+            </Tooltip>
           </div>
         )}
 
-        <div className={nav === "sidebar" ? "eq-frame" : "eq-col"}>
         {nav === "sidebar" && (
-          <div className="eq-rail" role="tablist" aria-orientation="vertical">
-            <button className={"eq-rail-item" + (tab === "questions" ? " is-active" : "")} role="tab" aria-selected={tab === "questions"}
-              onClick={() => { setTab("questions"); setGq(""); }}><Icon name="list-unordered" size={16} />Library questions</button>
-            <button className={"eq-rail-item" + (tab === "custom" ? " is-active" : "")} role="tab" aria-selected={tab === "custom"}
-              onClick={() => { setTab("custom"); setGq(""); }}><Icon name="edit" size={16} />Custom questions</button>
-            {/* Questions are atoms; themes and templates SELECT sets of them.
-                Naming the group teaches the library's structure instead of
-                listing four equal destinations. */}
-            <div className="eq-rail-group">Question sets</div>
-            <button className={"eq-rail-item" + (tab === "themes" ? " is-active" : "")} role="tab" aria-selected={tab === "themes"}
-              onClick={() => { setTab("themes"); setGq(""); }}><Icon name="themes" size={16} />Themes</button>
-            <button className={"eq-rail-item" + (tab === "templates" ? " is-active" : "")} role="tab" aria-selected={tab === "templates"}
-              onClick={() => { setTab("templates"); setGq(""); }}><Icon name="layout" size={16} />Templates</button>
-          </div>
+          <h3 className="eq-section-title">{gqt
+            ? `Results for “${gq.trim()}”`
+            : tab === "all" ? "All questions"
+            : tab === "questions" ? "Library questions"
+            : tab === "custom" ? "Custom questions"
+            : tab === "themes" ? "Themes" : "Templates"}</h3>
         )}
-        <div className="eq-main">
+
 
         {nav === "tabs" && tab === "questions" && (
           <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>

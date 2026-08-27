@@ -1255,18 +1255,22 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
    looks across everything and never scopes to the rail selection. */
 .eq-col { display: flex; flex-direction: column; gap: var(--spacing-loose); flex: 1; min-height: 0; }
 .eq-frame { display: flex; gap: var(--spacing-loose); flex: 1; min-height: 0; }
-.eq-rail { width: 216px; flex: none; display: flex; flex-direction: column; gap: 2px; overflow-y: auto;
-  padding-right: var(--spacing-base-tight); border-right: 1px solid var(--border-base); }
-.eq-rail-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: none;
-  border-radius: var(--radius-md); background: transparent; font-family: inherit; font-size: 14px;
-  font-weight: 500; color: var(--content-secondary); text-align: left; cursor: pointer; }
+/* Rail per Figma 6316:27977: 280px, 24px padding, 48px items with the icon
+   inset at 12px and the label at 40px, the dialog's title at the top. */
+.eq-rail { width: 280px; flex: none; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;
+  padding: 0 var(--spacing-base) 0 0; border-right: 1px solid var(--border-base); box-sizing: border-box; }
+.eq-rail-title { padding: 12px; font-size: 20px; font-weight: 600; line-height: 28px; color: var(--content-base); }
+.eq-rail-item { position: relative; display: flex; align-items: center; min-height: 48px;
+  padding: 12px 12px 12px 40px; border: none; border-radius: var(--radius-md); background: transparent;
+  font-family: inherit; font-size: 14px; font-weight: 500; line-height: 22.4px;
+  color: var(--content-secondary); text-align: left; cursor: pointer; }
+.eq-rail-item > i[data-icon] { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); }
 .eq-rail-item:hover { background: var(--bg-base-hover); }
-.eq-rail-item.is-active { background: var(--bg-brand-subtle); color: var(--content-base); font-weight: 600; }
-.eq-rail-sub { display: block; padding: 6px 12px 6px 38px; border: none; border-radius: var(--radius-md);
-  background: transparent; font-family: inherit; font-size: 13px; color: var(--content-secondary);
-  text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.eq-rail-sub:hover { background: var(--bg-base-hover); color: var(--content-base); }
-.eq-rail-group { padding: 16px 12px 4px; font-size: 13px; font-weight: 600; color: var(--content-base); flex: none; }
+.eq-rail-item.is-active { background: var(--bg-brand-subtle-selected); color: var(--content-action-pressed); font-weight: 600; }
+.eq-rail-group { padding: 16px 12px 4px; font-size: 16px; font-weight: 600; line-height: 24px;
+  color: var(--content-base); flex: none; }
+/* The content column names the section you are in — or the live query. */
+.eq-section-title { margin: 0; font-size: 20px; font-weight: 600; line-height: 28px; color: var(--content-base); }
 .eq-main { display: flex; flex-direction: column; gap: var(--spacing-loose); flex: 1; min-width: 0; min-height: 0; }
 .eq-main .dialog-body { flex: 1; min-height: 0; }
 
@@ -1278,4 +1282,16 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
   font-weight: 600; color: var(--content-base); }
 /* The sidebar variant earns more width than the DS's largest dialog (1080):
    rail + rows need the room. Flagged as beyond the DS scale on purpose. */
-.dialog.eq-wide { width: min(1280px, calc(100vw - 48px)); }
+/* The frame's shape: the rail runs the full height flush to the dialog edge,
+   the content column carries its own 32px padding, the footer spans both. */
+.dialog.eq-wide { width: min(1280px, calc(100vw - 48px)); padding: 0; gap: 0; }
+.dialog.eq-wide > .eq-frame { flex: 1; min-height: 0; gap: 0; }
+.dialog.eq-wide .eq-rail { padding: var(--spacing-loose); }
+.dialog.eq-wide .eq-main { padding: var(--spacing-super-loose); gap: var(--spacing-super-loose); }
+.dialog.eq-wide > .dialog-footer { padding: var(--spacing-loose) var(--spacing-super-loose);
+  border-top: 1px solid var(--border-base); }
+.eq-tool-div { width: 1px; height: 24px; background: var(--border-base); flex: none; }
+/* One row at full width (as drawn); wraps instead of clipping when the dialog
+   is squeezed, and the search never collapses to an icon. */
+.eq-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-base-tight); }
+.eq-toolbar-search { flex: 1 1 240px; min-width: 240px; }
