@@ -51,18 +51,22 @@ export const VARIANTS = {
 };
 
 // A library's alternative wordings are curated per question, so how MANY
-// questions have them differs per library. `all` fills the gap with plausible
-// rewrites, so the alternative-wording flow can be shown on any question.
+// questions have them differs per library. `all` adds plausible rewrites to
+// EVERY question, so the flow can be tested anywhere: it fills the gap on
+// questions with no curated list and extends the ones that have it — a switch
+// that only changed the empty cases would look dead on the questions a tester
+// opens first, which all happen to be curated.
 export function variantsOf(text, all = false, type = "scale5") {
   const curated = VARIANTS[text] || [];
-  if (curated.length || !all || !text) return curated;
+  if (!all || !text) return curated;
   const t = text.replace(/\.$/, "");
   const lower = t.charAt(0).toLowerCase() + t.slice(1);
   // An agree-scale frame only makes sense on a statement; an open or
   // multiple-choice question needs a frame that doesn't imply a scale.
-  return type === "scale5"
+  const made = type === "scale5"
     ? [`To what extent do you agree: ${lower}`, `In my experience, ${lower}`]
     : [`In your view, ${lower}`, `From your experience, ${lower}`];
+  return [...curated, ...made.filter(v => !curated.includes(v))];
 }
 
 // Effectory-approved DESCRIPTION alternatives, same mechanics as question

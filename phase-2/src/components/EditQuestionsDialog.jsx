@@ -477,6 +477,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const [templateDetail, setTemplateDetail] = useState(null); // template id whose detail takeover is open
   const [customOpen, setCustomOpen] = useState(false);
   const [confirm, setConfirm] = useState(null);
+  const [customQ, setCustomQ] = useState("");   // tabs variant: search on the Custom questions page
   const [justAdded, setJustAdded] = useState(null); // scroll target right after adding a custom question
   const [toast, setToast] = useState(null);         // { topic }
   const [reqNotice, setReqNotice] = useState(0);    // key: increments each time a required question is pressed (re-announces)
@@ -661,8 +662,10 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     }
     setSel(s => { const n = new Set(s); ids.forEach(id => { if (!on && requiredIds.has(id)) return; on ? n.add(id) : n.delete(id); }); return n; });
   };
-  const addCustom = (nq) => {
-    setPool(p => [...p, nq]); setSel(s => new Set([...s, nq.id])); setCustomOpen(false);
+  // Adding without closing the create dialog: it confirms the question there
+  // and offers writing another one, so it decides when it goes away.
+  const addCustomKeepOpen = (nq) => {
+    setPool(p => [...p, nq]); setSel(s => new Set([...s, nq.id]));
     // Make the new question visible where it landed: clear search/filter,
     // switch to the Questions tab, scroll to the row, and toast.
     setQ(""); setShow("all"); setTab("custom");
@@ -673,8 +676,16 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       setTimeout(() => setToast(null), 5000),
     ];
   };
+  const addCustom = (nq) => { addCustomKeepOpen(nq); setCustomOpen(false); };
 
   const customQs = pool.filter(x => x.custom && !x.from);   // written in this survey
+// The tabbed variant searches per page, so the Custom questions page filters
+// its own two groups. In the sidebar variant a query goes to the global search
+// instead, so nothing here is ever filtered.
+  const cqt = nav === "tabs" ? customQ.trim().toLowerCase() : "";
+  const customShown = cqt ? customQs.filter(x => (x.text || "").toLowerCase().includes(cqt)) : customQs;
+  const orgShown = cqt ? orgCustomQs.filter(x => (x.text || "").toLowerCase().includes(cqt)) : orgCustomQs;
+
   const visible = pool.filter(x => !x.custom)
     .filter(x => [x.text, x.theme, x.topic].some(v => (v || "").toLowerCase().includes(q.toLowerCase())))
     .filter(x => (show === "all" ? true : show === "selected" ? sel.has(x.id) : !sel.has(x.id)) || leaving.has(x.id));
@@ -766,7 +777,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 the answer when the library does not cover something, and that
                 is a realisation you have while browsing it. */}
             <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
-              <Icon name="plus" size={16} />Custom question</button>
+              <Icon name="plus" size={16} />Add custom question</button>
             <span className="eq-tool-div" aria-hidden="true" />
             <Tooltip label="Close" pos="is-left">
               <button className="ib ib-36 ib-tertiary" aria-label="Close" onClick={close}><Icon name="cross" size={16} /></button>
@@ -806,11 +817,18 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           </div>
         )}
 
-        {nav === "tabs" && tab === "custom" && customQs.length > 0 && (
+        {/* In the tabbed variant every page carries its own search, so this one
+            searches custom questions only — and the action that creates one
+            sits next to it, where it does on every other page. */}
+        {nav === "tabs" && tab === "custom" && (
           <div style={{ display: "flex", gap: "var(--spacing-base-tight)", alignItems: "center" }}>
-            <span className="text-medium text-subdued" style={{ flex: 1 }}>Your own questions for this survey. No benchmark comparisons.</span>
+            <div className="search-wrap" style={{ flex: 1 }}>
+              <span className="search-icon"><Icon name="search" size={16} /></span>
+              <input type="search" className="srch" placeholder="Search custom questions"
+                value={customQ} onChange={e => setCustomQ(e.target.value)} />
+            </div>
             <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
-              <Icon name="plus" size={16} />Create custom question</button>
+              <Icon name="plus" size={16} />Add custom question</button>
           </div>
         )}
 
@@ -945,7 +963,13 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               </>
             )
           ) : tab === "custom" ? (
-            customQs.length === 0 && orgCustomQs.length === 0 ? (
+            cqt && customShown.length === 0 && orgShown.length === 0 ? (
+              <div className="eq-empty">
+                <img className="eq-empty-art" src="assets/illustrations/templates/search-no-results-illustration.svg" alt="" />
+                <div className="eq-empty-title">We couldn't find any matches for "{customQ.trim()}"</div>
+                <p className="eq-empty-body">Check the spelling or try another word</p>
+              </div>
+            ) : customQs.length === 0 && orgCustomQs.length === 0 ? (
               <div className="eq-empty">
                 <img className="eq-empty-art" src="assets/illustrations/templates/search-no-results-illustration.svg" alt="" />
                 <div className="eq-empty-title">No custom questions yet</div>
@@ -954,20 +978,20 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                   something specific to your context. Custom questions don't carry a benchmark.
                 </p>
                 <button className="btn btn-primary" onClick={() => setCustomOpen(true)}>
-                  <Icon name="plus" size={16} />Custom question</button>
+                  <Icon name="plus" size={16} />Add custom question</button>
               </div>
             ) : (
               <>
                 {/* Two groups, behaving like the library's topics: count pill,
                     collapse chevron, and Select all where selecting is what the
                     checkbox does. */}
-                {customQs.length > 0 && (
+                {customShown.length > 0 && (
                   <section className={"aql-sec" + (collapsed.has("cq:own") ? " is-collapsed" : "")}>
                     <div className="aql-sechead">
                       <h3>Created in this survey</h3>
                       <div className="spacer" />
-                      <SelectAllTopic allOn={customQs.every(x => sel.has(x.id))} total={customQs.length}
-                        onToggle={() => setMany(customQs.map(x => x.id), !customQs.every(x => sel.has(x.id)))} />
+                      <SelectAllTopic allOn={customShown.every(x => sel.has(x.id))} total={customShown.length}
+                        onToggle={() => setMany(customShown.map(x => x.id), !customShown.every(x => sel.has(x.id)))} />
                       <Tooltip label={collapsed.has("cq:own") ? "Expand" : "Collapse"} pos="is-above" float>
                         <button className="ib ib-tertiary aql-sec-toggle" aria-label="Collapse questions"
                           aria-expanded={!collapsed.has("cq:own")} onClick={() => toggleSec("cq:own")}>
@@ -975,18 +999,18 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                         </button>
                       </Tooltip>
                     </div>
-                    {!collapsed.has("cq:own") && customQs.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} usedInTag
+                    {!collapsed.has("cq:own") && customShown.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} usedInTag
                       leaving={leaving.has(qq.id)} themeInfo={null}
                       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
                   </section>
                 )}
-                {orgCustomQs.length > 0 && (
+                {orgShown.length > 0 && (
                   <section className={"aql-sec" + (collapsed.has("cq:org") ? " is-collapsed" : "")}>
                     <div className="aql-sechead">
                       <h3>Created and used in other surveys</h3>
                       <div className="spacer" />
-                      <span className="tag tag-count">{orgCustomQs.length}</span>
+                      <span className="tag tag-count">{orgShown.length}</span>
                       <Tooltip label={collapsed.has("cq:org") ? "Expand" : "Collapse"} pos="is-above" float>
                         <button className="ib ib-tertiary aql-sec-toggle" aria-label="Collapse questions"
                           aria-expanded={!collapsed.has("cq:org")} onClick={() => toggleSec("cq:org")}>
@@ -994,7 +1018,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                         </button>
                       </Tooltip>
                     </div>
-                    {!collapsed.has("cq:org") && orgCustomQs.map(oq => (
+                    {!collapsed.has("cq:org") && orgShown.map(oq => (
                       <div key={oq.id} className="aql-row" onClick={() => toggleOrgQuestion(oq)}>
                         <Tooltip label={sel.has(oq.id) ? "Added to questionnaire" : "Add to questionnaire"} pos="is-above" float>
                           <Checkbox on={sel.has(oq.id)} large onClick={(e) => { e.stopPropagation(); toggleOrgQuestion(oq); }} />
@@ -1069,7 +1093,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       {customOpen && <CustomQuestionDialog topics={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
         pool={[...pool, ...orgCustomQs]} selectedIds={[...sel]}
         onUseSuggestion={(q) => { if (pool.some(pq => pq.id === q.id)) setMany([q.id], true); else toggleOrgQuestion(q); setCustomOpen(false); }}
-        onCancel={() => setCustomOpen(false)} onAdd={addCustom} />}
+        onCancel={() => setCustomOpen(false)} onAdd={addCustom} onAddAnother={addCustomKeepOpen} />}
       {editCustomQ && <CustomQuestionDialog question={editCustomQ}
         topics={[...new Set(pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
         onCancel={() => setEditCustomQ(null)} onSubmit={saveCustomEdit} onDelete={deleteCustomQ} />}

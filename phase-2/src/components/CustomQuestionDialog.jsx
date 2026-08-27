@@ -218,13 +218,19 @@ function ManualConflictDialog({ langs, onKeep, onOverwrite }) {
   );
 }
 
-export function CustomQuestionDialog({ question, topics, design, pool = [], selectedIds = [], onUseSuggestion, onCancel, onAdd, onSubmit, onDelete }) {
+// How long the check runs, and how long the confirmation stays before it closes
+// itself. The confirmation offers a choice, so it has to outlast reading it.
+const CHECK_MS = 1400;
+const DONE_MS = 6000;
+
+export function CustomQuestionDialog({ question, topics, design, pool = [], selectedIds = [], onUseSuggestion, onCancel, onAdd, onAddAnother, onSubmit, onDelete }) {
   const editing = !!question;
   const submitFn = onSubmit || onAdd;
   // Only offer topics that actually exist in this survey (as {value,label} —
   // value is the stable key, label the survey-scoped display name); fall back
   // to the library topics if none were passed.
   const topicList = (topics && topics.length) ? topics : TOPICS.map(t => ({ value: t, label: t }));
+  const topicLabel = (v) => ((topicList.find(o => o.value === v) || {}).label || v);
   const [text, setText] = useState(question ? question.text : "");
   const [desc, setDesc] = useState(question && question.desc ? question.desc : "");
   const [type, setType] = useState(question ? question.type : "scale5");
@@ -261,6 +267,9 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   const [checked, setChecked] = useState(null);   // matches, in the picking step
   const [phase, setPhase] = useState(null);      // "loading" | "picking" | "success"
   const [pick, setPick] = useState("mine");      // which question gets added
+  // Where the created question landed — read off the draft before the form is
+  // cleared, so the confirmation still names it while you write the next one.
+  const [doneTopic, setDoneTopic] = useState("");
   const checkTimer = useRef(null);
   useEffect(() => () => clearTimeout(checkTimer.current), []);
   useEffect(() => { setChecked(null); setPhase(null); setPick("mine"); }, [text, desc, type, topic]);
@@ -362,17 +371,18 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   const retranslateOne = (lang) =>
     runAuto([lang], text.trim(), desc.trim(), hasOpts ? opts : []);
 
+  const buildQ = () => ({
+    ...(question || {}),
+    id: question ? question.id : "c" + Date.now(),
+    topic, theme: question ? question.theme : null, bench: false, type, custom: true,
+    text: text.trim(), desc: desc.trim() || undefined,
+    options: hasOpts ? cleanOpts : undefined,
+  });
+
   const submit = () => {
     setAttempted(true);
     if (textErr || topicErr || optsErr) return;
-    const nq = {
-      ...(question || {}),
-      id: question ? question.id : "c" + Date.now(),
-      topic, theme: question ? question.theme : null, bench: false, type, custom: true,
-      text: text.trim(), desc: desc.trim() || undefined,
-      options: hasOpts ? cleanOpts : undefined,
-    };
-    submitFn(nq);
+    submitFn(buildQ());
   };
   // The primary action while creating: "Check question" runs the similarity
   // check behind a short full-dialog loader. Matches -> the check step (pick
@@ -389,11 +399,26 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
     checkTimer.current = setTimeout(() => {
       const m = similarQuestions(text, pool);
       if (m.length) { setChecked(m); setPick("mine"); setPhase("picking"); }
-      else {
+      // A clean check creates the question right away and CONFIRMS it here, so
+      // every way out of the confirmation keeps it — including writing the next
+      // one. Without a non-closing add, it stays the old add-then-close.
+      else if (onAddAnother) {
+        onAddAnother(buildQ());
+        setDoneTopic(topicLabel(topic));
         setPhase("success");
-        checkTimer.current = setTimeout(submit, 1100);
+        checkTimer.current = setTimeout(() => onCancel(), DONE_MS);
+      } else {
+        setPhase("success");
+        checkTimer.current = setTimeout(submit, DONE_MS);
       }
-    }, 1100);
+    }, CHECK_MS);
+  };
+  // Clear the form for the next question, keeping topic and answer type: the
+  // reason to write another one is usually that the first one wasn't enough.
+  const createAnother = () => {
+    clearTimeout(checkTimer.current);
+    setPhase(null); setChecked(null); setPick("mine");
+    setText(""); setDesc(""); setOpts(["", ""]); setAttempted(false); setTr({});
   };
   // Add whichever question the step has selected.
   const addPicked = () => {
@@ -461,9 +486,27 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
             )}
             {phase === "success" && (
               <div className="cq-step-center" role="status" aria-live="polite">
-                <span className="cq-step-ok"><Icon name="check" size={28} /></span>
-                <div className="cq-step-title">No similar questions found</div>
-                <div className="cq-step-sub">Adding it to your questionnaire</div>
+                <span className="cq-step-ok is-pop"><Icon name="check" size={32} /></span>
+                {onAddAnother ? (
+                  <>
+                    <div className="cq-step-title">Question added</div>
+                    <div className="cq-step-sub">
+                      Nothing similar was found, so it went in as the last question in {doneTopic || "your questionnaire"}
+                    </div>
+                    <div className="cq-step-btns">
+                      <button className="btn btn-secondary" onClick={createAnother}>Create another question</button>
+                      <button className="btn btn-primary" onClick={() => { clearTimeout(checkTimer.current); onCancel(); }}>Got it</button>
+                    </div>
+                    {/* Drains over the auto-close, so closing itself is never a
+                        surprise and the choice above has a visible deadline. */}
+                    <span className="cq-step-bar" aria-hidden="true"><i style={{ animationDuration: DONE_MS + "ms" }} /></span>
+                  </>
+                ) : (
+                  <>
+                    <div className="cq-step-title">No similar questions found</div>
+                    <div className="cq-step-sub">Adding it to your questionnaire</div>
+                  </>
+                )}
               </div>
             )}
             {phase === "picking" && (

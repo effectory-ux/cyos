@@ -10,7 +10,7 @@ export const EDGE_CASES = [
   {
     key: "altWordings",
     label: "Alternative wordings for every question",
-    desc: "How many library questions carry approved alternative wordings differs per library. Turn this on to see the flow on any question.",
+    desc: "How many library questions carry approved alternative wordings differs per library. Turn this on to get alternatives on every question.",
     on: false,
   },
   {

@@ -1256,6 +1256,21 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
   justify-content: center; gap: 10px; text-align: center; }
 .cq-step-ok { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
   background: var(--bg-positive-subtle); color: var(--content-positive-secondary); }
+/* The check pops in once, so "it worked" is read from the movement before the
+   words are read at all. */
+.cq-step-ok.is-pop { width: 64px; height: 64px; animation: cq-pop 420ms cubic-bezier(.2,1.4,.4,1) both; }
+.cq-step-ok.is-pop svg { animation: cq-pop-in 260ms ease-out 180ms both; }
+@keyframes cq-pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes cq-pop-in { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.cq-step-btns { display: flex; align-items: center; gap: var(--spacing-tight); padding-top: 6px; }
+.cq-step-bar { width: 200px; height: 3px; border-radius: 2px; overflow: hidden;
+  background: var(--bg-interface-tertiary); margin-top: 2px; }
+.cq-step-bar i { display: block; height: 100%; background: var(--content-positive-secondary);
+  transform-origin: left center; animation: cq-drain linear both; }
+@keyframes cq-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .cq-step-ok.is-pop, .cq-step-ok.is-pop svg, .cq-step-bar i { animation: none; }
+}
 .cq-step-head { display: flex; flex-direction: column; gap: 4px; }
 .cq-step-title { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.5; color: var(--content-base); }
 .cq-step-sub { margin: 0; font-size: 14px; line-height: 1.6; color: var(--content-secondary); max-width: 620px; }

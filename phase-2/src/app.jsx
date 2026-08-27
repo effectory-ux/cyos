@@ -289,10 +289,11 @@ export function App() {
   };
   // "Add custom question" straight from the builder bar: the new question goes
   // into the pool and is selected immediately — no trip through the library.
-  const addCustomDirect = (nq) => {
+  // Adding without closing: the dialog confirms the question itself and offers
+  // writing another one, so it decides when it goes away.
+  const addCustomKeepOpen = (nq) =>
     setSurvey(s => ({ ...s, pool: [...s.pool, nq], selectedIds: [...s.selectedIds, nq.id] }));
-    setNewCustom(false);
-  };
+  const addCustomDirect = (nq) => { addCustomKeepOpen(nq); setNewCustom(false); };
   // The similar-question check found a match: select the existing question
   // instead of creating a duplicate.
   const useSuggested = (q) => {
@@ -466,7 +467,7 @@ export function App() {
       {newCustom && survey && <CustomQuestionDialog topics={surveyTopicOptions()} design={designById(survey.design)}
         pool={[...survey.pool, ...ORG_CUSTOM.filter(o => !survey.pool.some(p => p.id === o.id))]} selectedIds={survey.selectedIds}
         onUseSuggestion={useSuggested}
-        onCancel={() => setNewCustom(false)} onAdd={addCustomDirect} />}
+        onCancel={() => setNewCustom(false)} onAdd={addCustomDirect} onAddAnother={addCustomKeepOpen} />}
       {editCustom && <CustomQuestionDialog question={editCustom} design={survey ? designById(survey.design) : null}
         topics={surveyTopicOptions()}
         onCancel={() => setEditCustom(null)} onSubmit={saveCustomEdit}
