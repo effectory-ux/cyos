@@ -14,6 +14,7 @@ import { PROTO_STORAGE_PREFIX, START_POINTS, USE_CASES, VARIANTS } from "./data/
 import { serialize, writeRoute, parse } from "./data/routes.js";
 import { defaultEdges, EDGE_CASES } from "./data/edgecases.js";
 import { designById } from "./data/designs.js";
+import { ORG_CUSTOM } from "./data/data.js";
 
 // Behaviour the design iterations landed on: removing the last question of a
 // complete theme soft-locks (asks first), and "Add custom question" lives in
@@ -293,7 +294,12 @@ export function App() {
   // The similar-question check found a match: select the existing question
   // instead of creating a duplicate.
   const useSuggested = (q) => {
-    setSurvey(s => s.selectedIds.includes(q.id) ? s : { ...s, selectedIds: [...s.selectedIds, q.id] });
+    setSurvey(s => ({
+      ...s,
+      // an org-created custom question isn't in this survey's pool yet
+      pool: s.pool.some(p => p.id === q.id) ? s.pool : [...s.pool, q],
+      selectedIds: s.selectedIds.includes(q.id) ? s.selectedIds : [...s.selectedIds, q.id],
+    }));
     setNewCustom(false);
   };
   const saveCustomEdit = (q) => {
@@ -455,7 +461,7 @@ export function App() {
         onKeep={() => setRemoveConfirm(null)}
         onRemove={() => { removeFromSurvey(removeConfirm.q); setRemoveConfirm(null); }} />}
       {newCustom && survey && <CustomQuestionDialog topics={surveyTopicOptions()} design={designById(survey.design)}
-        pool={survey.pool} selectedIds={survey.selectedIds}
+        pool={[...survey.pool, ...ORG_CUSTOM.filter(o => !survey.pool.some(p => p.id === o.id))]} selectedIds={survey.selectedIds}
         onUseSuggestion={useSuggested}
         onCancel={() => setNewCustom(false)} onAdd={addCustomDirect} />}
       {editCustom && <CustomQuestionDialog question={editCustom} design={survey ? designById(survey.design) : null}

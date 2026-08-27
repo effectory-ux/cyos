@@ -602,6 +602,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                                 ? <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
                                 : <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>}
                               {m.theme && <span className="infotag is-alt">{m.theme}</span>}
+                              {m.from && <span className="infotag is-alt">{m.from}</span>}
                             </div>
                             {inSurvey
                               ? <span className="cq-suggest-in"><Icon name="check" size={14} />Already in this survey</span>

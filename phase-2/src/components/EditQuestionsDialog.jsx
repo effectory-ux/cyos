@@ -493,6 +493,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const gqt = nav === "sidebar" ? gq.trim().toLowerCase() : "";
   const gRes = gqt ? {
     questions: pool.filter(x => (x.text || "").toLowerCase().includes(gqt)),
+    // One pool for search: org-created customs join the results, differentiated
+    // by their tags and source — never excluded for living elsewhere.
+    orgQuestions: ORG_CUSTOM.filter(x => !pool.some(pq => pq.id === x.id) && x.text.toLowerCase().includes(gqt)),
     themes: themeGroups.filter(t => t.name.toLowerCase().includes(gqt) || (t.desc || "").toLowerCase().includes(gqt)),
     templates: templateCards.filter(t => t.name.toLowerCase().includes(gqt) || (t.desc || "").toLowerCase().includes(gqt)),
   } : null;
@@ -719,7 +722,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
 
         <div className="dialog-body scroll-y">
           {gRes ? (
-            gRes.questions.length + gRes.themes.length + gRes.templates.length === 0 ? (
+            gRes.questions.length + gRes.orgQuestions.length + gRes.themes.length + gRes.templates.length === 0 ? (
               <div className="aql-themes-empty">
                 <Icon name="search" size={32} />
                 <div className="text-l5" style={{ color: "var(--content-secondary)" }}>Nothing matches "{gq.trim()}"</div>
@@ -727,13 +730,24 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               </div>
             ) : (
               <>
-                {gRes.questions.length > 0 && (
+                {gRes.questions.length + gRes.orgQuestions.length > 0 && (
                   <section className="eq-gres">
-                    <div className="eq-gres-head">Questions <span className="tag tag-count">{gRes.questions.length}</span></div>
+                    <div className="eq-gres-head">Questions <span className="tag tag-count">{gRes.questions.length + gRes.orgQuestions.length}</span></div>
                     {gRes.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
                       leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
                       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
+                    {gRes.orgQuestions.map(oq => (
+                      <div key={oq.id} className="aql-row" onClick={() => addOrgQuestion(oq)}>
+                        <Tooltip label="Add to questionnaire" pos="is-above" float>
+                          <Checkbox on={false} large onClick={(e) => { e.stopPropagation(); addOrgQuestion(oq); }} />
+                        </Tooltip>
+                        <div className="aql-text">{oq.text}</div>
+                        <span className="text-medium text-subdued" style={{ flex: "none" }}>{oq.from}</span>
+                        <CustomTag label="Custom question" pos="is-above" float />
+                        <QTypeIcon type={oq.type} size={24} tip pos="is-above" float />
+                      </div>
+                    ))}
                   </section>
                 )}
                 {gRes.themes.length > 0 && (
@@ -885,8 +899,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       </div>
 
       {customOpen && <CustomQuestionDialog topics={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
-        pool={pool} selectedIds={[...sel]}
-        onUseSuggestion={(q) => { setMany([q.id], true); setCustomOpen(false); }}
+        pool={[...pool, ...orgCustomQs]} selectedIds={[...sel]}
+        onUseSuggestion={(q) => { if (pool.some(pq => pq.id === q.id)) setMany([q.id], true); else addOrgQuestion(q); setCustomOpen(false); }}
         onCancel={() => setCustomOpen(false)} onAdd={addCustom} />}
       {editCustomQ && <CustomQuestionDialog question={editCustomQ}
         topics={[...new Set(pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}

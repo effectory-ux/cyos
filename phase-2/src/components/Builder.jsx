@@ -377,8 +377,9 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // Preview language: a reviewed translation if there is one, otherwise the
   // automatic one. Standard library text ships pre-translated in production;
   // the prototype fakes it with the same translator.
-  // Participants see the survey's own name until someone writes them a title.
-  const introTitle = intro.title || name;
+  // The platform's default intro until the coordinator writes their own.
+  const introTitle = intro.title || "Hello!";
+  const introDesc = intro.desc || "Thank you for participating in this survey. We really appreciate your feedback!";
   const tr = (key, text) => {
     if (viewLang === "en" || !text) return text;
     return (i18nEdits[viewLang] || {})[key] || autoTranslation(text, viewLang);
@@ -612,6 +613,10 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             </button>
           )}
 
+          {/* Display and Design are SETTINGS menus: picking an option keeps
+              them open (compare languages or designs in quick succession);
+              they close on outside click or the button itself. The Add menu
+              stays an action menu — its items navigate, so it closes. */}
           <div className="ctxbar-menu-wrap">
             <button className={"btn btn-secondary" + (barMenu === "display" ? " is-pressed" : "")}
               aria-haspopup="menu" aria-expanded={barMenu === "display"}
@@ -625,7 +630,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                   <div className="menu-group-lbl">Preview language</div>
                   {LANGUAGES.map(l => (
                     <div key={l.code} className={"menu-item" + (viewLang === l.code ? " is-selected" : "")} role="menuitemradio"
-                      aria-checked={viewLang === l.code} onClick={() => { setViewLang(l.code); setBarMenu(null); }}>
+                      aria-checked={viewLang === l.code} onClick={() => setViewLang(l.code)}>
                       <span className="lang-flag menu-item-icon"><img src={flagSrc(l.flag)} alt="" /></span>
                       <span className="menu-item-body"><span className="menu-item-title">{l.label}</span></span>
                       {viewLang === l.code && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
@@ -661,7 +666,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     return (
                       <button key={d.id} className="dsg-tile-wrap" role="menuitemradio" aria-checked={active}
                         aria-label={d.name} title={d.name}
-                        onClick={() => { onSetDesign && onSetDesign(active ? undefined : d.id); setBarMenu(null); }}>
+                        onClick={() => onSetDesign && onSetDesign(active ? undefined : d.id)}>
                         <span className="dsg-tile" style={{ background: d.photo || d.color }}>
                           {d.photo && <span className="dsg-tile-dim" aria-hidden="true" />}
                           <span className="dsg-chrome">
@@ -722,9 +727,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIntroOpen(true); } }}>
             <div className="intro-card-body">
               <div className="intro-card-title" data-t="2">{tr("intro:name", introTitle)}</div>
-              <div className={"intro-card-desc" + (intro.desc ? "" : " is-empty")} data-t="3">
-                {intro.desc ? tr("intro:desc", intro.desc) : "Add a short welcome for participants"}
-              </div>
+              <div className="intro-card-desc" data-t="3">{tr("intro:desc", introDesc)}</div>
             </div>
             <Tooltip label="Edit intro screen" pos="is-left">
               <button className="ib ib-36 ib-tertiary" aria-label="Edit intro screen" onClick={() => setIntroOpen(true)}><Icon name="edit" size={16} /></button>
@@ -924,7 +927,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         onCancel={() => setTopicWarn(null)}
         onConfirm={(dontShow) => { if (dontShow) { try { localStorage.setItem("cyos.skipTopicRemoveWarn", "1"); } catch (_) {} } doRemoveTopic(topicWarn); setTopicWarn(null); }} />}
       {introOpen && <TopicDialog variant="intro" tidName="2" tidDesc="3" design={design}
-        questionCount={chosen.length} minutes={estMinutes} name={introTitle} desc={intro.desc}
+        questionCount={chosen.length} minutes={estMinutes} name={introTitle} desc={introDesc}
         originalName={introTitle} isCustom i18nEdits={i18nEdits} stringKeyBase="intro"
         onCancel={() => setIntroOpen(false)}
         onSave={({ name: nm, desc: ds, translations }) => {
