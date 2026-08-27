@@ -26,7 +26,7 @@ export function buildSuggestions({ themeGroups = [], pool = [], selectedIds = []
         kind: "theme",
         theme: t.name,
         title: `${t.name} is ${missing} ${missing === 1 ? "question" : "questions"} from a theme score`,
-        why: "A theme only gets a score in the results when all of its questions are in.",
+        why: "A theme only gets a score in the results when all of its questions are in",
         action: missing === 1 ? "Add the question" : "Add the questions",
       });
     });

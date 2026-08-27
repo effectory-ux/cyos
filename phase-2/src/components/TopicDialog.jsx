@@ -76,7 +76,7 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
             {isIntro ? (initialName || "Intro screen") : creating ? "Add topic" : (initialName || "Topic")}</h2>
           <p className="dialog-subtitle">
             {isIntro
-              ? "The first screen participants see. Give the survey a title in their words and, if it helps, a short welcome."
+              ? "The first screen participants see. Use their words for the title, and add a short welcome if it helps."
               : "Topics organize the questions in this survey and introduce them to participants. They don't affect themes or benchmarks."}
           </p>
         </div>

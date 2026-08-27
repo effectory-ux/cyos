@@ -456,21 +456,21 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
           <div className="cq-step" role="group" aria-label="Check question">
             {phase === "loading" && (
               <div className="cq-step-center" role="status" aria-live="polite">
-                <span className="block-loader"><span className="spinner spinner-lg"></span>Checking for similar questions…</span>
+                <span className="block-loader"><span className="spinner spinner-lg"></span>Checking for similar questions</span>
               </div>
             )}
             {phase === "success" && (
               <div className="cq-step-center" role="status" aria-live="polite">
                 <span className="cq-step-ok"><Icon name="check" size={28} /></span>
                 <div className="cq-step-title">No similar questions found</div>
-                <div className="cq-step-sub">Adding your question to the questionnaire…</div>
+                <div className="cq-step-sub">Adding it to your questionnaire</div>
               </div>
             )}
             {phase === "picking" && (
               <>
                 <div className="cq-step-head">
                   <h3 className="cq-step-title">Select the question you want to add</h3>
-                  <p className="cq-step-sub">Questions like yours already exist. Reusing one keeps your results comparable; keeping your own wording is fine too.</p>
+                  <p className="cq-step-sub">Questions like yours already exist. Reuse one to keep your results comparable, or keep your own wording.</p>
                 </div>
                 {/* Topic sits above the choice: which topic fits can change
                     with the question you pick. */}

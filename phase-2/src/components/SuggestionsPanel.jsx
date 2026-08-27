@@ -56,7 +56,7 @@ export function SuggestionsPanel({ items, onAct, onClose }) {
             <div className="sgp-empty">
               <span className="sgp-empty-mark"><Icon name="check" size={20} /></span>
               <div className="sgp-empty-title">Nothing to flag</div>
-              <div className="sgp-empty-sub">Your themes are complete and the length looks good.</div>
+              <div className="sgp-empty-sub">Your themes are complete and the length looks good</div>
             </div>
           ) : <SuggestionsList items={items} onAct={onAct} />}
         </div>
@@ -83,7 +83,7 @@ export function SuggestionsPreflight({ items, onReview, onContinue }) {
               {items.length === 1 ? "One thing worth checking" : `${items.length} things worth checking`}
             </h3>
           </div>
-          <p className="dialog-subtitle">You can continue and come back to these at any time before the survey is sent.</p>
+          <p className="dialog-subtitle">You can come back to these any time before the survey is sent</p>
         </div>
         <SuggestionsList items={items} />
         <div className="dialog-footer">

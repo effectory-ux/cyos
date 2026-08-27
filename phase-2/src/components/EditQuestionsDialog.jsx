@@ -224,7 +224,7 @@ function AddedToast({ topic, onClose }) {
     <div className="sysnotif-stack">
       <div className="sysnotif" role="status">
         <div className="sysnotif-title">Custom question added</div>
-        <div className="sysnotif-desc">Added to “{topic}” — selected and ready in your questionnaire.</div>
+        <div className="sysnotif-desc">Added to “{topic}” and selected in your questionnaire</div>
         <button className="sysnotif-close" aria-label="Dismiss" onClick={onClose}><Icon name="cross" size={16} /></button>
       </div>
     </div>
@@ -240,8 +240,8 @@ function RequiredNotice({ count = 1, onClose }) {
       <div className="sysnotif is-info" role="status" aria-live="polite">
         <div className="sysnotif-title">{count > 1 ? `${count} questions are required` : "This question is required"}</div>
         <div className="sysnotif-desc">{count > 1
-          ? "They’re set up as required and stay selected in this survey."
-          : "It’s set up as required and is always included in this survey."}</div>
+          ? "They’re set up as required and stay selected in this survey"
+          : "It’s set up as required and is always included in this survey"}</div>
         <button className="sysnotif-close" aria-label="Dismiss" onClick={onClose}><Icon name="cross" size={16} /></button>
       </div>
     </div>
@@ -537,6 +537,17 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // Sidebar variant: one query across everything. A search should never come
   // back empty because the match lived under another tab.
   const gqt = nav === "sidebar" ? gq.trim().toLowerCase() : "";
+  // Custom questions created OUTSIDE this survey (other coordinators/surveys):
+  // shown as their own group — customer content stays split from the library,
+  // and from this survey's own customs. Adding one pulls it into this survey.
+  const poolIds = useMemo(() => new Set(pool.map(x => x.id)), [pool]);
+  // A fresh account has no custom questions anywhere yet (edge case).
+  const orgCustomQs = tweaks.orgCustoms === false ? [] : ORG_CUSTOM.filter(x => !poolIds.has(x.id));
+  const addOrgQuestion = (oq) => {
+    setPool(p => [...p, oq]);
+    setSel(s2 => new Set([...s2, oq.id]));
+  };
+
   // Result priority: library questions first (validated + benchmarked, the
   // answer we want found), then this survey's customs, then the org's — the
   // other content types follow in their own groups below.
@@ -663,16 +674,6 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   };
 
   const customQs = pool.filter(x => x.custom);
-  // Custom questions created OUTSIDE this survey (other coordinators/surveys):
-  // shown as their own group — customer content stays split from the library,
-  // and from this survey's own customs. Adding one pulls it into this survey.
-  const poolIds = useMemo(() => new Set(pool.map(x => x.id)), [pool]);
-  // A fresh account has no custom questions anywhere yet (edge case).
-  const orgCustomQs = tweaks.orgCustoms === false ? [] : ORG_CUSTOM.filter(x => !poolIds.has(x.id));
-  const addOrgQuestion = (oq) => {
-    setPool(p => [...p, oq]);
-    setSel(s2 => new Set([...s2, oq.id]));
-  };
   const visible = pool.filter(x => !x.custom)
     .filter(x => [x.text, x.theme, x.topic].some(v => (v || "").toLowerCase().includes(q.toLowerCase())))
     .filter(x => (show === "all" ? true : show === "selected" ? sel.has(x.id) : !sel.has(x.id)) || leaving.has(x.id));
@@ -757,6 +758,11 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 onChange={tab === "themes" ? setThemeShow : tab === "templates" ? setTmplShow : setShow}
                 options={GENERIC_SHOW[tab] || GENERIC_SHOW.questions} />
             )}
+            {/* Creating a custom question is reachable from every page: it is
+                the answer when the library does not cover something, and that
+                is a realisation you have while browsing it. */}
+            <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
+              <Icon name="plus" size={16} />Custom question</button>
             <span className="eq-tool-div" aria-hidden="true" />
             <Tooltip label="Close" pos="is-left">
               <button className="ib ib-36 ib-tertiary" aria-label="Close" onClick={close}><Icon name="cross" size={16} /></button>
@@ -778,10 +784,6 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
             {!gqt && tab === "questions" && secKeys.length > 0 && (
               <button className="btn btn-tertiary" onClick={toggleAllSecs}>
                 <Icon name={allCollapsed ? "double-chevron-down" : "double-chevron-up"} size={16} />{allCollapsed ? "Expand all" : "Collapse all"}</button>
-            )}
-            {!gqt && tab === "custom" && (customQs.length > 0 || orgCustomQs.length > 0) && (
-              <button className="btn btn-tertiary" onClick={() => setCustomOpen(true)}>
-                <Icon name="plus" size={16} />Custom question</button>
             )}
           </div>
         )}
@@ -835,10 +837,10 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               : resFilter === "themes" ? gRes.themes.length : gRes.templates.length) === 0 ? (
               <div className="aql-themes-empty">
                 <Icon name="search" size={32} />
-                <div className="text-l5" style={{ color: "var(--content-secondary)" }}>Nothing matches "{gq.trim()}"</div>
+                <div className="text-l5" style={{ color: "var(--content-secondary)" }}>We couldn't find any matches for "{gq.trim()}"</div>
                 <div className="text-medium">{resFilter === "all"
-                  ? "Searched all questions, themes and templates."
-                  : "No matches of this kind — try “All results”."}</div>
+                  ? "Check the spelling or try another word"
+                  : "No matches of this kind. Choose All results to see everything"}</div>
               </div>
             ) : (
               <>
@@ -944,9 +946,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 <img className="eq-empty-art" src="assets/illustrations/templates/search-no-results-illustration.svg" alt="" />
                 <div className="eq-empty-title">No custom questions yet</div>
                 <p className="eq-empty-body">
-                  The library covers most of what organizations measure. Write your own
-                  when you need something specific to your context — it just won't carry
-                  a benchmark.
+                  The library covers most of what organizations measure. Write your own for
+                  something specific to your context. Custom questions don't carry a benchmark.
                 </p>
                 <button className="btn btn-primary" onClick={() => setCustomOpen(true)}>
                   <Icon name="plus" size={16} />Custom question</button>

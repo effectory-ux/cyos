@@ -95,7 +95,7 @@ function DetachWarning({ theme, completes, themeCount, onCancel, onConfirm }) {
               {completes ? `Keep the “${theme}” theme complete?` : "Write your own wording?"}
             </h3>
           </div>
-          <p className="dialog-subtitle">You can word it however you like — this is what changes:</p>
+          <p className="dialog-subtitle">You can word it however you like. This is what changes:</p>
         </div>
         {/* the tag flip, shown with the same tags the dialogs carry */}
         <div className="dw-flip" aria-hidden="true">
@@ -104,11 +104,11 @@ function DetachWarning({ theme, completes, themeCount, onCancel, onConfirm }) {
           <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>
         </div>
         <ul className="dw-impact">
-          <li><b>Loses the benchmark</b> — its results can no longer be compared with other organizations.</li>
+          <li><b>Loses the benchmark.</b> Its results can no longer be compared with other organizations.</li>
           {theme && (
-            <li><b>Leaves the “{theme}” theme</b>{completes
-              ? ` — it was the last question holding the theme complete, so the composite score breaks (the theme needs all ${themeCount} questions).`
-              : " — it no longer counts toward the theme."}</li>
+            <li><b>Leaves the “{theme}” theme.</b>{completes
+              ? ` It was the last question holding the theme complete, so the composite score breaks. The theme needs all ${themeCount} questions.`
+              : " It no longer counts toward the theme."}</li>
           )}
         </ul>
         <label className="cb-label-wrap" style={{ display: "flex", alignItems: "center", gap: "var(--spacing-tight)", cursor: "pointer" }}>
