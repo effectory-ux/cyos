@@ -89,7 +89,9 @@ function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, on
 // progress bar for themes) · a Select/Active toggle button and a View details
 // link. "Active" (all questions selected) highlights the card and turns the
 // button into a filled "✓ Active"; clicking it again clears the selection.
-function ChoiceCard({ variant, title, desc, illus, selCount, total, onToggle, onDetails }) {
+// `art` is a template's DS illustration path (the same SVG the create-survey
+// dialog shows); `illus` stays the icon tile themes use.
+function ChoiceCard({ variant, title, desc, illus, art, selCount, total, onToggle, onDetails }) {
   const isTemplate = variant === "template";
   const allOn = total > 0 && selCount >= total;
   const pct = total ? Math.round((selCount / total) * 100) : 0;
@@ -104,7 +106,9 @@ function ChoiceCard({ variant, title, desc, illus, selCount, total, onToggle, on
       role="button" tabIndex={0} onClick={onDetails}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onDetails(); } }}>
       <div className="cc-head">
-        {illus && <span className="cc-illus" style={{ background: illus.bg, color: illus.fg }}><Icon name={illus.icon} size={30} /></span>}
+        {art
+          ? <img className="cc-art" src={"assets/illustrations/" + art} alt="" />
+          : illus && <span className="cc-illus" style={{ background: illus.bg, color: illus.fg }}><Icon name={illus.icon} size={30} /></span>}
         <span className="cc-title">{title}</span>
         <p className="cc-desc">{desc}</p>
       </div>
@@ -383,7 +387,7 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
       </div>
       <div className="dialog-body scroll-y" style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-loose)" }}>
         <div className="tpv-hero">
-          <span className="tpv-illus tpv-illus-fit" style={{ background: b.bg, color: b.fg }}><Icon name={b.icon} size={28} /></span>
+          <img className="tpv-illus tpv-illus-fit" src={"assets/illustrations/" + t.illus} alt="" />
           <div style={{ minWidth: 0 }}>
             <h2 className="dialog-title" id="tpv-title">{t.name}</h2>
             <div className="tpv-meta">Standard template · {t.total} questions · {meta.minutes || Math.max(3, Math.round(t.total * 0.5))} minutes</div>
@@ -825,7 +829,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                     <div className="eq-gres-head">Templates <span className="tag tag-count">{gRes.templates.length}</span></div>
                     <div className="thm-grid">
                       {gRes.templates.map(t => <ChoiceCard key={t.id} variant="template"
-                        title={t.name} desc={t.desc} illus={BADGE_COLORS[t.badge]} selCount={t.selCount} total={t.total}
+                        title={t.name} desc={t.desc} art={t.illus} selCount={t.selCount} total={t.total}
                         onToggle={() => setTemplate(t, !t.active)}
                         onDetails={() => setTemplateDetail(t.id)} />)}
                     </div>
@@ -871,7 +875,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                   onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
                 {orgCustomQs.length > 0 && (
                   <>
-                    <div className="aql-sechead" style={{ marginTop: "var(--spacing-extra-loose)" }}>
+                    <div className="aql-sechead" style={customQs.length ? { marginTop: "var(--spacing-extra-loose)" } : undefined}>
                       <h3>Used in other surveys</h3>
                     </div>
                     {orgCustomQs.map(oq => (
@@ -894,7 +898,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
             ) : (
               <div className="thm-grid">
                 {visibleTemplates.map(t => <ChoiceCard key={t.id} variant="template"
-                  title={t.name} desc={t.desc} illus={BADGE_COLORS[t.badge]} selCount={t.selCount} total={t.total}
+                  title={t.name} desc={t.desc} art={t.illus} selCount={t.selCount} total={t.total}
                   onToggle={() => setTemplate(t, !t.active)}
                   onDetails={() => setTemplateDetail(t.id)} />)}
               </div>

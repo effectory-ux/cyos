@@ -1246,9 +1246,39 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .cq-mark.is-radio.is-on::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--bg-brand); }
 .cq-mark:hover { border-color: var(--border-brand); }
 
-/* Full-dialog loader while the similar-question check runs. */
-.cq-checking { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
-  background: rgba(255,255,255,0.88); border-radius: var(--radius-xl); }
+/* The check step: one full-dialog screen that loads, then either offers the
+   choice between your wording and what already exists, or confirms nothing
+   similar was found. */
+.cq-step { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column;
+  gap: var(--spacing-base); padding: var(--spacing-loose) var(--spacing-extra-loose) var(--spacing-extra-loose);
+  background: var(--bg-base); border-radius: var(--radius-xl); }
+.cq-step-center { flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 10px; text-align: center; }
+.cq-step-ok { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg-positive-subtle); color: var(--content-positive-secondary); }
+.cq-step-head { display: flex; flex-direction: column; gap: 4px; }
+.cq-step-title { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.5; color: var(--content-base); }
+.cq-step-sub { margin: 0; font-size: 14px; line-height: 1.6; color: var(--content-secondary); max-width: 620px; }
+.cq-step-topic { max-width: 340px; }
+.cq-step-opts { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column;
+  gap: var(--spacing-tight); padding-top: 4px; }
+/* One option = a radio card: the mark, the wording, and the tags that say what
+   picking it costs or buys. */
+.cq-opt-card { display: flex; align-items: flex-start; gap: var(--spacing-base-tight); width: 100%;
+  padding: var(--spacing-base-tight) var(--spacing-base); border: 1px solid var(--border-base);
+  border-radius: var(--radius-md); background: var(--bg-base); font-family: inherit; text-align: left;
+  cursor: pointer; transition: border-color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard); }
+.cq-opt-card:hover { background: var(--bg-base-hover); }
+.cq-opt-card.is-on { border-color: var(--border-brand); background: var(--bg-brand-subtle); }
+.cq-opt-mark { flex: none; width: 18px; height: 18px; margin-top: 3px; border-radius: 50%;
+  border: 1.5px solid var(--border-action); background: var(--bg-base); display: grid; place-items: center; }
+.cq-opt-card.is-on .cq-opt-mark { border-color: var(--border-brand); }
+.cq-opt-card.is-on .cq-opt-mark::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--bg-brand); }
+.cq-opt-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.cq-opt-text { font-size: 15px; font-weight: 500; line-height: 22.4px; color: var(--content-base); }
+.cq-opt-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.cq-opt-tags .infotag { padding: 3px 8px; font-size: 11.5px; }
+.cq-step-foot { display: flex; align-items: center; justify-content: flex-end; gap: var(--spacing-tight); }
 
 /* ---- Select questions: sidebar navigation variant --------------------------
    Left rail = browse (topics double as jump anchors); the one search on top
@@ -1298,6 +1328,7 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .dialog.eq-wide .aql-sec + .aql-sec { margin-top: var(--spacing-extra-loose); }
 .eq-tool-div { width: 1px; height: 24px; background: var(--border-base); flex: none; }
 /* "Used in <survey>" — truncates rather than pushing the row's meta around. */
+.cc-art { width: 64px; height: 64px; flex: none; }
 .eq-usedin { flex: none; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
 /* One row at full width (as drawn); wraps instead of clipping when the dialog
    is squeezed, and the search never collapses to an icon. */

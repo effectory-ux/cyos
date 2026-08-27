@@ -258,11 +258,12 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   // this dialog — pick one, or confirm creating the new question. `checked`
   // null = still writing; an array = the check step with its matches. Any
   // change to the draft drops back to writing (the next Create re-checks).
-  const [checked, setChecked] = useState(null);
-  const [checking, setChecking] = useState(false); // the short full-dialog loader
+  const [checked, setChecked] = useState(null);   // matches, in the picking step
+  const [phase, setPhase] = useState(null);      // "loading" | "picking" | "success"
+  const [pick, setPick] = useState("mine");      // which question gets added
   const checkTimer = useRef(null);
   useEffect(() => () => clearTimeout(checkTimer.current), []);
-  useEffect(() => { setChecked(null); }, [text, desc, type, topic]);
+  useEffect(() => { setChecked(null); setPhase(null); setPick("mine"); }, [text, desc, type, topic]);
   const timers = useRef([]);
   const lastSource = useRef("");
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
@@ -377,19 +378,28 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   // check behind a short full-dialog loader. Matches -> the check step (pick
   // one, or keep your own); a clean check creates right away. Once checked,
   // the primary becomes "Keep my question" and submits.
+  // Check question -> a full-screen step: it loads, then either offers the
+  // choice between your wording and the questions that already exist, or
+  // confirms in place that nothing similar was found.
   const checkThenSubmit = () => {
     setAttempted(true);
     if (textErr || topicErr || optsErr) return;
-    if (!editing && checked === null) {
-      setChecking(true);
-      checkTimer.current = setTimeout(() => {
-        setChecking(false);
-        const m = similarQuestions(text, pool);
-        if (m.length) setChecked(m); else submit();
-      }, 1200);
-      return;
-    }
-    submit();
+    if (editing) { submit(); return; }
+    setPhase("loading");
+    checkTimer.current = setTimeout(() => {
+      const m = similarQuestions(text, pool);
+      if (m.length) { setChecked(m); setPick("mine"); setPhase("picking"); }
+      else {
+        setPhase("success");
+        checkTimer.current = setTimeout(submit, 1100);
+      }
+    }, 1100);
+  };
+  // Add whichever question the step has selected.
+  const addPicked = () => {
+    if (pick === "mine") { submit(); return; }
+    const m = (checked || []).find(x => x.id === pick);
+    if (m && onUseSuggestion) onUseSuggestion(m); else submit();
   };
 
   // Standard answer categories ship with the platform; Custom ones are the
@@ -442,9 +452,68 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
         <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
-        {checking && (
-          <div className="cq-checking" role="status" aria-live="polite">
-            <span className="block-loader"><span className="spinner spinner-lg"></span>Checking for similar questions…</span>
+        {phase && (
+          <div className="cq-step" role="group" aria-label="Check question">
+            {phase === "loading" && (
+              <div className="cq-step-center" role="status" aria-live="polite">
+                <span className="block-loader"><span className="spinner spinner-lg"></span>Checking for similar questions…</span>
+              </div>
+            )}
+            {phase === "success" && (
+              <div className="cq-step-center" role="status" aria-live="polite">
+                <span className="cq-step-ok"><Icon name="check" size={28} /></span>
+                <div className="cq-step-title">No similar questions found</div>
+                <div className="cq-step-sub">Adding your question to the questionnaire…</div>
+              </div>
+            )}
+            {phase === "picking" && (
+              <>
+                <div className="cq-step-head">
+                  <h3 className="cq-step-title">Select the question you want to add</h3>
+                  <p className="cq-step-sub">Questions like yours already exist. Reusing one keeps your results comparable; keeping your own wording is fine too.</p>
+                </div>
+                {/* Topic sits above the choice: which topic fits can change
+                    with the question you pick. */}
+                <div className="cq-field cq-step-topic">
+                  <span className="cq-lbl">Add to topic</span>
+                  <MiniSelect ariaLabel="Add to topic" value={topic} placeholder="Topic name"
+                    items={topicItems} onChange={setTopic} block />
+                </div>
+                <div className="cq-step-opts" role="radiogroup" aria-label="Question to add">
+                  <button type="button" className={"cq-opt-card" + (pick === "mine" ? " is-on" : "")}
+                    role="radio" aria-checked={pick === "mine"} onClick={() => setPick("mine")}>
+                    <span className="cq-opt-mark" aria-hidden="true" />
+                    <span className="cq-opt-body">
+                      <span className="cq-opt-text">{text.trim()}</span>
+                      <span className="cq-opt-tags">
+                        <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Your question</span>
+                        <span className="infotag is-alt">No benchmark</span>
+                      </span>
+                    </span>
+                  </button>
+                  {(checked || []).map(m => (
+                    <button type="button" key={m.id} className={"cq-opt-card" + (pick === m.id ? " is-on" : "")}
+                      role="radio" aria-checked={pick === m.id} onClick={() => setPick(m.id)}>
+                      <span className="cq-opt-mark" aria-hidden="true" />
+                      <span className="cq-opt-body">
+                        <span className="cq-opt-text">{m.text}</span>
+                        <span className="cq-opt-tags">
+                          {m.bench
+                            ? <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
+                            : <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>}
+                          {m.theme && <span className="infotag is-alt">{m.theme}</span>}
+                          {m.from && <span className="infotag is-alt">Used in {m.from}</span>}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="cq-step-foot">
+                  <button className="btn btn-secondary" onClick={() => { setPhase(null); setChecked(null); }}>Back</button>
+                  <button className="btn btn-primary" onClick={addPicked}>Add question</button>
+                </div>
+              </>
+            )}
           </div>
         )}
         {/* Titled by the thing itself, like the benchmarked-question and topic
@@ -584,37 +653,6 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                       ) : <ScalePreview lang={active} />}
                     </div>
                   </div>
-                  {/* The check step: shown after Create found similar existing
-                      questions — pick one, or press "Create new question" to
-                      continue with the draft. Editing anything returns to
-                      writing and the next Create re-checks. */}
-                  {!editing && checked && checked.length > 0 && (
-                    <div className="cq-suggest is-inline">
-                      <div className="cq-suggest-head"><Icon name="lightbulb" size={14} />
-                        Similar questions already exist — pick one, or keep your own</div>
-                      {checked.map(m => {
-                        const inSurvey = selectedIds.includes(m.id);
-                        return (
-                          <div key={m.id} className="cq-suggest-item">
-                            <div className="cq-suggest-text">{m.text}</div>
-                            <div className="cq-suggest-tags">
-                              {m.bench
-                                ? <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
-                                : <span className="infotag is-custom"><Icon name="edit-inline" size={12} />Custom</span>}
-                              {m.theme && <span className="infotag is-alt">{m.theme}</span>}
-                              {m.from && <span className="infotag is-alt">{m.from}</span>}
-                            </div>
-                            {inSurvey
-                              ? <span className="cq-suggest-in"><Icon name="check" size={14} />Already in this survey</span>
-                              : onUseSuggestion && (
-                                <button className="btn btn-secondary cq-suggest-use" onClick={() => onUseSuggestion(m)}>
-                                  Use this question</button>
-                              )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -650,8 +688,8 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
           <div className="spacer" />
           {benchNote}
           <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-          <button className={"btn btn-primary" + (checking ? " is-disabled" : "")} disabled={checking} onClick={checkThenSubmit}>
-            {editing ? "Save changes" : checked ? "Keep my question" : "Check question"}</button>
+          <button className={"btn btn-primary" + (phase ? " is-disabled" : "")} disabled={!!phase} onClick={checkThenSubmit}>
+            {editing ? "Save changes" : "Check question"}</button>
         </div>
       </div>
 
