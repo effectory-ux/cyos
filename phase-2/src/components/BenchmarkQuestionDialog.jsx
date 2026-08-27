@@ -134,7 +134,7 @@ function DetachWarning({ theme, completes, themeCount, onCancel, onConfirm }) {
   );
 }
 
-export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, onCancel, onSave, onDetach }) {
+export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, allVariants = false, onCancel, onSave, onDetach }) {
   // Staged edits — committed on Save only.
   const [variant, setVariant] = useState(meta.variant);
   const [desc, setDesc] = useState(meta.desc);
@@ -153,7 +153,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   };
 
   const wording = variant || q.text;
-  const variants = variantsOf(q.text);
+  const variants = variantsOf(q.text, allVariants, q.type);
   const primary = lang === "en";
   const t = (text) => (primary || !text ? text : autoTranslation(text, lang));
 

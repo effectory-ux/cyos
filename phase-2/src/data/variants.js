@@ -50,8 +50,19 @@ export const VARIANTS = {
   ],
 };
 
-export function variantsOf(text) {
-  return VARIANTS[text] || [];
+// A library's alternative wordings are curated per question, so how MANY
+// questions have them differs per library. `all` fills the gap with plausible
+// rewrites, so the alternative-wording flow can be shown on any question.
+export function variantsOf(text, all = false, type = "scale5") {
+  const curated = VARIANTS[text] || [];
+  if (curated.length || !all || !text) return curated;
+  const t = text.replace(/\.$/, "");
+  const lower = t.charAt(0).toLowerCase() + t.slice(1);
+  // An agree-scale frame only makes sense on a statement; an open or
+  // multiple-choice question needs a frame that doesn't imply a scale.
+  return type === "scale5"
+    ? [`To what extent do you agree: ${lower}`, `In my experience, ${lower}`]
+    : [`In your view, ${lower}`, `From your experience, ${lower}`];
 }
 
 // Effectory-approved DESCRIPTION alternatives, same mechanics as question

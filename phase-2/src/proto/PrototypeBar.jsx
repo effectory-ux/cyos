@@ -20,6 +20,21 @@ import "./prototype-bar.css";
 
 // Per-project localStorage keys, so two prototypes on one origin don't share
 // their toolbar state. The host passes the same prefix it uses at boot.
+// A link can opt the toolbar OUT entirely: ?toolbar=off renders nothing at all,
+// not even the reveal tab, so a participant or tester sees only the prototype.
+// Sharing that link is an action IN the toolbar; the plain link keeps it.
+const NO_BAR = (() => {
+  try { return new URLSearchParams(window.location.search).get("toolbar") === "off"; }
+  catch (_) { return false; }
+})();
+const participantLink = () => {
+  try {
+    const u = new URL(window.location.href);
+    u.searchParams.set("toolbar", "off");
+    return u.toString();
+  } catch (_) { return window.location.href; }
+};
+
 const startKey = (prefix) => prefix + ".startAt";
 const hideKey = (prefix) => prefix + ".barHidden";
 export const getStartAt = (prefix, fallback) => {
@@ -42,6 +57,7 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
   const [menu, setMenu] = useState(null); // "cases" | "start" | "edges" | null
   const [start, setStart] = useState(() => getStartAt(storagePrefix, startPoints[0] && startPoints[0].key));
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
   // Inline copy editing (copyEdit.js): available only while the dev server
   // runs — the deployed prototype still APPLIES saved edits, read-only.
   const [canEdit, setCanEdit] = useState(false);
@@ -76,9 +92,14 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
   const copy = () => {
     try { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch (_) {}
   };
+  const copyClean = () => {
+    try { navigator.clipboard.writeText(participantLink()); setShared(true); setTimeout(() => setShared(false), 1600); } catch (_) {}
+  };
   const pick = (key) => { setMenu(null); onUseCase(key); };
   const pickStart = (key) => { setStart(key); setStartAt(storagePrefix, key); setMenu(null); };
   const offCount = edgeCases.filter(e => edges[e.key] !== e.on).length;
+
+  if (NO_BAR) return null;
 
   if (hidden) {
     return (
@@ -228,6 +249,10 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
       <button className="pbar-icon pbar-tt is-right" onClick={copy}
         data-tip={copied ? "Copied" : "Copy link to this step"} aria-label="Copy link to this step">
         <Ic name={copied ? "check" : "copy"} size={14} />
+      </button>
+      <button className="pbar-icon pbar-tt is-right" onClick={copyClean}
+        data-tip={shared ? "Copied" : "Copy link for participants (no toolbar)"} aria-label="Copy link for participants">
+        <Ic name={shared ? "check" : "share"} size={14} />
       </button>
       <button className="pbar-icon pbar-tt is-right"
         onClick={() => { if (editing) { disableEdit(); setEditing(false); } setHide(true); saveHidden(storagePrefix, true); }}

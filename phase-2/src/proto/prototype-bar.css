@@ -62,8 +62,8 @@
   display: inline-flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 10px 5px 10px 6px; border: none; border-radius: 8px 0 0 8px; cursor: pointer;
   background: #14161a; color: #cfd4dc; font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; font-size: 11px;
-  font-weight: 600; opacity: .4; transition: opacity .15s ease; }
-.pbar-peek:hover, .pbar-peek:focus-visible { opacity: 1; }
+  font-weight: 600; }
+.pbar-peek:hover, .pbar-peek:focus-visible { background: #1d2027; }
 .pbar-peek-lbl { writing-mode: vertical-rl; letter-spacing: .04em; }
 .pbar-peek i { display: flex; }
 

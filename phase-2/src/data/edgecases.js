@@ -8,6 +8,12 @@
 // Defaults match the "normal" account the rest of the prototype assumes.
 export const EDGE_CASES = [
   {
+    key: "altWordings",
+    label: "Alternative wordings for every question",
+    desc: "How many library questions carry approved alternative wordings differs per library. Turn this on to see the flow on any question.",
+    on: false,
+  },
+  {
     key: "orgCustoms",
     label: "Custom questions elsewhere in the org",
     desc: "Colleagues have written custom questions in other surveys, ready to reuse. A first survey in a fresh account has none.",

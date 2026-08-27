@@ -681,7 +681,10 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const selCount = [...sel].length;
   // Per-section collapse (Questions tab): a chevron per header, plus a
   // collapse-all / expand-all toolbar toggle over the currently visible groups.
-  const secKeys = groups.map(g => g.key);
+  // Collapse all acts on the sections of the page you are on.
+  const secKeys = tab === "custom"
+    ? [...(customQs.length ? ["cq:own"] : []), ...(orgCustomQs.length ? ["cq:org"] : [])]
+    : groups.map(g => g.key);
   const allCollapsed = secKeys.length > 0 && secKeys.every(k => collapsed.has(k));
   const toggleSec = (k) => setCollapsed(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
   const toggleAllSecs = () => setCollapsed(allCollapsed ? new Set() : new Set(secKeys));
@@ -781,7 +784,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               : tab === "custom" ? "Custom questions"
               : tab === "themes" ? "Themes" : "Templates"}</h3>
             <span className="spacer" />
-            {!gqt && tab === "questions" && secKeys.length > 0 && (
+            {!gqt && (tab === "questions" || tab === "custom") && secKeys.length > 0 && (
               <button className="btn btn-tertiary" onClick={toggleAllSecs}>
                 <Icon name={allCollapsed ? "double-chevron-down" : "double-chevron-up"} size={16} />{allCollapsed ? "Expand all" : "Collapse all"}</button>
             )}
@@ -835,12 +838,12 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
             (resFilter === "all" ? gRes.questions.length + gRes.orgQuestions.length + gRes.indirect.length + gRes.themes.length + gRes.templates.length
               : resFilter === "questions" ? gRes.questions.length + gRes.orgQuestions.length + gRes.indirect.length
               : resFilter === "themes" ? gRes.themes.length : gRes.templates.length) === 0 ? (
-              <div className="aql-themes-empty">
-                <Icon name="search" size={32} />
-                <div className="text-l5" style={{ color: "var(--content-secondary)" }}>We couldn't find any matches for "{gq.trim()}"</div>
-                <div className="text-medium">{resFilter === "all"
+              <div className="eq-empty">
+                <img className="eq-empty-art" src="assets/illustrations/templates/search-no-results-illustration.svg" alt="" />
+                <div className="eq-empty-title">We couldn't find any matches for "{gq.trim()}"</div>
+                <p className="eq-empty-body">{resFilter === "all"
                   ? "Check the spelling or try another word"
-                  : "No matches of this kind. Choose All results to see everything"}</div>
+                  : "No matches of this kind. Choose All results to see everything"}</p>
               </div>
             ) : (
               <>
@@ -864,33 +867,33 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                         <QTypeIcon type={oq.type} size={24} tip pos="is-above" float />
                       </div>
                     ))}
+                    {/* A theme or topic that matched by name renders exactly like a
+                        section in the library list: same header, same count pill,
+                        same collapse chevron. It IS that group, just reached
+                        through search. */}
                     {gRes.indirect.map(g => {
                       const open = resOpen.has(g.key);
                       const ids = g.questions.map(x => x.id);
                       const allOn = ids.every(id => sel.has(id));
                       return (
-                        <div key={g.key} className="eq-ind">
-                          <button className="eq-ind-head" aria-expanded={open} onClick={() => toggleResGroup(g.key)}>
-                            <Icon name={g.kind === "theme" ? "themes" : "folder"} size={16} />
-                            <span className="eq-ind-txt">
-                              {g.questions.length} {g.questions.length === 1 ? "question" : "questions"} in the{" "}
-                              <mark className="eq-hl">{g.name}</mark> {g.kind}
-                            </span>
-                            <span className="spacer" />
-                            <Icon name="chevron-down" size={16} className={"aql-chevron" + (open ? " is-expanded" : "")} />
-                          </button>
-                          {open && (
-                            <>
-                              <div className="eq-ind-actions">
-                                <SelectAllTopic allOn={allOn} total={ids.length} onToggle={() => setMany(ids, !allOn)} />
-                              </div>
-                              {g.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
-                                leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
-                                onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
-                                onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
-                            </>
-                          )}
-                        </div>
+                        <section key={g.key} className={"aql-sec eq-res-sec" + (open ? "" : " is-collapsed")}>
+                          <div className="aql-sechead">
+                            <h3><Highlight text={g.name} q={gqt} /></h3>
+                            <span className="text-medium text-subdued">{g.kind}</span>
+                            <div className="spacer" />
+                            <SelectAllTopic allOn={allOn} total={ids.length} onToggle={() => setMany(ids, !allOn)} />
+                            <Tooltip label={open ? "Collapse" : "Expand"} pos="is-above" float>
+                              <button className="ib ib-tertiary aql-sec-toggle" aria-label={open ? "Collapse questions" : "Expand questions"}
+                                aria-expanded={open} onClick={() => toggleResGroup(g.key)}>
+                                <Icon name="chevron-down" size={16} className={"aql-chevron" + (open ? " is-expanded" : "")} />
+                              </button>
+                            </Tooltip>
+                          </div>
+                          {open && g.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
+                            leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
+                            onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
+                            onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
+                        </section>
                       );
                     })}
                   </section>
@@ -954,19 +957,43 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               </div>
             ) : (
               <>
+                {/* Two groups, behaving like the library's topics: count pill,
+                    collapse chevron, and Select all where selecting is what the
+                    checkbox does. */}
                 {customQs.length > 0 && (
-                  <div className="aql-sechead"><h3>Created in this survey</h3></div>
-                )}
-                {customQs.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} usedInTag
-                  leaving={leaving.has(qq.id)} themeInfo={null}
-                  onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
-                  onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
-                {orgCustomQs.length > 0 && (
-                  <>
-                    <div className="aql-sechead" style={customQs.length ? { marginTop: "var(--spacing-extra-loose)" } : undefined}>
-                      <h3>Used in other surveys</h3>
+                  <section className={"aql-sec" + (collapsed.has("cq:own") ? " is-collapsed" : "")}>
+                    <div className="aql-sechead">
+                      <h3>Created in this survey</h3>
+                      <div className="spacer" />
+                      <SelectAllTopic allOn={customQs.every(x => sel.has(x.id))} total={customQs.length}
+                        onToggle={() => setMany(customQs.map(x => x.id), !customQs.every(x => sel.has(x.id)))} />
+                      <Tooltip label={collapsed.has("cq:own") ? "Expand" : "Collapse"} pos="is-above" float>
+                        <button className="ib ib-tertiary aql-sec-toggle" aria-label="Collapse questions"
+                          aria-expanded={!collapsed.has("cq:own")} onClick={() => toggleSec("cq:own")}>
+                          <Icon name="chevron-down" size={16} className={"aql-chevron" + (collapsed.has("cq:own") ? "" : " is-expanded")} />
+                        </button>
+                      </Tooltip>
                     </div>
-                    {orgCustomQs.map(oq => (
+                    {!collapsed.has("cq:own") && customQs.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} usedInTag
+                      leaving={leaving.has(qq.id)} themeInfo={null}
+                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
+                      onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
+                  </section>
+                )}
+                {orgCustomQs.length > 0 && (
+                  <section className={"aql-sec" + (collapsed.has("cq:org") ? " is-collapsed" : "")}>
+                    <div className="aql-sechead">
+                      <h3>Used in other surveys</h3>
+                      <div className="spacer" />
+                      <span className="tag tag-count">{orgCustomQs.length}</span>
+                      <Tooltip label={collapsed.has("cq:org") ? "Expand" : "Collapse"} pos="is-above" float>
+                        <button className="ib ib-tertiary aql-sec-toggle" aria-label="Collapse questions"
+                          aria-expanded={!collapsed.has("cq:org")} onClick={() => toggleSec("cq:org")}>
+                          <Icon name="chevron-down" size={16} className={"aql-chevron" + (collapsed.has("cq:org") ? "" : " is-expanded")} />
+                        </button>
+                      </Tooltip>
+                    </div>
+                    {!collapsed.has("cq:org") && orgCustomQs.map(oq => (
                       <div key={oq.id} className="aql-row" onClick={() => addOrgQuestion(oq)}>
                         <Tooltip label="Add to questionnaire" pos="is-above" float>
                           <Checkbox on={false} large onClick={(e) => { e.stopPropagation(); addOrgQuestion(oq); }} />
@@ -976,7 +1003,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                         <QTypeIcon type={oq.type} size={24} tip pos="is-above" float />
                       </div>
                     ))}
-                  </>
+                  </section>
                 )}
               </>
             )

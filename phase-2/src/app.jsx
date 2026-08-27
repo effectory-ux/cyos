@@ -444,7 +444,7 @@ export function App() {
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveQuestionTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
             onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta} onUpdateIntro={updateIntro} onSetDesign={setDesign} onNewCustom={() => setNewCustom(true)}
-            onSaveTranslation={saveTranslation}
+            onSaveTranslation={saveTranslation} edges={edges}
             openDialog={openInBuilder} onDialogChange={setBuilderDialog}
             onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }} />}
       </div>

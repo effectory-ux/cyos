@@ -285,7 +285,7 @@ function reconcileLayout(prev, groups) {
   return next;
 }
 
-export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, openDialog, onDialogChange }) {
+export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, edges = {}, openDialog, onDialogChange }) {
   const { name, design: designId, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {}, intro = {} } = survey;
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
@@ -910,6 +910,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         const q = pool.find(p => p.id === settingsQId);
         return q ? (
           <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]} design={design}
+            allVariants={edges.altWordings}
             topicOptions={visibleSections.map(x => ({ value: x.key, label: topicName(x.key) }))}
             onCancel={() => setSettingsQId(null)}
             onDetach={({ text, topic }) => { setSettingsQId(null); onDetachQuestion && onDetachQuestion(q, text, topic); }}
