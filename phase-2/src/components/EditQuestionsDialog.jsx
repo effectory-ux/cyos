@@ -108,7 +108,7 @@ function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, on
 // button into a filled "✓ Active"; clicking it again clears the selection.
 // `art` is a template's DS illustration path (the same SVG the create-survey
 // dialog shows); `illus` stays the icon tile themes use.
-function ChoiceCard({ variant, title, desc, illus, art, selCount, total, onToggle, onDetails }) {
+function ChoiceCard({ variant, title, desc, illus, art, selCount, total, hl, onToggle, onDetails }) {
   const isTemplate = variant === "template";
   const allOn = total > 0 && selCount >= total;
   const pct = total ? Math.round((selCount / total) * 100) : 0;
@@ -126,8 +126,8 @@ function ChoiceCard({ variant, title, desc, illus, art, selCount, total, onToggl
         {art
           ? <img className="cc-art" src={"assets/illustrations/" + art} alt="" />
           : illus && <span className="cc-illus" style={{ background: illus.bg, color: illus.fg }}><Icon name={illus.icon} size={30} /></span>}
-        <span className="cc-title">{title}</span>
-        <p className="cc-desc">{desc}</p>
+        <span className="cc-title">{hl ? <Highlight text={title} q={hl} /> : title}</span>
+        <p className="cc-desc">{hl ? <Highlight text={desc} q={hl} /> : desc}</p>
       </div>
       {isTemplate ? (
         <span className="cc-count">{countText}</span>
@@ -541,9 +541,13 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // shown as their own group — customer content stays split from the library,
   // and from this survey's own customs. Adding one pulls it into this survey.
   const poolIds = useMemo(() => new Set(pool.map(x => x.id)), [pool]);
-  // A fresh account has no custom questions anywhere yet (edge case).
-  const orgCustomQs = tweaks.orgCustoms === false ? [] : ORG_CUSTOM.filter(x => !poolIds.has(x.id));
-  const addOrgQuestion = (oq) => {
+  // Grouping follows WHERE a question was created, not whether this survey uses
+  // it: adding one from another survey must not move it between groups, so the
+  // overview stays put while you work through it.
+  const orgCustomQs = tweaks.orgCustoms === false ? [] : ORG_CUSTOM;
+  // Selecting one that isn't in this survey's pool yet pulls it in first.
+  const toggleOrgQuestion = (oq) => {
+    if (poolIds.has(oq.id)) { toggle(oq); return; }
     setPool(p => [...p, oq]);
     setSel(s2 => new Set([...s2, oq.id]));
   };
@@ -558,12 +562,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     // A theme or topic whose NAME matches brings its questions along. The
     // reason they matched is the group they sit in, not their own wording, so
     // they arrive collapsed under that name instead of padding the direct hits.
-    const viaTheme = themeGroups
-      .filter(t => t.name.toLowerCase().includes(gqt))
-      .map(t => ({ kind: "theme", key: "th:" + t.name, name: t.name,
-        questions: t.questions.filter(x => !seen.has(x.id)) }))
-      .filter(g => g.questions.length);
-    viaTheme.forEach(g => g.questions.forEach(x => seen.add(x.id)));
+    // A matching THEME is already answered by its card in the Themes group
+    // (with Select all and View details), so it doesn't get a second section
+    // here. A topic has no card anywhere, so it does.
     const topicNames = [...new Set(pool.map(x => x.topic).filter(Boolean))];
     const viaTopic = topicNames
       .filter(n => n.toLowerCase().includes(gqt))
@@ -575,8 +576,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       questions: direct,
       // One pool for search: org-created customs join the results,
       // differentiated by their tags and source — never excluded.
-      orgQuestions: orgCustomQs.filter(x => x.text.toLowerCase().includes(gqt)),
-      indirect: [...viaTheme, ...viaTopic],
+      orgQuestions: orgCustomQs.filter(x => !poolIds.has(x.id) && x.text.toLowerCase().includes(gqt)),
+      indirect: viaTopic,
       themes: themeGroups.filter(t => t.name.toLowerCase().includes(gqt) || (t.desc || "").toLowerCase().includes(gqt)),
       templates: templateCards.filter(t => t.name.toLowerCase().includes(gqt) || (t.desc || "").toLowerCase().includes(gqt)),
     };
@@ -673,7 +674,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     ];
   };
 
-  const customQs = pool.filter(x => x.custom);
+  const customQs = pool.filter(x => x.custom && !x.from);   // written in this survey
   const visible = pool.filter(x => !x.custom)
     .filter(x => [x.text, x.theme, x.topic].some(v => (v || "").toLowerCase().includes(q.toLowerCase())))
     .filter(x => (show === "all" ? true : show === "selected" ? sel.has(x.id) : !sel.has(x.id)) || leaving.has(x.id));
@@ -857,9 +858,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
                     {gRes.orgQuestions.map(oq => (
-                      <div key={oq.id} className="aql-row" onClick={() => addOrgQuestion(oq)}>
+                      <div key={oq.id} className="aql-row" onClick={() => toggleOrgQuestion(oq)}>
                         <Tooltip label="Add to questionnaire" pos="is-above" float>
-                          <Checkbox on={false} large onClick={(e) => { e.stopPropagation(); addOrgQuestion(oq); }} />
+                          <Checkbox on={false} large onClick={(e) => { e.stopPropagation(); toggleOrgQuestion(oq); }} />
                         </Tooltip>
                         <div className="aql-text"><Highlight text={oq.text} q={gqt} /></div>
                         <CustomTag label="Custom question" pos="is-above" float />
@@ -902,7 +903,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                   <section className="eq-gres">
                     <div className="eq-gres-head">Themes <span className="tag tag-count">{gRes.themes.length}</span></div>
                     <div className="thm-grid">
-                      {gRes.themes.map(t => <ChoiceCard key={t.name} variant="theme"
+                      {gRes.themes.map(t => <ChoiceCard key={t.name} variant="theme" hl={gqt}
                         title={t.name} desc={t.desc} selCount={t.kept} total={t.total}
                         onToggle={() => setMany(t.questions.map(x => x.id), t.kept < t.total)}
                         onDetails={() => setThemeDetails(t.name)} />)}
@@ -913,7 +914,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                   <section className="eq-gres">
                     <div className="eq-gres-head">Templates <span className="tag tag-count">{gRes.templates.length}</span></div>
                     <div className="thm-grid">
-                      {gRes.templates.map(t => <ChoiceCard key={t.id} variant="template"
+                      {gRes.templates.map(t => <ChoiceCard key={t.id} variant="template" hl={gqt}
                         title={t.name} desc={t.desc} art={t.illus} selCount={t.selCount} total={t.total}
                         onToggle={() => setTemplate(t, !t.active)}
                         onDetails={() => setTemplateDetail(t.id)} />)}
@@ -983,7 +984,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 {orgCustomQs.length > 0 && (
                   <section className={"aql-sec" + (collapsed.has("cq:org") ? " is-collapsed" : "")}>
                     <div className="aql-sechead">
-                      <h3>Used in other surveys</h3>
+                      <h3>Created and used in other surveys</h3>
                       <div className="spacer" />
                       <span className="tag tag-count">{orgCustomQs.length}</span>
                       <Tooltip label={collapsed.has("cq:org") ? "Expand" : "Collapse"} pos="is-above" float>
@@ -994,9 +995,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                       </Tooltip>
                     </div>
                     {!collapsed.has("cq:org") && orgCustomQs.map(oq => (
-                      <div key={oq.id} className="aql-row" onClick={() => addOrgQuestion(oq)}>
-                        <Tooltip label="Add to questionnaire" pos="is-above" float>
-                          <Checkbox on={false} large onClick={(e) => { e.stopPropagation(); addOrgQuestion(oq); }} />
+                      <div key={oq.id} className="aql-row" onClick={() => toggleOrgQuestion(oq)}>
+                        <Tooltip label={sel.has(oq.id) ? "Added to questionnaire" : "Add to questionnaire"} pos="is-above" float>
+                          <Checkbox on={sel.has(oq.id)} large onClick={(e) => { e.stopPropagation(); toggleOrgQuestion(oq); }} />
                         </Tooltip>
                         <div className="aql-text">{oq.text}</div>
                         <UsedInTag survey={oq.from} />
@@ -1067,7 +1068,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
 
       {customOpen && <CustomQuestionDialog topics={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
         pool={[...pool, ...orgCustomQs]} selectedIds={[...sel]}
-        onUseSuggestion={(q) => { if (pool.some(pq => pq.id === q.id)) setMany([q.id], true); else addOrgQuestion(q); setCustomOpen(false); }}
+        onUseSuggestion={(q) => { if (pool.some(pq => pq.id === q.id)) setMany([q.id], true); else toggleOrgQuestion(q); setCustomOpen(false); }}
         onCancel={() => setCustomOpen(false)} onAdd={addCustom} />}
       {editCustomQ && <CustomQuestionDialog question={editCustomQ}
         topics={[...new Set(pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
