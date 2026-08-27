@@ -223,7 +223,7 @@ function ManualConflictDialog({ langs, onKeep, onOverwrite }) {
 const CHECK_MS = 1400;
 const DONE_MS = 6000;
 
-export function CustomQuestionDialog({ question, topics, design, pool = [], selectedIds = [], onUseSuggestion, onCancel, onAdd, onAddAnother, onSubmit, onDelete }) {
+export function CustomQuestionDialog({ question, topics, design, pool = [], selectedIds = [], alwaysSimilar = false, onUseSuggestion, onCancel, onAdd, onAddAnother, onOpenCreated, onSubmit, onDelete }) {
   const editing = !!question;
   const submitFn = onSubmit || onAdd;
   // Only offer topics that actually exist in this survey (as {value,label} —
@@ -267,9 +267,9 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   const [checked, setChecked] = useState(null);   // matches, in the picking step
   const [phase, setPhase] = useState(null);      // "loading" | "picking" | "success"
   const [pick, setPick] = useState("mine");      // which question gets added
-  // Where the created question landed — read off the draft before the form is
-  // cleared, so the confirmation still names it while you write the next one.
-  const [doneTopic, setDoneTopic] = useState("");
+  // What the confirmation is about: the question that went in, its topic read
+  // off before the form is cleared, and whether it was reused instead of made.
+  const [done, setDone] = useState(null);
   const checkTimer = useRef(null);
   useEffect(() => () => clearTimeout(checkTimer.current), []);
   useEffect(() => { setChecked(null); setPhase(null); setPick("mine"); }, [text, desc, type, topic]);
@@ -308,6 +308,14 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
     if (isStale(active)) setTr(p => ({ ...p, [active]: { ...p[active], stale: false } }));
     setEditingNow(null);
     setActive(code);
+    // A question that already exists was never typed in this dialog, so no
+    // translation run has happened yet. Going to a language for the first time
+    // translates it there and then — otherwise "Check translations" lands on
+    // empty fields.
+    const lang = OTHER_LANGUAGES.find(l => l.code === code);
+    if (lang && !tr[code] && text.trim()) {
+      runAuto([lang], text.trim(), desc.trim(), hasOpts ? opts : []);
+    }
   };
 
   // Replace `langs` with fresh automatic translations, clearing any edited/stale
@@ -391,23 +399,27 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   // Check question -> a full-screen step: it loads, then either offers the
   // choice between your wording and the questions that already exist, or
   // confirms in place that nothing similar was found.
+  // The question is IN and the step now only says so: same confirmation whether
+  // it was written here or reused from the library, which is where people meet
+  // the fact that translations are theirs to review.
+  const finish = (q, reused) => {
+    setDone({ q, topic: topicLabel(q.topic), reused });
+    setPhase("success");
+    checkTimer.current = setTimeout(() => onCancel(), DONE_MS);
+  };
   const checkThenSubmit = () => {
     setAttempted(true);
     if (textErr || topicErr || optsErr) return;
     if (editing) { submit(); return; }
     setPhase("loading");
     checkTimer.current = setTimeout(() => {
-      const m = similarQuestions(text, pool);
+      const m = similarQuestions(text, pool, { always: alwaysSimilar });
       if (m.length) { setChecked(m); setPick("mine"); setPhase("picking"); }
       // A clean check creates the question right away and CONFIRMS it here, so
       // every way out of the confirmation keeps it — including writing the next
       // one. Without a non-closing add, it stays the old add-then-close.
-      else if (onAddAnother) {
-        onAddAnother(buildQ());
-        setDoneTopic(topicLabel(topic));
-        setPhase("success");
-        checkTimer.current = setTimeout(() => onCancel(), DONE_MS);
-      } else {
+      else if (onAddAnother) { const nq = buildQ(); onAddAnother(nq); finish(nq, false); }
+      else {
         setPhase("success");
         checkTimer.current = setTimeout(submit, DONE_MS);
       }
@@ -417,14 +429,18 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   // reason to write another one is usually that the first one wasn't enough.
   const createAnother = () => {
     clearTimeout(checkTimer.current);
-    setPhase(null); setChecked(null); setPick("mine");
+    setPhase(null); setChecked(null); setPick("mine"); setDone(null);
     setText(""); setDesc(""); setOpts(["", ""]); setAttempted(false); setTr({});
   };
-  // Add whichever question the step has selected.
+  // Add whichever question the step has selected — then confirm it the same way
+  // a clean check does.
   const addPicked = () => {
-    if (pick === "mine") { submit(); return; }
-    const m = (checked || []).find(x => x.id === pick);
-    if (m && onUseSuggestion) onUseSuggestion(m); else submit();
+    const m = pick === "mine" ? null : (checked || []).find(x => x.id === pick);
+    if (!onAddAnother || (m && !onUseSuggestion)) { m ? onUseSuggestion(m) : submit(); return; }
+    if (m) { onUseSuggestion(m); finish(m, true); return; }
+    const nq = buildQ();
+    onAddAnother(nq);
+    finish(nq, false);
   };
 
   // Standard answer categories ship with the platform; Custom ones are the
@@ -486,20 +502,39 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
             )}
             {phase === "success" && (
               <div className="cq-step-center" role="status" aria-live="polite">
-                <span className="cq-step-ok is-pop"><Icon name="check" size={32} /></span>
-                {onAddAnother ? (
+                {/* The auto-close runs as a ring around the check itself — one
+                    element carrying both "it worked" and "this is going away". */}
+                <span className="cq-step-ok is-pop">
+                  <Icon name="check" size={32} />
+                  {done && (
+                    <svg className="cq-step-ring" viewBox="0 0 100 100" aria-hidden="true">
+                      <circle className="cq-ring-track" cx="50" cy="50" r="46" />
+                      <circle className="cq-ring-run" cx="50" cy="50" r="46"
+                        style={{ animationDuration: DONE_MS + "ms" }} />
+                    </svg>
+                  )}
+                </span>
+                {done ? (
                   <>
                     <div className="cq-step-title">Question added</div>
-                    <div className="cq-step-sub">
-                      Nothing similar was found, so it went in as the last question in {doneTopic || "your questionnaire"}
-                    </div>
+                    <div className="cq-step-sub">{
+                      done.reused
+                        ? (done.q.bench
+                            ? `You reused a library question, so its benchmark and translations come with it`
+                            : `You reused an existing question, so its translations come with it`)
+                        : `It went in as the last question in ${done.topic || "your questionnaire"}`
+                    }</div>
                     <div className="cq-step-btns">
-                      <button className="btn btn-secondary" onClick={createAnother}>Create another question</button>
-                      <button className="btn btn-primary" onClick={() => { clearTimeout(checkTimer.current); onCancel(); }}>Got it</button>
+                      <button className="btn btn-tertiary" onClick={createAnother}>Create another question</button>
+                      <button className="btn btn-secondary" onClick={() => { clearTimeout(checkTimer.current); onCancel(); }}>Close</button>
+                      {/* Custom questions are the ones whose translations are
+                          the customer's to review — this is where they find
+                          that out. Library questions arrive translated. */}
+                      {done.q.custom && onOpenCreated && (
+                        <button className="btn btn-primary" onClick={() => { clearTimeout(checkTimer.current); onOpenCreated(done.q); }}>
+                          Check translations</button>
+                      )}
                     </div>
-                    {/* Drains over the auto-close, so closing itself is never a
-                        surprise and the choice above has a visible deadline. */}
-                    <span className="cq-step-bar" aria-hidden="true"><i style={{ animationDuration: DONE_MS + "ms" }} /></span>
                   </>
                 ) : (
                   <>

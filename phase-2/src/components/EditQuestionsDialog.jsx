@@ -1092,8 +1092,10 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
 
       {customOpen && <CustomQuestionDialog topics={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
         pool={[...pool, ...orgCustomQs]} selectedIds={[...sel]}
-        onUseSuggestion={(q) => { if (pool.some(pq => pq.id === q.id)) setMany([q.id], true); else toggleOrgQuestion(q); setCustomOpen(false); }}
-        onCancel={() => setCustomOpen(false)} onAdd={addCustom} onAddAnother={addCustomKeepOpen} />}
+        alwaysSimilar={tweaks.similarAlways}
+        onUseSuggestion={(q) => { if (pool.some(pq => pq.id === q.id)) setMany([q.id], true); else toggleOrgQuestion(q); }}
+        onCancel={() => setCustomOpen(false)} onAdd={addCustom} onAddAnother={addCustomKeepOpen}
+        onOpenCreated={(q) => { setCustomOpen(false); setEditCustomQ(q); }} />}
       {editCustomQ && <CustomQuestionDialog question={editCustomQ}
         topics={[...new Set(pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
         onCancel={() => setEditCustomQ(null)} onSubmit={saveCustomEdit} onDelete={deleteCustomQ} />}

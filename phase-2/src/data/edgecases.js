@@ -14,6 +14,12 @@ export const EDGE_CASES = [
     on: false,
   },
   {
+    key: "similarAlways",
+    label: "Similar questions on every check",
+    desc: "Whether a new custom question looks like anything in the library depends on the draft. Turn this on to always reach the pick-a-question step.",
+    on: false,
+  },
+  {
     key: "orgCustoms",
     label: "Custom questions elsewhere in the org",
     desc: "Colleagues have written custom questions in other surveys, ready to reuse. A first survey in a fresh account has none.",

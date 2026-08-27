@@ -303,7 +303,6 @@ export function App() {
       pool: s.pool.some(p => p.id === q.id) ? s.pool : [...s.pool, q],
       selectedIds: s.selectedIds.includes(q.id) ? s.selectedIds : [...s.selectedIds, q.id],
     }));
-    setNewCustom(false);
   };
   const saveCustomEdit = (q) => {
     setSurvey(s => ({
@@ -457,7 +456,7 @@ export function App() {
         onBack={cancelName} onConfirm={confirmName} />}
       {editing && survey && (
         <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds}
-          tweaks={{ ...TWEAKS, orgCustoms: edges.orgCustoms }}
+          tweaks={{ ...TWEAKS, orgCustoms: edges.orgCustoms, similarAlways: edges.similarAlways }}
           initialTab={editTab} nav={variantsOn.dialogSidebarNav ? "sidebar" : "tabs"}
           onClose={() => setEditing(false)} onSave={saveQuestions} />
       )}
@@ -467,7 +466,9 @@ export function App() {
       {newCustom && survey && <CustomQuestionDialog topics={surveyTopicOptions()} design={designById(survey.design)}
         pool={[...survey.pool, ...ORG_CUSTOM.filter(o => !survey.pool.some(p => p.id === o.id))]} selectedIds={survey.selectedIds}
         onUseSuggestion={useSuggested}
-        onCancel={() => setNewCustom(false)} onAdd={addCustomDirect} onAddAnother={addCustomKeepOpen} />}
+        alwaysSimilar={edges.similarAlways}
+        onCancel={() => setNewCustom(false)} onAdd={addCustomDirect} onAddAnother={addCustomKeepOpen}
+        onOpenCreated={(q) => { setNewCustom(false); setEditCustom(q); }} />}
       {editCustom && <CustomQuestionDialog question={editCustom} design={survey ? designById(survey.design) : null}
         topics={surveyTopicOptions()}
         onCancel={() => setEditCustom(null)} onSubmit={saveCustomEdit}
