@@ -1266,7 +1266,7 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
   background: transparent; font-family: inherit; font-size: 13px; color: var(--content-secondary);
   text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .eq-rail-sub:hover { background: var(--bg-base-hover); color: var(--content-base); }
-.eq-rail-div { height: 1px; margin: 8px 12px; background: var(--border-base); flex: none; }
+.eq-rail-group { padding: 16px 12px 4px; font-size: 13px; font-weight: 600; color: var(--content-base); flex: none; }
 .eq-main { display: flex; flex-direction: column; gap: var(--spacing-loose); flex: 1; min-width: 0; min-height: 0; }
 .eq-main .dialog-body { flex: 1; min-height: 0; }
 

@@ -491,8 +491,12 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // Sidebar variant: one query across everything. A search should never come
   // back empty because the match lived under another tab.
   const gqt = nav === "sidebar" ? gq.trim().toLowerCase() : "";
+  // Result priority: library questions first (validated + benchmarked, the
+  // answer we want found), then this survey's customs, then the org's — the
+  // other content types follow in their own groups below.
+  const bySource = (a, b) => (b.bench ? 1 : 0) - (a.bench ? 1 : 0);
   const gRes = gqt ? {
-    questions: pool.filter(x => (x.text || "").toLowerCase().includes(gqt)),
+    questions: pool.filter(x => (x.text || "").toLowerCase().includes(gqt)).sort(bySource),
     // One pool for search: org-created customs join the results, differentiated
     // by their tags and source — never excluded for living elsewhere.
     orgQuestions: ORG_CUSTOM.filter(x => !pool.some(pq => pq.id === x.id) && x.text.toLowerCase().includes(gqt)),
@@ -670,7 +674,10 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               onClick={() => { setTab("questions"); setGq(""); }}><Icon name="list-unordered" size={16} />Library questions</button>
             <button className={"eq-rail-item" + (tab === "custom" ? " is-active" : "")} role="tab" aria-selected={tab === "custom"}
               onClick={() => { setTab("custom"); setGq(""); }}><Icon name="edit" size={16} />Custom questions</button>
-            <div className="eq-rail-div" role="presentation" />
+            {/* Questions are atoms; themes and templates SELECT sets of them.
+                Naming the group teaches the library's structure instead of
+                listing four equal destinations. */}
+            <div className="eq-rail-group">Question sets</div>
             <button className={"eq-rail-item" + (tab === "themes" ? " is-active" : "")} role="tab" aria-selected={tab === "themes"}
               onClick={() => { setTab("themes"); setGq(""); }}><Icon name="themes" size={16} />Themes</button>
             <button className={"eq-rail-item" + (tab === "templates" ? " is-active" : "")} role="tab" aria-selected={tab === "templates"}
