@@ -422,11 +422,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const initial = useMemo(() => new Set(initialSelected), []); // selection when the dialog opened
   const [q, setQ] = useState("");
   const [gq, setGq] = useState("");                 // sidebar variant: the one global query
-  // The frame (6316:27977) lands on "All questions": library + custom in one
-  // topic-grouped list, tags carrying the source. It is also the home of
-  // search results, so the rail never claims you are in a section while
-  // showing matches from everywhere.
-  const [tab, setTab] = useState(nav === "sidebar" && initialTab === "questions" ? "all" : initialTab);
+  const [tab, setTab] = useState(initialTab);
   const [show, setShow] = useState("all");
   const [themeQ, setThemeQ] = useState("");       // Themes tab search
   const [themeShow, setThemeShow] = useState("all"); // Themes tab completion filter
@@ -606,9 +602,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     setPool(p => [...p, oq]);
     setSel(s2 => new Set([...s2, oq.id]));
   };
-  // "All questions" mixes sources; "Library questions" is library only.
-  const sourceOf = (x) => (tab === "all" ? true : !x.custom);
-  const visible = pool.filter(sourceOf)
+  const visible = pool.filter(x => !x.custom)
     .filter(x => [x.text, x.theme, x.topic].some(v => (v || "").toLowerCase().includes(q.toLowerCase())))
     .filter(x => (show === "all" ? true : show === "selected" ? sel.has(x.id) : !sel.has(x.id)) || leaving.has(x.id));
   const groups = groupQuestions(visible, "library");
@@ -658,11 +652,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         {nav === "sidebar" && (
           <div className="eq-rail" role="tablist" aria-orientation="vertical">
             <div className="eq-rail-title" id="eq-title">Add questions</div>
-            {/* Search lives HERE (Miro's model): a query highlights All
-                questions, so the rail always tells the truth about where the
-                results came from. */}
-            <button className={"eq-rail-item" + (tab === "all" || gqt ? " is-active" : "")} role="tab" aria-selected={tab === "all"}
-              onClick={() => { setTab("all"); setGq(""); }}><Icon name="globe" size={16} />All questions</button>
+            {/* Source is a place (Library / Custom); the global search is the
+                everything view. While a query is live NO rail item is active —
+                the results belong to the whole library, not to a section. */}
             <button className={"eq-rail-item" + (tab === "questions" && !gqt ? " is-active" : "")} role="tab" aria-selected={tab === "questions"}
               onClick={() => { setTab("questions"); setGq(""); }}><Icon name="list-unordered" size={16} />Library questions</button>
             <button className={"eq-rail-item" + (tab === "custom" && !gqt ? " is-active" : "")} role="tab" aria-selected={tab === "custom"}
@@ -691,7 +683,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 onChange={tab === "themes" ? setThemeShow : tab === "templates" ? setTmplShow : setShow}
                 options={GENERIC_SHOW[tab] || GENERIC_SHOW.questions} />
             )}
-            {!gqt && (tab === "questions" || tab === "all") && (
+            {!gqt && tab === "questions" && (
               <button className={"btn btn-secondary" + (secKeys.length === 0 ? " is-disabled" : "")} disabled={secKeys.length === 0}
                 style={{ flex: "none" }} onClick={toggleAllSecs}>
                 <Icon name={allCollapsed ? "double-chevron-down" : "double-chevron-up"} size={16} />{allCollapsed ? "Expand" : "Collapse"}</button>
@@ -708,7 +700,6 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         {nav === "sidebar" && (
           <h3 className="eq-section-title">{gqt
             ? `Results for “${gq.trim()}”`
-            : tab === "all" ? "All questions"
             : tab === "questions" ? "Library questions"
             : tab === "custom" ? "Custom questions"
             : tab === "themes" ? "Themes" : "Templates"}</h3>

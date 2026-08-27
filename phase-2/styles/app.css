@@ -1287,9 +1287,15 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .dialog.eq-wide { width: min(1280px, calc(100vw - 48px)); padding: 0; gap: 0; }
 .dialog.eq-wide > .eq-frame { flex: 1; min-height: 0; gap: 0; }
 .dialog.eq-wide .eq-rail { padding: var(--spacing-loose); }
-.dialog.eq-wide .eq-main { padding: var(--spacing-super-loose); gap: var(--spacing-super-loose); }
-.dialog.eq-wide > .dialog-footer { padding: var(--spacing-loose) var(--spacing-super-loose);
+/* 32px around and between, per the frame — and no bottom padding, so the
+   scrolling list runs to the footer's border instead of stopping short. */
+.dialog.eq-wide .eq-main { padding: var(--spacing-extra-loose) var(--spacing-extra-loose) 0;
+  gap: var(--spacing-extra-loose); }
+.dialog.eq-wide > .dialog-footer { padding: var(--spacing-loose) var(--spacing-extra-loose);
   border-top: 1px solid var(--border-base); }
+/* Sections sit on the same 32px rhythm as the column (the shared rule is 40px;
+   scoped here so the legacy tabbed dialog keeps its own spacing). */
+.dialog.eq-wide .aql-sec + .aql-sec { margin-top: var(--spacing-extra-loose); }
 .eq-tool-div { width: 1px; height: 24px; background: var(--border-base); flex: none; }
 /* One row at full width (as drawn); wraps instead of clipping when the dialog
    is squeezed, and the search never collapses to an icon. */
