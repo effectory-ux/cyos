@@ -1,6 +1,12 @@
 /* Icon loader — replaces <i data-icon="name"> with inline SVG from assets/icons/{name}.svg.
    Icons inherit color via currentColor and size via CSS on the host element. */
 (function () {
+  /* Resolve assets next to this script, not next to the page, so a prototype can load
+     this file straight from the design-system site. Falls back to page-relative. */
+  const ASSET_BASE = (document.currentScript && document.currentScript.src)
+    ? new URL('.', document.currentScript.src).href
+    : '';
+
   const cache = new Map();
 
   function normalize(svg) {
@@ -13,7 +19,7 @@
 
   async function fetchIcon(name) {
     if (cache.has(name)) return cache.get(name);
-    const p = fetch(`assets/icons/${encodeURIComponent(name)}.svg`)
+    const p = fetch(`${ASSET_BASE}assets/icons/${encodeURIComponent(name)}.svg`)
       .then(r => r.ok ? r.text() : '')
       .then(t => t ? normalize(t) : '');
     cache.set(name, p);
