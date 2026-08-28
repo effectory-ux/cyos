@@ -268,10 +268,11 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
         </>
       )}
 
-      {/* The plain link is the default one — no toolbar for whoever opens it.
-          The second button is how the toolbar gets handed to a colleague. */}
+      {/* The plain link is just "the link" now: without the key it carries no
+          toolbar. The second button is how the toolbar gets handed to a
+          colleague who needs it. */}
       <button className="pbar-icon pbar-tt is-right" onClick={copy}
-        data-tip={copied ? "Copied" : "Copy link to this step (no toolbar)"} aria-label="Copy link to this step">
+        data-tip={copied ? "Copied" : "Copy link to this step"} aria-label="Copy link to this step">
         <Ic name={copied ? "check" : "copy"} size={14} />
       </button>
       <button className="pbar-icon pbar-tt is-right" onClick={copyWithBar}

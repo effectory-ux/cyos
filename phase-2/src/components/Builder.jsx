@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, Tooltip, RequiredMarker, themesOf } from "./shared.jsx";
+import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, Tooltip, RequiredMarker, themesOf, useMediaQuery } from "./shared.jsx";
 import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
@@ -83,7 +83,7 @@ function TopicRemoveWarning({ label, count, onCancel, onConfirm }) {
 // overlapping number-badge + icon pair; then a divider and the kebab. No
 // bottom border on this page — the context bar below seams to it with its own
 // white hairline.
-function TopNav({ name, onRename }) {
+function TopNav({ name, onRename, compact }) {
   const steps = [
     { n: 1, icon: "clipboard-a", label: "Questionnaire", active: true },
     { n: 2, icon: "group", label: "Participants" },
@@ -101,11 +101,20 @@ function TopNav({ name, onRename }) {
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <span className="tag tag-draft">Draft</span>
         <h1 data-t="1" style={{ margin: 0, fontWeight: 600, fontSize: 16, lineHeight: "24px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: "0 1 auto", minWidth: 64, maxWidth: 340 }}>{name}</h1>
-        <button className="btn btn-link" style={{ padding: "6px 12px", flex: "none" }} onClick={onRename}><Icon name="edit" size={16} />Edit name</button>
+        {/* On a narrow window the name itself is what matters; the action
+            keeps its icon and moves its label into the tooltip. */}
+        {compact ? (
+          <Tooltip label="Edit name" pos="is-below">
+            <button className="ib ib-36 ib-tertiary" aria-label="Edit name" onClick={onRename}><Icon name="edit" size={16} /></button>
+          </Tooltip>
+        ) : (
+          <button className="btn btn-link" style={{ padding: "6px 12px", flex: "none" }} onClick={onRename}><Icon name="edit" size={16} />Edit name</button>
+        )}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "none" }}>
         {steps.map(st => (
-          <div key={st.label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px 8px 8px",
+          <div key={st.label} title={compact ? st.label : undefined}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: compact ? 8 : "8px 12px 8px 8px",
             borderRadius: 12, background: st.active ? "var(--bg-brand-subtle-selected)" : "transparent" }}>
             <div style={{ display: "flex", alignItems: "center", height: 28 }}>
               <span style={{ ...badge(st), width: 24, height: 24, borderRadius: "50%", border: "2px solid var(--border-white)",
@@ -116,8 +125,12 @@ function TopNav({ name, onRename }) {
                 border: "2px solid var(--border-white)", borderRadius: 6, padding: 6, display: "flex", boxSizing: "content-box" }}>
                 <Icon name={st.icon} size={16} /></span>
             </div>
-            <span style={{ fontSize: 14, fontWeight: 600, lineHeight: "22.4px", whiteSpace: "nowrap",
-              color: st.active ? "var(--content-base)" : "var(--content-secondary)" }}>{st.label}</span>
+            {/* The number + icon pair already identifies a step; below the
+                breakpoint the labels go and the pills stay readable. */}
+            {!compact && (
+              <span style={{ fontSize: 14, fontWeight: 600, lineHeight: "22.4px", whiteSpace: "nowrap",
+                color: st.active ? "var(--content-base)" : "var(--content-secondary)" }}>{st.label}</span>
+            )}
           </div>
         ))}
         <span style={{ width: 1, height: 24, background: "var(--border-base)", flex: "none" }} aria-hidden="true" />
@@ -288,6 +301,9 @@ function reconcileLayout(prev, groups) {
 
 export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, edges = {}, openDialog, onDialogChange }) {
   const { name, design: designId, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {}, intro = {} } = survey;
+  // Below this the questionnaire page tightens: step labels go, the page
+  // padding and the gaps between cards shrink, "Edit name" becomes an icon.
+  const compact = useMediaQuery("(max-width: 1100px)");
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
   const [topicWarn, setTopicWarn] = useState(null); // section pending removal confirmation
@@ -591,7 +607,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   return (
     <div className={"col" + (tipsOff ? " tips-off" : "")} style={{ background: pageBg }}>
       <div className="scroll-y" style={{ flex: 1, padding: "0 0 110px" }}>
-      <TopNav name={name} onRename={() => setRename({ kind: "survey", value: name })} />
+      <TopNav name={name} onRename={() => setRename({ kind: "survey", value: name })} compact={compact} />
       {/* The step's context bar. It replaces the page title: the active tab
           already names the step, so an H1 would only repeat the nav — and this
           page's whole job is a long list. Grammar, left to right:
@@ -736,7 +752,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         </div>
       </div>
 
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 56px 0", boxSizing: "content-box" }}>
+        <div className="qpage">
           {/* The first thing participants see, so the page reads as the real
               sequence: intro screen, then the topics in order (Figma 6293:26527).
               No label — the title-sized text says what it is. Same interaction
