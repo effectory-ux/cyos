@@ -21,12 +21,10 @@ import "./prototype-bar.css";
 // Who gets the toolbar:
 //   • while PROTOTYPING (localhost / a LAN dev server) — always, no flag needed;
 //   • anywhere else — only for a URL carrying `?<toolbarKey>-toolbar-active`,
-//     where the key is minted per prototype and passed in by the host;
-//   • never, for any URL carrying `?toolbar=off`, which wins over both — that
-//     is how the clean participant view is checked on a dev server.
-// So the deployed prototype is clean unless the link says otherwise, and handing
-// someone the toolbar is a deliberate act (the share button in the bar) rather
-// than something they can type.
+//     where the key is minted per prototype and passed in by the host.
+// There is deliberately no "off" switch: a URL without the flag IS the version
+// without the toolbar, so a second way to say the same thing would only be
+// another thing to remember.
 const flagOf = (key) => `${key}-toolbar-active`;
 const DEV_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "[::1]"];
 const isDevHost = () => {
@@ -37,9 +35,7 @@ const isDevHost = () => {
 };
 const barActive = (key) => {
   try {
-    const p = new URLSearchParams(window.location.search);
-    if (p.get("toolbar") === "off") return false;
-    return isDevHost() || (!!key && p.has(flagOf(key)));
+    return isDevHost() || (!!key && new URLSearchParams(window.location.search).has(flagOf(key)));
   } catch (_) { return false; }
 };
 // The current step WITHOUT the toolbar flag: what you hand to a tester.

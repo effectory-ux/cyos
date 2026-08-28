@@ -13,6 +13,7 @@ import { QTypeIcon, Tooltip, ThemeTag } from "./shared.jsx";
 import { QTYPES, SCALE_LABELS } from "../data/data.js";
 import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 import { variantsOf } from "../data/variants.js";
+import { designWash } from "../data/designs.js";
 
 const SCALE_DOTS = [
   "var(--bg-distribution-strongly-disagree)",
@@ -238,7 +239,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
         </div>
 
         <div className="bmq-stage">
-          <div className="bmq-preview" style={design ? { background: `linear-gradient(rgba(18,18,18,.30), rgba(18,18,18,.30)), ${design.photo || design.color}` } : undefined}>
+          <div className="bmq-preview" style={design ? { background: designWash(design) } : undefined}>
             {/* margin:auto centers the group when there is room and degrades
                 to a normal scroll when there isn't — no fixed spacers, so the
                 container never scrolls unless the content truly overflows. */}

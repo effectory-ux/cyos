@@ -5,6 +5,7 @@
 // never in the library view. Rows keep selection in the checkbox with hover
 // tooltips.
 import { useState, useMemo, useRef, useEffect, Fragment } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 import { themeStatus, themesOf, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag, RequiredMarker, useMediaQuery } from "./shared.jsx";
 import { CustomQuestionDialog } from "./CustomQuestionDialog.jsx";
@@ -76,47 +77,99 @@ function UsedInTag({ survey }) {
 // Everything a row can do beyond the checkbox, in the same place the
 // questionnaire keeps it: an icon button on the right. The first item opens the
 // question's own dialog — where its wording, description and translations live.
-function RowMenu({ q, on, onToggle, onSettings, onEditCustom }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  const close = () => setOpen(false);
+// What a row offers beyond its checkbox, in the same corner the questionnaire
+// keeps it. Two shapes, because the two kinds of question offer different things:
+//
+//   • a library question, or a custom one reused from another survey, has
+//     exactly ONE action — open its dialog (wording, description, translations).
+//     A menu holding one item is a click too many, so the button IS that action.
+//   • a custom question written in THIS survey can also be deleted, which must
+//     never be one stray click away. That one keeps the menu.
+//
+// The menu renders in a portal at fixed coordinates: the list it sits in
+// scrolls and clips, and rows below it are painted later, so an absolutely
+// positioned menu ends up under them.
+function RowActions({ q, on, onToggle, onSettings, onEditCustom, onDelete }) {
+  const ownCustom = !!q.custom && !q.from;
+  const openDialog = () => (q.custom ? onEditCustom && onEditCustom(q) : onSettings && onSettings(q));
+  const [at, setAt] = useState(null);
+  const btn = useRef(null);
+  const close = () => setAt(null);
+  // Fixed coordinates have to be maintained: the list scrolls under the menu,
+  // so it FOLLOWS its button (and closes only when the button leaves the view).
+  // Closing on any scroll event looked like a menu that refused to open — the
+  // click itself can scroll the row into view.
   useEffect(() => {
-    if (!open) return;
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) close(); };
-    document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
-  }, [open]);
-  const item = (icon, label, act) => (
-    <div className="menu-item" role="menuitem" onClick={(e) => { e.stopPropagation(); close(); act(); }}>
+    if (!at) return;
+    const h = (e) => { if (!e.target.closest || !e.target.closest(".qrow-portal-menu")) close(); };
+    const follow = () => {
+      const el = btn.current;
+      if (!el) return close();
+      const r = el.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) return close();
+      setAt({ top: Math.round(r.bottom + 4), right: Math.round(window.innerWidth - r.right) });
+    };
+    document.addEventListener("mousedown", h);
+    window.addEventListener("scroll", follow, true);
+    window.addEventListener("resize", follow);
+    return () => {
+      document.removeEventListener("mousedown", h);
+      window.removeEventListener("scroll", follow, true);
+      window.removeEventListener("resize", follow);
+    };
+  }, [at ? 1 : 0]); // eslint-disable-line
+
+  if (!ownCustom) {
+    return (
+      <Tooltip label="Question settings">
+        <button className="ib ib-36 ib-tertiary" aria-label="Question settings"
+          onClick={(e) => { e.stopPropagation(); openDialog(); }}>
+          <Icon name="sliders" size={16} />
+        </button>
+      </Tooltip>
+    );
+  }
+
+  const item = (icon, label, act, danger) => (
+    <div className={"menu-item" + (danger ? " is-danger" : "")} role="menuitem"
+      onClick={(e) => { e.stopPropagation(); close(); act(); }}>
       <span className="menu-item-icon"><Icon name={icon} size={16} /></span>
       <span className="menu-item-body"><span className="menu-item-title">{label}</span></span>
     </div>
   );
+  const toggleMenu = () => {
+    if (at) { close(); return; }
+    const r = btn.current.getBoundingClientRect();
+    setAt({ top: Math.round(r.bottom + 4), right: Math.round(window.innerWidth - r.right) });
+  };
   return (
-    <div className="qrow-menu-wrap" ref={ref} onClick={e => e.stopPropagation()}>
+    <div className="qrow-menu-wrap" onClick={e => e.stopPropagation()}>
       <Tooltip label="Question actions">
-        <button className="ib ib-36 ib-tertiary" aria-label="Question actions" aria-haspopup="menu" aria-expanded={open}
-          onClick={() => setOpen(o => !o)}><Icon name="more-vertical" size={16} /></button>
+        <button ref={btn} className="ib ib-36 ib-tertiary" aria-label="Question actions"
+          aria-haspopup="menu" aria-expanded={!!at} onClick={toggleMenu}>
+          <Icon name="more-vertical" size={16} />
+        </button>
       </Tooltip>
-      {open && (
-        <div className="menu" role="menu" style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, width: 264, zIndex: 30 }}>
-          {q.custom
-            ? (onEditCustom ? item("edit", "Edit question", () => onEditCustom(q)) : null)
-            : (onSettings ? item("sliders", "Question settings", () => onSettings(q)) : null)}
-          {!q.required && (
+      {at && createPortal(
+        <div className="menu qrow-portal-menu" role="menu"
+          style={{ position: "fixed", top: at.top, right: at.right, width: 264, zIndex: 1200 }}>
+          {item("edit", "Edit question", openDialog)}
+          <div className="menu-divider" />
+          {on
+            ? item("minus", "Remove from questionnaire", onToggle)
+            : item("plus", "Add to questionnaire", onToggle)}
+          {onDelete && (
             <>
               <div className="menu-divider" />
-              {on
-                ? item("minus", "Remove from questionnaire", onToggle)
-                : item("plus", "Add to questionnaire", onToggle)}
+              {item("trash", "Delete question", () => onDelete(q), true)}
             </>
           )}
-        </div>
-      )}
+        </div>, document.body)}
     </div>
   );
 }
 
-function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom, onSettings, usedInTag, hl }) {
+function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom, onSettings, onDeleteCustom, usedInTag, hl }) {
   const required = q.required;
   // Required questions keep an INTERACTIVE (checked) checkbox — pressing it can't
   // uncheck it; instead it surfaces a live info notification explaining why. A
@@ -139,7 +192,7 @@ function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, on
           : q.custom ? <CustomTag label="Custom question" pos="is-above" float onOpen={onEditCustom ? () => onEditCustom(q) : undefined} /> : null}
       {required && <RequiredMarker size={24} />}
       <QTypeIcon type={q.type} size={24} tip pos="is-above" float />
-      <RowMenu q={q} on={on} onToggle={onToggle} onSettings={onSettings} onEditCustom={onEditCustom} />
+      <RowActions q={q} on={on} onToggle={onToggle} onSettings={onSettings} onEditCustom={onEditCustom} onDelete={onDeleteCustom} />
     </div>
   );
 }
@@ -774,7 +827,14 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   };
 
   // Editing a custom question from its tag: update / delete it in the pool.
-  const saveCustomEdit = (nq) => { setPool(p => p.map(x => x.id === nq.id ? nq : x)); setEditCustomQ(null); };
+  // Editing a custom question. One that was REUSED from another survey may not
+  // be in this survey's pool yet (its settings are reachable from its row), so
+  // saving it there brings it in — you edited it to use it.
+  const saveCustomEdit = (nq) => {
+    setPool(p => (p.some(x => x.id === nq.id) ? p.map(x => x.id === nq.id ? nq : x) : [...p, nq]));
+    setSel(s2 => (s2.has(nq.id) ? s2 : new Set([...s2, nq.id])));
+    setEditCustomQ(null);
+  };
   const deleteCustomQ = (nq) => {
     setPool(p => p.filter(x => x.id !== nq.id));
     setSel(s => { const n = new Set(s); n.delete(nq.id); return n; });
@@ -1047,7 +1107,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                         + gRes.indirect.reduce((n, g) => n + g.questions.length, 0)}</span></div>
                     {gRes.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} hl={gqt}
                       leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
-                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ}
+                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
                     {gRes.orgQuestions.map(oq => (
                       <div key={oq.id} className="aql-row" onClick={() => toggleOrgQuestion(oq)}>
@@ -1084,7 +1144,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                           </div>
                           {open && g.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
                             leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
-                            onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ}
+                            onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
                             onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
                         </section>
                       );
@@ -1175,7 +1235,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                     </div>
                     {!collapsed.has("cq:own") && customShown.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} usedInTag
                       leaving={leaving.has(qq.id)} themeInfo={null}
-                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ}
+                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
                   </section>
                 )}
@@ -1200,7 +1260,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                         <div className="aql-text">{oq.text}</div>
                         <UsedInTag survey={oq.from} />
                         <QTypeIcon type={oq.type} size={24} tip pos="is-above" float />
-                        <RowMenu q={oq} on={sel.has(oq.id)} onToggle={() => toggleOrgQuestion(oq)} onEditCustom={setEditCustomQ} />
+                        <RowActions q={oq} on={sel.has(oq.id)} onToggle={() => toggleOrgQuestion(oq)} onEditCustom={setEditCustomQ} />
                       </div>
                     ))}
                   </section>
@@ -1241,7 +1301,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                     </div>
                     {!isColl && g.items.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
                       leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
-                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ}
+                      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
                   </section>
                 );

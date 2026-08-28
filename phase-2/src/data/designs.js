@@ -16,3 +16,14 @@ export const DESIGNS = [
 ];
 
 export const designById = (id) => DESIGNS.find(d => d.id === id) || null;
+
+// The ONE tint every surface in the prototype uses for a design: the design's
+// own colour, lightened. White cards and dark text sit on these backgrounds
+// everywhere (the builder page, the question and topic dialogs, the design
+// tiles), so a full-strength brand colour would fight the content and fail
+// contrast. A photo cover keeps its image under a white wash; a flat colour is
+// mixed toward white.
+export const designWash = (d) => (!d ? undefined
+  : d.photo
+    ? `linear-gradient(rgba(255,255,255,.78), rgba(255,255,255,.78)), ${d.photo}`
+    : `color-mix(in srgb, ${d.color} 24%, white)`);

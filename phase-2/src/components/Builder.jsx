@@ -8,7 +8,7 @@ import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
 import { TranslationsDialog } from "./TranslationsDialog.jsx";
 import { THEMES, CUSTOM_GROUP } from "../data/data.js";
-import { DESIGNS, designById } from "../data/designs.js";
+import { DESIGNS, designById, designWash } from "../data/designs.js";
 import { LANGUAGES, PRIMARY_LANGUAGE, flagSrc, autoTranslation } from "../data/i18n.js";
 
 // Small rename dialog — used for the survey name and for a topic's
@@ -585,9 +585,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // context bar — its wash is translucent, and scrolled content must never
   // shine through while the bar is stuck.
   const pageBg = design
-    ? (design.photo
-      ? `linear-gradient(rgba(255,255,255,.78), rgba(255,255,255,.78)), ${design.photo}`
-      : `color-mix(in srgb, ${design.color} 24%, white)`)
+    ? designWash(design)
     : "var(--bg-secondary)";
   const barWash = design ? "rgba(255,255,255,.30)" : "rgba(25,39,67,.05)";
   return (
@@ -687,8 +685,10 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                       <button key={d.id} className="dsg-tile-wrap" role="menuitemradio" aria-checked={active}
                         aria-label={d.name} title={d.name}
                         onClick={() => onSetDesign && onSetDesign(active ? undefined : d.id)}>
-                        <span className="dsg-tile" style={{ background: d.photo || d.color }}>
-                          {d.photo && <span className="dsg-tile-dim" aria-hidden="true" />}
+                        {/* The tile shows the design the way the rest of the
+                            prototype does: the lightened wash, not the raw
+                            colour, so picking one predicts what you'll see. */}
+                        <span className="dsg-tile" style={{ background: designWash(d) }}>
                           <span className="dsg-chrome">
                             <span className="dsg-mark" style={{ background: d.markBg, color: d.markColor || "#fff" }}>{d.mark}</span>
                           </span>

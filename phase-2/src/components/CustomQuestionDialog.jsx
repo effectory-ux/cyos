@@ -20,6 +20,7 @@ import { similarQuestions } from "../data/similar.js";
 import {
   LANGUAGES, PRIMARY_LANGUAGE, OTHER_LANGUAGES, flagSrc, autoTranslation, scaleFor,
 } from "../data/i18n.js";
+import { designWash } from "../data/designs.js";
 
 // Below this the dialog can't hold a 240px side list next to the preview.
 const COMPACT_QUERY = "(max-width: 1160px)";
@@ -613,7 +614,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
 
           <div className={"cq-frame" + (compact ? " is-compact" : "")}>
             {/* ---- preview (left on wide, whole frame on compact) ---- */}
-            <div className="cq-preview" style={design ? { background: `linear-gradient(rgba(18,18,18,.30), rgba(18,18,18,.30)), ${design.photo || design.color}` } : undefined}>
+            <div className="cq-preview" style={design ? { background: designWash(design) } : undefined}>
               {compact && editing && (
                 <div className="cq-field cq-langsel">
                   <span className="cq-lbl">Languages</span>

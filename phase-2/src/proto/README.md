@@ -15,8 +15,9 @@ corner brings it back.
   `?<toolbarKey>-toolbar-active`, where `toolbarKey` is an id the host mints once
   and passes in as a prop. Every other link — the one a tester or participant is
   handed — is the plain prototype: no toolbar, no peek tab, no shortcut.
-- **`?toolbar=off`** forces the clean view anywhere, dev server included. That is
-  how you check what a participant sees while you build.
+
+There is no "off" switch: the URL without the flag is already the version
+without the toolbar.
 
 The two copy buttons in the bar make the distinction explicit: the link icon
 copies the current step *without* the flag (share this), the share icon copies it

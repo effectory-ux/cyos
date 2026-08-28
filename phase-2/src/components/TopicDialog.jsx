@@ -12,6 +12,7 @@ import { useState } from "react";
 import { Icon } from "./Icon.jsx";
 import { Tooltip } from "./shared.jsx";
 import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
+import { designWash } from "../data/designs.js";
 
 // The same surface serves the survey's intro screen: participants meet it the
 // same way (a themed screen with a title, a description and a next arrow), so
@@ -22,7 +23,7 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
   // behind a light dark scrim so the white text stays readable on any color.
   // Without a design the preview keeps its neutral default backdrop.
   const screenStyle = design ? {
-    background: `linear-gradient(rgba(18,18,18,.35), rgba(18,18,18,.35)), ${design.photo || design.color}`,
+    background: designWash(design),
   } : undefined;
   // CTA in the design's accent; light accents flip to dark text.
   const cta = (design && design.button) || "#0a9d99";
