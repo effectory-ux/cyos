@@ -154,7 +154,7 @@ function ManualConflictDialog({ langs, onKeep, onOverwrite }) {
 const CHECK_MS = 1400;
 const DONE_MS = 6000;
 
-export function CustomQuestionDialog({ question, topics, design, pool = [], selectedIds = [], alwaysSimilar = false, onUseSuggestion, onCancel, onAdd, onAddAnother, onOpenCreated, onSubmit, onDelete }) {
+export function CustomQuestionDialog({ question, topics, design, pool = [], selectedIds = [], alwaysSimilar = false, defaultTopic, focusTitle = false, onUseSuggestion, onCancel, onAdd, onAddAnother, onOpenCreated, onSubmit, onDelete }) {
   const editing = !!question;
   const submitFn = onSubmit || onAdd;
   // Only offer topics that actually exist in this survey (as {value,label} —
@@ -165,7 +165,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   const [text, setText] = useState(question ? question.text : "");
   const [desc, setDesc] = useState(question && question.desc ? question.desc : "");
   const [type, setType] = useState(question ? question.type : "scale5");
-  const [topic, setTopic] = useState(question && question.topic ? question.topic : "");
+  const [topic, setTopic] = useState(question && question.topic ? question.topic : (defaultTopic || ""));
   // Custom answer options (multiple choice only) — custom questions are the ONE
   // place answers are editable; standard questions stay standard from A to Z.
   const [opts, setOpts] = useState(question && question.options && question.options.length ? question.options : ["", ""]);
@@ -190,6 +190,16 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   const [conflict, setConflict] = useState(null);
 
   const compact = useMediaQuery(COMPACT_QUERY);
+  // Opened by "Write your own wording": rewriting IS the task, so the title
+  // arrives focused with the old wording selected — typing replaces it.
+  useEffect(() => {
+    if (!focusTitle) return;
+    const t = setTimeout(() => {
+      const el = document.querySelector(".cq-dialog .cq-qfield");
+      if (el) { el.focus(); el.select(); }
+    }, 60);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line
   // CREATING runs a check before anything is born: the primary button first
   // looks for similar existing questions and, if it finds any, shows them in
   // this dialog — pick one, or confirm creating the new question. `checked`
@@ -405,7 +415,9 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   const showManual = !isPrimary && !working && !stale && !!state.edited && editingNow !== active;
   // Option LABELS are translated; the option list itself belongs to the primary
   // language, so translations can't add or remove answers.
-  const shownOpts = isPrimary ? opts : (state.opts || opts.map(() => ""));
+  // A translation derives from the primary the moment it is looked at — the
+  // stagger only simulates latency, it must never show empty fields.
+  const shownOpts = isPrimary ? opts : (state.opts || opts.map(o => (o ? autoTranslation(o, active) : "")));
   const setOptAt = (i, v) => (isPrimary
     ? setOpts(prev => prev.map((x, k) => (k === i ? v : x)))
     : editTranslation("opts", shownOpts.map((x, k) => (k === i ? v : x))));
@@ -608,7 +620,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                       className={"cq-qfield" + (isPrimary && showTextErr ? " is-error" : "")}
                       data-t={question && isPrimary ? "q-" + question.id : undefined}
                       autoFocus={isPrimary}
-                      value={isPrimary ? text : (state.text || "")}
+                      value={isPrimary ? text : (state.text ?? (text.trim() ? autoTranslation(text, active) : ""))}
                       placeholder={working ? "" : "Write a positive statement here"}
                       onChange={e => (isPrimary
                         ? setText(e.target.value)
@@ -619,7 +631,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                     )}
                     <AutoTextarea
                       className="cq-descfield"
-                      value={isPrimary ? desc : (state.desc || "")}
+                      value={isPrimary ? desc : (state.desc ?? (desc.trim() ? autoTranslation(desc, active) : ""))}
                       placeholder={working ? "" : "Elaborate the context of your question here (optional)"}
                       onChange={e => (isPrimary
                         ? setDesc(e.target.value)

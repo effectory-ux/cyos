@@ -5,10 +5,16 @@ import { useLayoutEffect, useRef } from "react";
 
 export function Icon({ name, size = 16, color, className, style, title }) {
   const ref = useRef(null);
+  // The last name this element actually RENDERED. Comparing against the DOM
+  // attribute is useless for detecting a swap: React updates `data-icon`
+  // before this effect runs, so attribute and prop always agree — and a
+  // "check → copy" or "up → down" swap kept showing the old glyph.
+  const rendered = useRef(null);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (el.getAttribute("data-icon") !== name) {
+    if (rendered.current !== name) {
+      rendered.current = name;
       el.removeAttribute("data-icon-loaded");
       el.innerHTML = "";
       el.setAttribute("data-icon", name);

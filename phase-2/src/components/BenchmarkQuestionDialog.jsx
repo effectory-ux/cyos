@@ -252,16 +252,17 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
 
         {/* Above the stage, not inside it: the preview scrolls, and a language
             control that scrolls out of view is a control you can't find. */}
-        {compact && (
-          <div className="cq-field cq-langsel">
-            <span className="cq-lbl">Languages</span>
-            <MiniSelect ariaLabel="Languages" value={lang} items={langItems} onChange={setLang} block />
-            {!primary && <div className="bmq-lang-note is-inline">Translations of benchmarked questions are provided by Effectory. Change the wording in the primary language.</div>}
-          </div>
-        )}
-
         <div className="bmq-stage">
           <div className="bmq-preview" style={design ? { background: designWash(design) } : undefined}>
+            {/* The language control lives WITH the preview it switches, same
+                as the custom-question dialog. */}
+            {compact && (
+              <div className="cq-field cq-langsel">
+                <span className="cq-lbl">Languages</span>
+                <MiniSelect ariaLabel="Languages" value={lang} items={langItems} onChange={setLang} block />
+                {!primary && <div className="bmq-lang-note is-inline">Translations of benchmarked questions are provided by Effectory. Change the wording in the primary language.</div>}
+              </div>
+            )}
             {/* margin:auto centers the group when there is room and degrades
                 to a normal scroll when there isn't — no fixed spacers, so the
                 container never scrolls unless the content truly overflows. */}

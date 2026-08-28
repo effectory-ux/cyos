@@ -321,6 +321,15 @@ function BuilderRow({ q, meta, tr, showDesc, onRemove, onEdit, onSettings, onRes
 // Reconcile the editable on-page ordering with the current selection: keep the
 // user's drag order for surviving questions, append newly-added ones to their
 // topic, drop removed ones, and add/remove whole sections as needed.
+// Smooth-scroll `sc` to `top`, with a guard: smooth scrolling is driven by
+// animation frames, which some embedded/background contexts never grant — if
+// nothing moved shortly after the call, jump there outright.
+function scrollContainerTo(sc, top) {
+  const from = sc.scrollTop;
+  sc.scrollTo({ top, behavior: "smooth" });
+  setTimeout(() => { if (Math.abs(sc.scrollTop - from) < 4 && Math.abs(top - from) >= 4) sc.scrollTop = top; }, 250);
+}
+
 function reconcileLayout(prev, groups) {
   const byKey = {}; groups.forEach(g => { byKey[g.key] = g; });
   const seen = new Set();
@@ -621,9 +630,14 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     enterTimers.current.push(setTimeout(() => {
       const secs = [...document.querySelectorAll(".qsec")];
       const target = secs.find(sec => fresh.some(id => sec.querySelector(`[data-qid="${id}"]`)));
-      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      const sc = target && target.closest(".scroll-y");
+      if (target && sc) scrollContainerTo(sc,
+        sc.scrollTop + target.getBoundingClientRect().top - sc.getBoundingClientRect().top - 100);
     }, 80));
   }, [sig]); // eslint-disable-line
+  // Keyed on the SECTIONS, not on `sig`: a custom topic changes topicMeta and
+  // customTopics but no question, so a question-derived signature misses it.
+  const secSig = visibleSections.map(s => s.key).join("|");
   useEffect(() => {
     const cur = new Set(visibleSections.map(s => s.key));
     if (prevSecs.current === null) { prevSecs.current = cur; return; }
@@ -633,7 +647,23 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     setEnteringSecs(prev => { const n = new Set(prev); fresh.forEach(k => n.add(k)); return n; });
     enterTimers.current.push(setTimeout(() =>
       setEnteringSecs(prev => { const n = new Set(prev); fresh.forEach(k => n.delete(k)); return n; }), 560));
-  }, [sig]); // eslint-disable-line
+    // A fresh EMPTY section is a just-created custom topic, far down a long
+    // page — go to it, or creating one looks like nothing happened. Sections
+    // that arrive WITH questions are covered by the questions' own scroll.
+    enterTimers.current.push(setTimeout(() => {
+      const k = fresh.find(key => {
+        const sec = visibleSections.find(x => x.key === key);
+        return sec && sec.items.length === 0;
+      });
+      if (!k) return;
+      const el = document.querySelector(`.qsec[data-key="${CSS.escape(k)}"]`);
+      const sc = el && el.closest(".scroll-y");
+      // Explicit container math: scrollIntoView gets dropped while the card's
+      // reveal animation is transforming it.
+      if (el && sc) scrollContainerTo(sc,
+        sc.scrollTop + el.getBoundingClientRect().top - sc.getBoundingClientRect().top - 100);
+    }, 80));
+  }, [secSig]); // eslint-disable-line
   const skipTopicWarn = () => { try { return localStorage.getItem("cyos.skipTopicRemoveWarn") === "1"; } catch (_) { return false; } };
   const doRemoveTopic = (s) => { if (onRemoveTopic) onRemoveTopic(s.items.map(q => q.id), s.key); };
   const requestRemoveTopic = (s) => {
@@ -722,6 +752,16 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     </span>
                     {showDesc && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
                   </div>
+                  {(viewLang !== PRIMARY_LANGUAGE.code || showDesc) && (
+                    <>
+                      <div className="menu-divider" />
+                      <div className="menu-item" role="menuitem"
+                        onClick={() => { setViewLang(PRIMARY_LANGUAGE.code); setShowDesc(false); }}>
+                        <span className="menu-item-icon"><Icon name="refresh" size={16} /></span>
+                        <span className="menu-item-body"><span className="menu-item-title">Reset view</span></span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </>
             )}
@@ -865,6 +905,11 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     <>
                       <div style={{ position: "fixed", inset: 0, zIndex: 1 }} onMouseDown={() => setMenuKey(null)} />
                       <div className="menu" role="menu" style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, width: 280, zIndex: 2 }}>
+                        <div className="menu-item" role="menuitem"
+                          onClick={() => { setMenuKey(null); onEditQuestions && onEditQuestions("questions", { key: s.key, label: topicName(s.key) }); }}>
+                          <span className="menu-item-icon"><Icon name="plus" size={16} /></span>
+                          <span className="menu-item-body"><span className="menu-item-title">Add questions to this topic</span></span>
+                        </div>
                         <div className="menu-item" role="menuitem" onClick={() => { setMenuKey(null); setTopicDialog({ key: s.key }); }}>
                           <span className="menu-item-icon"><Icon name="edit" size={16} /></span>
                           <span className="menu-item-body"><span className="menu-item-title">Edit topic</span><span className="menu-item-sub">Name and description — this survey only</span></span>
@@ -899,8 +944,13 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                 </div>
               </div>
               <div className="qsec-body" onDragOver={questionBodyDragOver(s.key)} onDrop={questionBodyDrop(s.key)}>
+                {/* An empty topic's one need IS the action, so the row is the
+                    button. Dragging into the section still works — the drop
+                    handlers live on the body around it. */}
                 {s.items.length === 0 && (
-                  <div className="qsec-empty">No questions yet — drag questions here, or move them here from their menu</div>
+                  <button className="qsec-empty is-action" onClick={() => onEditQuestions && onEditQuestions("questions", { key: s.key, label: topicName(s.key) })}>
+                    <Icon name="plus" size={16} />Add questions to this topic
+                  </button>
                 )}
                 {previewItems(s).map((qq) => {
                   const i = s.items.findIndex(x => x.id === qq.id);
@@ -923,14 +973,6 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           </Fragment>
           ); })}
           </div>
-
-          {chosen.length > 0 && (
-            <div style={{ marginTop: "var(--spacing-extra-loose)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "var(--spacing-loose)", textAlign: "center" }}>
-              <div className="text-l5" style={{ color: "var(--content-secondary)" }}>Want to add or remove questions?</div>
-              <div className="text-medium text-subdued">Open the question editor to select questions or write your own.</div>
-              <button className="btn btn-secondary" onClick={onEditQuestions}><Icon name="plus" size={16} />Select questions</button>
-            </div>
-          )}
 
           {chosen.length === 0 && (
             <div className="qb-empty">

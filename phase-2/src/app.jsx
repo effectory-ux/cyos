@@ -31,9 +31,15 @@ export function App() {
   // Which tab the Add-questions dialog opens on ("questions" default; a builder
   // template tag opens it on "templates").
   const [editTab, setEditTab] = useState("questions");
+  // Set when Select questions was opened FOR one topic ("Add questions to this
+  // topic"): everything selected in that session files into it.
+  const [editTarget, setEditTarget] = useState(null); // { key, label } | null
   const [survey, setSurvey] = useState(null);
   const [removeConfirm, setRemoveConfirm] = useState(null);
   const [editCustom, setEditCustom] = useState(null);
+  // True when editCustom was opened by "Write your own wording": the title
+  // arrives focused and selected, because rewriting it is the whole point.
+  const [focusTitle, setFocusTitle] = useState(false);
   // Design variants (toolbar): flip between candidate designs live.
   // The sidebar dialog (Figma 6316:27977) is the default now; flipping the
   // variant off brings the old tabbed dialog back for comparison.
@@ -210,11 +216,13 @@ export function App() {
     if ("desc" in patch && (patch.desc || undefined) !== ((s.intro || {}).desc || undefined)) touched.push("intro:desc");
     return { ...s, intro: next, i18nEdits: touched.length ? dropI18n(s, touched) : s.i18nEdits };
   });
-  const addTopic = ({ name, desc }) => setSurvey(s => {
+  // Returns the new topic's key, so the builder can scroll it into view.
+  const addTopic = ({ name, desc }) => {
     const key = "ct-" + Date.now();
-    return { ...s, customTopics: [...(s.customTopics || []), key],
-      topicMeta: { ...(s.topicMeta || {}), [key]: compact({ name, desc }) } };
-  });
+    setSurvey(s => ({ ...s, customTopics: [...(s.customTopics || []), key],
+      topicMeta: { ...(s.topicMeta || {}), [key]: compact({ name, desc }) } }));
+    return key;
+  };
   const updateQMeta = (id, patch) => setSurvey(s => {
     const cur = compact({ ...((s.qMeta || {})[id] || {}), ...patch });
     const qm = { ...(s.qMeta || {}) };
@@ -266,6 +274,7 @@ export function App() {
       };
     });
     // Straight into the editor — wording is the reason they detached.
+    setFocusTitle(true);
     setEditCustom({ id, topic: topic || q.topic, theme: null, bench: false, type: q.type,
       custom: true, required: false, text: text || q.text, options: q.options });
   };
@@ -452,7 +461,7 @@ export function App() {
       {screen === "surveys" && <Sidebar />}
       {screen === "surveys"
         ? <SurveysPage rows={surveysList} onCreate={() => setModal(true)} onDeleteDraft={deleteSurvey} onOpen={openSurvey} />
-        : <Builder survey={survey} onDetachQuestion={detachQuestion} onEditQuestions={(tab) => { setEditTab(tab || "questions"); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
+        : <Builder survey={survey} onDetachQuestion={detachQuestion} onEditQuestions={(tab, target) => { setEditTab(tab || "questions"); setEditTarget(target || null); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveQuestionTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
@@ -472,7 +481,9 @@ export function App() {
           tweaks={{ ...TWEAKS, orgCustoms: edges.orgCustoms, similarAlways: edges.similarAlways, altWordings: edges.altWordings }}
           qMeta={survey.qMeta} onUpdateQMeta={updateQMeta} onMoveTopic={moveQuestionTopic}
           initialTab={editTab} nav={variantsOn.dialogSidebarNav ? "sidebar" : "tabs"}
-          onClose={() => setEditing(false)} onSave={saveQuestions} />
+          addToTopic={editTarget} topicOptions={surveyTopicOptions()}
+          onClose={() => { setEditing(false); setEditTarget(null); }}
+          onSave={(ids, pool) => { saveQuestions(ids, pool); setEditTarget(null); }} />
       )}
       {removeConfirm && <ThemeConfirm q={removeConfirm.q} themes={removeConfirm.themes} pool={survey && survey.pool}
         onKeep={() => setRemoveConfirm(null)}
@@ -484,9 +495,10 @@ export function App() {
         onCancel={() => setNewCustom(false)} onAdd={addCustomDirect} onAddAnother={addCustomKeepOpen}
         onOpenCreated={(q) => { setNewCustom(false); setEditCustom(q); }} />}
       {editCustom && <CustomQuestionDialog question={editCustom} design={survey ? designById(survey.design) : null}
-        topics={surveyTopicOptions()}
-        onCancel={() => setEditCustom(null)} onSubmit={saveCustomEdit}
-        onDelete={(q) => { removeFromSurvey(q); setEditCustom(null); }} />}
+        topics={surveyTopicOptions()} focusTitle={focusTitle}
+        onCancel={() => { setEditCustom(null); setFocusTitle(false); }}
+        onSubmit={(q) => { saveCustomEdit(q); setFocusTitle(false); }}
+        onDelete={(q) => { removeFromSurvey(q); setEditCustom(null); setFocusTitle(false); }} />}
       {outOfScope && <OutOfScopeDialog row={outOfScope} onClose={() => setOutOfScope(null)} />}
     </div>
   );

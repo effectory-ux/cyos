@@ -432,6 +432,16 @@ const RESULT_FILTERS = [
 ];
 // The dialog's pages, in rail order. `group` starts a labelled group ("Question
 // sets"), which the compact menu repeats so both navigations read the same.
+// Topic choices for the custom-question dialog: the survey's own list (which
+// includes custom topics with no questions yet, the very ones you create in
+// order to fill) plus anything only present in this dialog's working pool.
+function mergeTopics(options, poolTopics) {
+  const out = [...(options || [])];
+  const seen = new Set(out.map(o => o.value));
+  [...new Set(poolTopics)].forEach(t => { if (!seen.has(t)) out.push({ value: t, label: t }); });
+  return out;
+}
+
 const EQ_PAGES = [
   { value: "questions", label: "Library questions", icon: "list-unordered" },
   { value: "custom", label: "Custom questions", icon: "edit" },
@@ -540,6 +550,15 @@ function FilterMenu({ show, showOptions, onShow, kind, kindOptions, onKind, comp
             <>
               <div className="menu-divider" />
               {group("Type of content", kind, kindOptions, onKind)}
+            </>
+          )}
+          {active > 0 && (
+            <>
+              <div className="menu-divider" />
+              <div className="menu-item" onClick={() => { onShow("all"); onKind && onKind("all"); setOpen(false); }}>
+                <span className="menu-item-icon"><Icon name="refresh" size={16} /></span>
+                <span className="menu-item-body"><span className="menu-item-title">Reset filters</span></span>
+              </div>
             </>
           )}
         </div>
@@ -651,11 +670,17 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
 // "sidebar" — Miro/Qualtrics-style: a left rail to browse (with the topics as
 //             jump anchors) and ONE search on top that looks across questions,
 //             themes and templates, results grouped by where they came from.
-export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", qMeta = {}, onUpdateQMeta, onMoveTopic, onClose, onSave }) {
+export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", qMeta = {}, addToTopic = null, topicOptions = [], onUpdateQMeta, onMoveTopic, onClose, onSave }) {
   const compact = useMediaQuery(EQ_COMPACT);
   const [pool, setPool] = useState(initialPool);
   const [sel, setSel] = useState(() => new Set(initialSelected));
   const initial = useMemo(() => new Set(initialSelected), []); // selection when the dialog opened
+  // "Add questions to this topic": while set, everything selected here files
+  // into that topic on Confirm. The user can drop back to normal adding with
+  // the notice's own button; the mode never outlives the dialog.
+  const [target, setTarget] = useState(addToTopic || null);
+  const targetAdds = useRef(new Set());
+  const markAdded = (ids) => { if (target) ids.forEach(id => targetAdds.current.add(id)); };
   const [q, setQ] = useState("");
   const [gq, setGq] = useState("");                 // sidebar variant: the one global query
   // Narrowing AFTER the query (Miro's "Filter by"): the search always looks
@@ -678,6 +703,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const [reqCount, setReqCount] = useState(1);      // how many required questions the notice is about
   const [themeDetails, setThemeDetails] = useState(null); // theme name whose details dialog is open
   const [editCustomQ, setEditCustomQ] = useState(null);
+  // Set together with editCustomQ by the detach path, so the title arrives
+  // focused and selected — rewriting it is why you detached.
+  const [focusTitleQ, setFocusTitleQ] = useState(false);
   // A library question's own dialog, opened from a row's menu: wording,
   // description, topic and translations. Its edits are survey-scoped meta, so
   // they go straight to the survey (the dialog has its own Save/Cancel) rather
@@ -751,6 +779,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // lands in the "No topic" section at the bottom and can be filed from there.
   const toggleOrgQuestion = (oq) => {
     if (poolIds.has(oq.id)) { toggle(oq); return; }
+    markAdded([oq.id]);
     setPool(p => [...p, { ...oq, topic: null }]);
     setSel(s2 => new Set([...s2, oq.id]));
   };
@@ -860,6 +889,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       if (broken.length) { setConfirm({ q: qq, themes: broken }); return; }
     }
     const willBeOn = !isOn;
+    if (willBeOn) markAdded([qq.id]);
     setSel(s => { const n = new Set(s); isOn ? n.delete(qq.id) : n.add(qq.id); return n; });
     // Under a Selected / Not-selected filter the row no longer matches — ease it out.
     if ((show === "selected" && !willBeOn) || (show === "unselected" && willBeOn)) easeOut(qq.id);
@@ -870,7 +900,22 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   };
   // Closing always drops the dialog back to the default (unfiltered) view.
   const close = () => { setShow("all"); setThemeShow("all"); setTmplShow("all"); onClose(); };
-  const apply = () => { setShow("all"); setThemeShow("all"); setTmplShow("all"); onSave([...sel], pool); };
+  const apply = () => {
+    setShow("all"); setThemeShow("all"); setTmplShow("all");
+    // File everything selected under a target topic. Custom questions carry
+    // their topic on the pool object (saved wholesale below); a library
+    // question keeps its canonical topic and gets a survey-scoped override.
+    let outPool = pool;
+    if (target) {
+      const adds = [...targetAdds.current].filter(id => sel.has(id));
+      outPool = pool.map(x => (adds.includes(x.id) && x.custom) ? { ...x, topic: target.key } : x);
+      adds.forEach(id => {
+        const x = pool.find(p2 => p2.id === id);
+        if (x && !x.custom) onMoveTopic && onMoveTopic(id, target.key);
+      });
+    }
+    onSave([...sel], outPool);
+  };
   const setMany = (ids, on) => {
     // Deselect all keeps required questions — and says so, same notice as
     // pressing one directly.
@@ -878,6 +923,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       const kept = ids.filter(id => requiredIds.has(id) && sel.has(id)).length;
       if (kept > 0) showReqNotice(kept);
     }
+    if (on) markAdded(ids);
     setSel(s => { const n = new Set(s); ids.forEach(id => { if (!on && requiredIds.has(id)) return; on ? n.add(id) : n.delete(id); }); return n; });
   };
   // Adding without closing the create dialog: it confirms the question there
@@ -1081,6 +1127,16 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           </div>
         )}
 
+        {/* The one thing that changes in "add to this topic" mode: a quiet
+            banner naming where selections go, with its own way out. */}
+        {target && (
+          <div className="eq-target-note" role="status">
+            <Icon name="info" size={16} />
+            <span className="eq-target-txt">Questions you select are added to <b>{target.label}</b></span>
+            <button className="btn btn-tertiary" onClick={() => setTarget(null)}>Stop adding to this topic</button>
+          </div>
+        )}
+
         <div className="dialog-body scroll-y">
           {gRes ? (
             (resFilter === "all" ? gRes.questions.length + gRes.orgQuestions.length + gRes.indirect.length + gRes.themes.length + gRes.templates.length
@@ -1239,7 +1295,12 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                     <div className="aql-sechead">
                       <h3>Created and used in other surveys</h3>
                       <div className="spacer" />
-                      <span className="tag tag-count">{orgShown.length}</span>
+                      <SelectAllTopic allOn={orgShown.length > 0 && orgShown.every(x => sel.has(x.id))} total={orgShown.length}
+                        onToggle={() => {
+                          const allOn = orgShown.every(x => sel.has(x.id));
+                          if (allOn) setMany(orgShown.map(x => x.id), false);
+                          else orgShown.forEach(x => { if (!sel.has(x.id)) toggleOrgQuestion(x); });
+                        }} />
                       <Tooltip label={collapsed.has("cq:org") ? "Expand" : "Collapse"} pos="is-above" float>
                         <button className="ib ib-tertiary aql-sec-toggle" aria-label="Collapse questions"
                           aria-expanded={!collapsed.has("cq:org")} onClick={() => toggleSec("cq:org")}>
@@ -1322,15 +1383,18 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         </div>
       </div>
 
-      {customOpen && <CustomQuestionDialog topics={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
+      {customOpen && <CustomQuestionDialog defaultTopic={target ? target.key : undefined}
+        topics={mergeTopics(topicOptions, pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))}
         pool={[...pool, ...orgCustomQs]} selectedIds={[...sel]}
         alwaysSimilar={tweaks.similarAlways}
         onUseSuggestion={(q) => { if (pool.some(pq => pq.id === q.id)) setMany([q.id], true); else toggleOrgQuestion(q); }}
         onCancel={() => setCustomOpen(false)} onAdd={addCustom} onAddAnother={addCustomKeepOpen}
         onOpenCreated={(q) => { setCustomOpen(false); setEditCustomQ(q); }} />}
-      {editCustomQ && <CustomQuestionDialog question={editCustomQ}
-        topics={[...new Set(pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))].map(t => ({ value: t, label: t }))}
-        onCancel={() => setEditCustomQ(null)} onSubmit={saveCustomEdit} onDelete={deleteCustomQ} />}
+      {editCustomQ && <CustomQuestionDialog question={editCustomQ} focusTitle={focusTitleQ}
+        topics={mergeTopics(topicOptions, pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))}
+        onCancel={() => { setEditCustomQ(null); setFocusTitleQ(false); }}
+        onSubmit={(q2) => { saveCustomEdit(q2); setFocusTitleQ(false); }}
+        onDelete={(q2) => { deleteCustomQ(q2); setFocusTitleQ(false); }} />}
       {settingsQ && (() => {
         const meta = qMeta[settingsQ.id] || {};
         const t = themeGroups.find(g => g.name === settingsQ.theme);
@@ -1355,6 +1419,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               setSel(s2 => { const n = new Set(s2); n.delete(settingsQ.id); n.add(id); return n; });
               onUpdateQMeta && onUpdateQMeta(settingsQ.id, { variant: undefined, desc: undefined, topic: undefined });
               setSettingsQ(null);
+              setFocusTitleQ(true);
               setEditCustomQ(custom);
             }}
             onSave={({ qMeta: patch, topic }) => {

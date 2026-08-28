@@ -578,7 +578,10 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .ctxbar-sugg:hover { background: var(--bg-base-hover); }
 .ctxbar-sugg i { flex: none; color: var(--content-info-secondary); }
 .ctxbar-menu-wrap { position: relative; flex: none; }
-.ctxbar-menu { position: absolute; top: calc(100% + 4px); left: 0; width: 300px; z-index: 40; }
+/* This menu is short and its options are the point — the DS's 280px cap would
+   put "Reset view" behind a scrollbar. */
+.ctxbar-menu { position: absolute; top: calc(100% + 4px); left: 0; width: 300px; z-index: 40;
+  max-height: none; overflow: visible; }
 .ctxbar-menu.is-right { left: auto; right: 0; }
 /* The one line that says a menu changes nothing about the survey. Quiet, above
    the options, and never mistaken for one of them. */
@@ -721,8 +724,8 @@ button.sel-btn.cq-sel { font-size: 14px; }
    hover removes the class, which ends it for good. */
 .qsec-body .qrow.is-fresh { animation: row-pulse 2500ms var(--ease-standard) 1s 2; }
 @keyframes row-pulse {
-  0%, 100% { background: transparent; box-shadow: inset 0 0 0 0 var(--border-brand); }
-  50% { background: var(--bg-brand-subtle); box-shadow: inset 3px 0 0 0 var(--border-brand); }
+  0%, 100% { background: transparent; }
+  50% { background: var(--bg-brand-subtle); }
 }
 /* Scrolled-to topics clear the sticky context bar. */
 .qsec { scroll-margin-top: 92px; }
@@ -880,6 +883,12 @@ button.sel-btn.cq-sel { font-size: 14px; }
 /* Empty (custom) topic body */
 .qsec-empty { padding: var(--spacing-loose); border-top: 1px solid var(--border-base);
   font-size: 13.5px; color: var(--content-subtle); text-align: center; }
+/* The empty state as the action it calls for: a full-row tertiary button. */
+button.qsec-empty.is-action { display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; background: none; font-family: inherit; font-size: 14px; font-weight: 600;
+  color: var(--content-action); cursor: pointer; border-left: 0; border-right: 0; border-bottom: 0;
+  transition: background var(--motion-fast) var(--ease-standard); }
+button.qsec-empty.is-action:hover { background: var(--bg-base-hover); }
 
 /* Question settings sidepane */
 .qsp-scrim { position: fixed; inset: 0; z-index: 70; background: var(--bg-interface-overlay); }
@@ -1511,6 +1520,14 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .eq-toolbar-search { flex: 1 1 240px; min-width: 120px; }
 /* How many filters are actually narrowing something. Same grey pill the counts
    elsewhere use, sized to a circle for single digits. */
+/* "Adding to one topic" notice: informative blue, above the list, with the
+   way out on the row itself. */
+.eq-target-note { display: flex; align-items: center; gap: var(--spacing-tight); flex: none;
+  padding: 6px 8px 6px 14px; border-radius: var(--radius-md);
+  background: var(--bg-info-subtle, #e8f0fc); color: var(--content-info); }
+.eq-target-txt { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; color: var(--content-base); }
+.eq-target-note .btn { flex: none; }
+
 .eq-filter-count { flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--radius-full);
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--bg-secondary); color: var(--content-secondary); font-size: 12px; font-weight: 600; }
