@@ -156,7 +156,17 @@ export function App() {
     }
   };
 
-  const saveQuestions = (ids, pool) => { setSurvey(s => ({ ...s, selectedIds: ids, pool })); setEditing(false); };
+  // Confirm closes the dialog FIRST and applies the selection half a second
+  // later: the questionnaire is on screen by then, so the new questions arrive
+  // as a visible change (animation + scroll in the Builder) instead of being
+  // already there when the dialog gets out of the way.
+  const applyTimer = useRef(null);
+  const saveQuestions = (ids, pool) => {
+    setEditing(false);
+    clearTimeout(applyTimer.current);
+    applyTimer.current = setTimeout(() => setSurvey(s => ({ ...s, selectedIds: ids, pool })), 500);
+  };
+  useEffect(() => () => clearTimeout(applyTimer.current), []);
   // Add/remove a theme's questions from the builder's "View details" dialog.
   const toggleQuestion = (id) => setSurvey(s => ({ ...s, selectedIds: s.selectedIds.includes(id) ? s.selectedIds.filter(x => x !== id) : [...s.selectedIds, id] }));
   const setManyQuestions = (ids, on) => setSurvey(s => { const set = new Set(s.selectedIds); ids.forEach(id => on ? set.add(id) : set.delete(id)); return { ...s, selectedIds: [...set] }; });
@@ -297,10 +307,13 @@ export function App() {
   // The similar-question check found a match: select the existing question
   // instead of creating a duplicate.
   const useSuggested = (q) => {
+    // Reused from another survey → no topic here (see toggleOrgQuestion): it
+    // joins the "No topic" section at the bottom.
+    const arriving = q.from ? { ...q, topic: null } : q;
     setSurvey(s => ({
       ...s,
       // an org-created custom question isn't in this survey's pool yet
-      pool: s.pool.some(p => p.id === q.id) ? s.pool : [...s.pool, q],
+      pool: s.pool.some(p => p.id === q.id) ? s.pool : [...s.pool, arriving],
       selectedIds: s.selectedIds.includes(q.id) ? s.selectedIds : [...s.selectedIds, q.id],
     }));
   };

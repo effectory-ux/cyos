@@ -7,9 +7,9 @@ import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
 import { TranslationsDialog } from "./TranslationsDialog.jsx";
-import { THEMES } from "../data/data.js";
+import { THEMES, CUSTOM_GROUP } from "../data/data.js";
 import { DESIGNS, designById } from "../data/designs.js";
-import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
+import { LANGUAGES, PRIMARY_LANGUAGE, flagSrc, autoTranslation } from "../data/i18n.js";
 
 // Small rename dialog — used for the survey name and for a topic's
 // questionnaire-specific label. `note` adds one quiet scope line under the field.
@@ -127,7 +127,7 @@ function TopNav({ name, onRename }) {
   );
 }
 
-function BuilderRow({ q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, themeInfo, onOpenTheme, onDragStart, onDragEnd }) {
+function BuilderRow({ q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, pulsing, onSeen, themeInfo, onOpenTheme, onDragStart, onDragEnd }) {
   const [menu, setMenu] = useState(false);
   // "Move to topic" opens a nested submenu BESIDE the menu (DS pattern: a
   // trailing .menu-chevron item flying out a second .menu) instead of swapping
@@ -164,8 +164,8 @@ function BuilderRow({ q, meta, tr, showDesc, onRemove, onEdit, onSettings, onRes
   // this question actually has one — added here or shipped with a custom one.
   const desc = meta && meta.descHidden ? undefined : ((meta && meta.desc) || q.desc);
   return (
-    <div className={"qrow" + (dragging ? " is-dragging" : "") + (entering ? " is-entering" : "")} data-qid={q.id}
-      onClick={rowClick}>
+    <div className={"qrow" + (dragging ? " is-dragging" : "") + (entering ? " is-entering" : "") + (pulsing ? " is-fresh" : "")} data-qid={q.id}
+      onClick={rowClick} onMouseEnter={pulsing && onSeen ? onSeen : undefined}>
       <Tooltip label="Drag to reorder" pos="is-left">
         <button className="ib ib-36 ib-tertiary drag-ib" aria-label="Drag to reorder" draggable
           onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={e => e.preventDefault()}>
@@ -280,7 +280,10 @@ function reconcileLayout(prev, groups) {
     seen.add(g.key);
   });
   groups.forEach(g => { if (!seen.has(g.key)) next.push({ key: g.key, label: g.label, items: g.items }); });
-  return next;
+  // "No topic" is the bottom of the questionnaire by definition, so it is
+  // pinned there whatever order the sections were dragged or added in.
+  const tail = next.filter(s2 => s2.key === "__custom");
+  return tail.length ? [...next.filter(s2 => s2.key !== "__custom"), ...tail] : next;
 }
 
 export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, edges = {}, openDialog, onDialogChange }) {
@@ -329,7 +332,12 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   const sel = new Set(selectedIds);
   const customTopicSet = new Set(customTopics);
   // A topic's display name in THIS survey (library name is the stable key).
-  const topicName = (key) => (topicMeta[key] && topicMeta[key].name) || key;
+  // Section labels: a survey-scoped rename wins, then the group's own name.
+  // "__custom" is the catch-all at the bottom for questions with no topic (a
+  // custom question written without one, or one reused from another survey), so
+  // it carries that name rather than its internal key.
+  const topicName = (key) => (topicMeta[key] && topicMeta[key].name)
+    || (key === "__custom" ? CUSTOM_GROUP : key);
   // A question's effective topic: survey-scoped move override, else its own.
   const effTopic = (q) => (qMeta[q.id] && qMeta[q.id].topic) || q.topic;
   const chosen = pool.filter(q => sel.has(q.id));
@@ -405,6 +413,14 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // builder load doesn't animate everything at once.
   const [enteringIds, setEnteringIds] = useState(() => new Set());
   const [enteringSecs, setEnteringSecs] = useState(() => new Set());
+  // Rows that keep pulsing after they arrived, so a question added to a topic
+  // that already had some is still findable. Hovering one ends its pulse —
+  // you have clearly seen it by then.
+  const [pulseIds, setPulseIds] = useState(() => new Set());
+  const stopPulse = (id) => setPulseIds(prev => {
+    if (!prev.has(id)) return prev;
+    const n = new Set(prev); n.delete(id); return n;
+  });
   const prevIds = useRef(null);
   const prevSecs = useRef(null);
   const enterTimers = useRef([]);
@@ -534,6 +550,19 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     setEnteringIds(prev => { const n = new Set(prev); fresh.forEach(id => n.add(id)); return n; });
     enterTimers.current.push(setTimeout(() =>
       setEnteringIds(prev => { const n = new Set(prev); fresh.forEach(id => n.delete(id)); return n; }), 480));
+    // The pulse starts a second in (the reveal animation owns that moment) and
+    // runs for five, so it reads as "here they are", not as a warning.
+    setPulseIds(prev => { const n = new Set(prev); fresh.forEach(id => n.add(id)); return n; });
+    enterTimers.current.push(setTimeout(() =>
+      setPulseIds(prev => { const n = new Set(prev); fresh.forEach(id => n.delete(id)); return n; }), 6200));
+    // Scroll to the FIRST topic that got something, not the last: several
+    // topics can change at once, and reading order beats recency. Measured
+    // from the DOM so it follows the order actually on screen.
+    enterTimers.current.push(setTimeout(() => {
+      const secs = [...document.querySelectorAll(".qsec")];
+      const target = secs.find(sec => fresh.some(id => sec.querySelector(`[data-qid="${id}"]`)));
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80));
   }, [sig]); // eslint-disable-line
   useEffect(() => {
     const cur = new Set(visibleSections.map(s => s.key));
@@ -600,26 +629,38 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             <button className={"btn btn-secondary" + (barMenu === "display" ? " is-pressed" : "")}
               aria-haspopup="menu" aria-expanded={barMenu === "display"}
               onClick={() => setBarMenu(m => m === "display" ? null : "display")}>
-              <Icon name="layout" size={16} />Display
+              <Icon name="layout" size={16} />View
             </button>
             {barMenu === "display" && (
               <>
                 <div className="cq-menu-scrim" onMouseDown={() => setBarMenu(null)} />
                 <div className="menu ctxbar-menu" role="menu">
-                  <div className="menu-group-lbl">Preview language</div>
+                  {/* This menu is the one place in the step that changes
+                      NOTHING about the survey, so it says so before the
+                      options — and each group names what it switches. */}
+                  <div className="menu-header">Your view</div>
+                  <p className="ctxbar-menu-note">Only changes how you preview the questionnaire. Participants always get the survey as it is set up</p>
+                  <div className="menu-divider" />
+                  <div className="menu-group-lbl">Preview in language</div>
                   {LANGUAGES.map(l => (
                     <div key={l.code} className={"menu-item" + (viewLang === l.code ? " is-selected" : "")} role="menuitemradio"
                       aria-checked={viewLang === l.code} onClick={() => setViewLang(l.code)}>
                       <span className="lang-flag menu-item-icon"><img src={flagSrc(l.flag)} alt="" /></span>
-                      <span className="menu-item-body"><span className="menu-item-title">{l.label}</span></span>
+                      <span className="menu-item-body">
+                        <span className="menu-item-title">{l.label}</span>
+                        {l.code !== PRIMARY_LANGUAGE.code && <span className="menu-item-sub">Translation</span>}
+                      </span>
                       {viewLang === l.code && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
                     </div>
                   ))}
                   <div className="menu-divider" />
-                  <div className="menu-group-lbl">Show</div>
+                  <div className="menu-group-lbl">Show in this list</div>
                   <div className="menu-item" role="menuitemcheckbox" aria-checked={showDesc}
                     onClick={() => setShowDesc(v => !v)}>
-                    <span className="menu-item-body"><span className="menu-item-title">Descriptions</span></span>
+                    <span className="menu-item-body">
+                      <span className="menu-item-title">Descriptions</span>
+                      <span className="menu-item-sub">The extra context under a question</span>
+                    </span>
                     {showDesc && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
                   </div>
                 </div>
@@ -809,7 +850,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     onMoveUp={() => reorderQuestion(s.key, qq.id, i - 1)}
                     onMoveDown={() => reorderQuestion(s.key, qq.id, i + 1)}
                     topics={visibleSections.map(x => ({ key: x.key, label: topicName(x.key) }))} onMoveTopic={(t) => onMoveTopic && onMoveTopic(qq.id, t)}
-                    entering={enteringIds.has(qq.id) && !enteringSecs.has(s.key)} themeInfo={themeMap[qq.theme]}
+                    entering={enteringIds.has(qq.id) && !enteringSecs.has(s.key)}
+                    pulsing={pulseIds.has(qq.id)} onSeen={() => stopPulse(qq.id)} themeInfo={themeMap[qq.theme]}
                     onOpenTheme={setThemeDetail}
                     onDragStart={startQuestion(s.key, qq.id, i, qq.custom)} onDragEnd={clearDrag} />;
                 })}

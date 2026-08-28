@@ -706,9 +706,12 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // overview stays put while you work through it.
   const orgCustomQs = tweaks.orgCustoms === false ? [] : ORG_CUSTOM;
   // Selecting one that isn't in this survey's pool yet pulls it in first.
+  // A custom question reused from another survey arrives WITHOUT a topic: the
+  // topic it had over there is that survey's structure, not this one's, so it
+  // lands in the "No topic" section at the bottom and can be filed from there.
   const toggleOrgQuestion = (oq) => {
     if (poolIds.has(oq.id)) { toggle(oq); return; }
-    setPool(p => [...p, oq]);
+    setPool(p => [...p, { ...oq, topic: null }]);
     setSel(s2 => new Set([...s2, oq.id]));
   };
 

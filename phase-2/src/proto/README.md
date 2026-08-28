@@ -9,14 +9,19 @@ corner brings it back.
 
 ## Who sees it
 
-The toolbar is **opt-in and unguessable**. It renders only when the URL carries
-`?<toolbarKey>-toolbar-active`, where `toolbarKey` is a random id the host mints
-once and passes in as a prop. Every other link — the default one, and anything a
-tester or participant is handed — is the plain prototype: no toolbar, no peek
-tab, no shortcut. The two copy buttons in the bar make the distinction explicit:
-the link icon copies the current step *without* the flag (share this), the share
-icon copies it *with* the flag (for a colleague who needs the toolbar). Rotating
-the key in the host's config invalidates every toolbar link handed out so far.
+- **Prototyping** (localhost, `127.0.0.1`, a `.local` or LAN host): the toolbar
+  is there by default. No flag to remember while you work.
+- **Anywhere else** (the deployed prototype): only for a URL carrying
+  `?<toolbarKey>-toolbar-active`, where `toolbarKey` is an id the host mints once
+  and passes in as a prop. Every other link — the one a tester or participant is
+  handed — is the plain prototype: no toolbar, no peek tab, no shortcut.
+- **`?toolbar=off`** forces the clean view anywhere, dev server included. That is
+  how you check what a participant sees while you build.
+
+The two copy buttons in the bar make the distinction explicit: the link icon
+copies the current step *without* the flag (share this), the share icon copies it
+*with* the flag (for a colleague who needs the toolbar). Rotating the key in the
+host's config invalidates every toolbar link handed out so far.
 
 ## What lives here
 

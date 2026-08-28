@@ -18,16 +18,29 @@ import { Ic } from "./icons.jsx";
 import { initCopyEdits, enableEdit, disableEdit, discardEdits, editCount, undoEdit, redoEdit, canUndo, canRedo } from "./copyEdit.js";
 import "./prototype-bar.css";
 
-// The toolbar is OPT-IN, and the opt-in is unguessable: it appears only when
-// the URL carries `?<toolbarKey>-toolbar-active`, where the key is a random id
-// minted per prototype (the host passes it in). Every other link — the one a
-// participant, a tester or a stranger ends up with — is the plain prototype,
-// with no toolbar and no reveal tab. Handing someone the toolbar is therefore a
-// deliberate act (the share button in the bar), not something they can type.
+// Who gets the toolbar:
+//   • while PROTOTYPING (localhost / a LAN dev server) — always, no flag needed;
+//   • anywhere else — only for a URL carrying `?<toolbarKey>-toolbar-active`,
+//     where the key is minted per prototype and passed in by the host;
+//   • never, for any URL carrying `?toolbar=off`, which wins over both — that
+//     is how the clean participant view is checked on a dev server.
+// So the deployed prototype is clean unless the link says otherwise, and handing
+// someone the toolbar is a deliberate act (the share button in the bar) rather
+// than something they can type.
 const flagOf = (key) => `${key}-toolbar-active`;
+const DEV_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "[::1]"];
+const isDevHost = () => {
+  try {
+    const h = window.location.hostname;
+    return DEV_HOSTS.includes(h) || h.endsWith(".local") || /^(10|192\.168)\./.test(h);
+  } catch (_) { return false; }
+};
 const barActive = (key) => {
-  try { return !!key && new URLSearchParams(window.location.search).has(flagOf(key)); }
-  catch (_) { return false; }
+  try {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("toolbar") === "off") return false;
+    return isDevHost() || (!!key && p.has(flagOf(key)));
+  } catch (_) { return false; }
 };
 // The current step WITHOUT the toolbar flag: what you hand to a tester.
 const plainLink = (key) => {

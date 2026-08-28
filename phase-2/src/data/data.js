@@ -70,7 +70,10 @@ export const PROJECTS = [
   "Example projects",
 ];
 
-export const CUSTOM_GROUP = "Your custom questions";
+// The catch-all section at the BOTTOM of a questionnaire: questions that carry
+// no topic — custom questions written without one, and custom questions reused
+// from another survey (their old survey's topic means nothing here).
+export const CUSTOM_GROUP = "No topic";
 
 // Small legacy question set (realistic, IP-safe wording from the base library)
 // used only as the default for `themeStatus` — survey pools are built from

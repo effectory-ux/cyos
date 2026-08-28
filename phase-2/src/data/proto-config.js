@@ -3,12 +3,15 @@
 // The toolbar component itself lives in src/proto/ and knows nothing of CYOS.
 export const PROTO_STORAGE_PREFIX = "cyos";
 
-// The toolbar is opt-in and unguessable: it renders only for a URL carrying
-// `?<key>-toolbar-active`. Minted once, at random, and kept in the repo so a
-// toolbar link stays valid between sessions — copy one from the bar's share
-// button rather than typing it. Rotate it here to invalidate every link handed
-// out so far.
-export const PROTO_TOOLBAR_KEY = "0c8ca4b4ce";
+// The key in `?<key>-toolbar-active`, the URL that carries the toolbar to
+// someone else's browser. Five digits, like a project id — enough that nobody
+// arrives at it by guessing, short enough to read out. Rotate it here to
+// invalidate every toolbar link handed out so far.
+//
+// It is not needed while PROTOTYPING: on localhost the toolbar is on by
+// default. The deployed prototype is the other way round — clean unless the
+// link carries the key — and `?toolbar=off` forces the clean view anywhere.
+export const PROTO_TOOLBAR_KEY = "50168";
 
 export const START_POINTS = [
   { key: "surveys", label: "Surveys list" },

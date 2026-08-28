@@ -499,6 +499,9 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .ctxbar-menu-wrap { position: relative; flex: none; }
 .ctxbar-menu { position: absolute; top: calc(100% + 4px); left: 0; width: 300px; z-index: 40; }
 .ctxbar-menu.is-right { left: auto; right: 0; }
+/* The one line that says a menu changes nothing about the survey. Quiet, above
+   the options, and never mistaken for one of them. */
+.ctxbar-menu-note { margin: -2px 10px 8px; font-size: 12px; line-height: 1.5; color: var(--content-secondary); }
 
 /* Design menu (Figma 6293:27553): the org's designs as mini participant
    screens — chrome strip with the org mark, the question card, the button in
@@ -621,10 +624,20 @@ button.sel-btn.cq-sel { font-size: 14px; }
 @keyframes row-reveal { from { opacity: 0; transform: translateY(-14px) scale(0.98); } to { opacity: 1; transform: none; } }
 .qsec.is-entering { animation: card-reveal 420ms var(--ease-out); }
 @keyframes card-reveal { from { opacity: 0; transform: translateY(-16px) scale(0.98); } to { opacity: 1; transform: none; } }
+/* A just-added row keeps breathing for five seconds after a one-second pause,
+   so it stays findable in a topic that already had questions. Two slow cycles;
+   hover removes the class, which ends it for good. */
+.qsec-body .qrow.is-fresh { animation: row-pulse 2500ms var(--ease-standard) 1s 2; }
+@keyframes row-pulse {
+  0%, 100% { background: transparent; box-shadow: inset 0 0 0 0 var(--border-brand); }
+  50% { background: var(--bg-brand-subtle); box-shadow: inset 3px 0 0 0 var(--border-brand); }
+}
+/* Scrolled-to topics clear the sticky context bar. */
+.qsec { scroll-margin-top: 92px; }
 
 @media (prefers-reduced-motion: reduce) {
   .overlay > .dialog, .menu, .inline-note, .aql-row, .aql-row.is-leaving,
-  .qsec-body .qrow.is-entering, .qsec.is-entering { animation: none; }
+  .qsec-body .qrow.is-entering, .qsec.is-entering, .qsec-body .qrow.is-fresh { animation: none; }
 }
 
 /* ---- surveys list: clickable rows ---- */
