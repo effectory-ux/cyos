@@ -83,7 +83,48 @@ function TopicRemoveWarning({ label, count, onCancel, onConfirm }) {
 // overlapping number-badge + icon pair; then a divider and the kebab. No
 // bottom border on this page — the context bar below seams to it with its own
 // white hairline.
-function TopNav({ name, onRename, compact }) {
+// The four steps as a menu, for a window too narrow to hold them as pills.
+// The steps beyond the questionnaire are out of this prototype's scope, so the
+// menu shows where you are and what exists — it does not pretend to navigate.
+function StepsMenu({ steps, badge }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  const here = steps.find(st => st.active);
+  return (
+    <div ref={ref} style={{ position: "relative", flex: "none" }}>
+      <Tooltip label={here ? "Steps: " + here.label : "Steps"} pos="is-below">
+        <button className={"ib ib-36 ib-secondary" + (open ? " is-pressed" : "")} aria-label="Steps"
+          aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+          <Icon name="menu" size={16} />
+        </button>
+      </Tooltip>
+      {open && (
+        <div className="menu" role="menu" style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", width: 260, zIndex: 60 }}>
+          {steps.map(st => (
+            <div key={st.label} className={"menu-item" + (st.active ? " is-selected" : "")} role="menuitem"
+              aria-current={st.active ? "step" : undefined} aria-disabled={!st.active || undefined}>
+              <span className="menu-item-icon" style={{ ...badge(st), width: 22, height: 22, borderRadius: "50%",
+                display: "grid", placeItems: "center", fontSize: 12, fontWeight: 600 }}>
+                {st.done ? <Icon name="check" size={13} /> : st.n}</span>
+              <span className="menu-item-body">
+                <span className="menu-item-title">{st.label}</span>
+                {st.done && <span className="menu-item-sub">Done</span>}
+              </span>
+              {st.active && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TopNav({ name, onRename, compact, mobile }) {
   const steps = [
     { n: 1, icon: "clipboard-a", label: "Questionnaire", active: true },
     { n: 2, icon: "group", label: "Participants" },
@@ -112,7 +153,8 @@ function TopNav({ name, onRename, compact }) {
         )}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "none" }}>
-        {steps.map(st => (
+        {mobile && <StepsMenu steps={steps} badge={badge} />}
+        {!mobile && steps.map(st => (
           <div key={st.label} title={compact ? st.label : undefined}
             style={{ display: "flex", alignItems: "center", gap: 8, padding: compact ? 8 : "8px 12px 8px 8px",
             borderRadius: 12, background: st.active ? "var(--bg-brand-subtle-selected)" : "transparent" }}>
@@ -133,7 +175,7 @@ function TopNav({ name, onRename, compact }) {
             )}
           </div>
         ))}
-        <span style={{ width: 1, height: 24, background: "var(--border-base)", flex: "none" }} aria-hidden="true" />
+        {!mobile && <span style={{ width: 1, height: 24, background: "var(--border-base)", flex: "none" }} aria-hidden="true" />}
         <Tooltip label="More options" pos="is-below"><button className="ib ib-36 ib-tertiary" aria-label="More options"><Icon name="more-vertical" size={16} /></button></Tooltip>
       </div>
     </div>
@@ -304,6 +346,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // Below this the questionnaire page tightens: step labels go, the page
   // padding and the gaps between cards shrink, "Edit name" becomes an icon.
   const compact = useMediaQuery("(max-width: 1100px)");
+  // Narrower still: the step pills don't fit at all and become a menu.
+  const mobile = useMediaQuery("(max-width: 760px)");
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
   const [topicWarn, setTopicWarn] = useState(null); // section pending removal confirmation
@@ -607,7 +651,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   return (
     <div className={"col" + (tipsOff ? " tips-off" : "")} style={{ background: pageBg }}>
       <div className="scroll-y" style={{ flex: 1, padding: "0 0 110px" }}>
-      <TopNav name={name} onRename={() => setRename({ kind: "survey", value: name })} compact={compact} />
+      <TopNav name={name} onRename={() => setRename({ kind: "survey", value: name })} compact={compact} mobile={mobile} />
       {/* The step's context bar. It replaces the page title: the active tab
           already names the step, so an H1 would only repeat the nav — and this
           page's whole job is a long list. Grammar, left to right:
@@ -903,15 +947,18 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         </div>
       </div>
 
-      <div style={{ height: 72, borderTop: "1px solid var(--border-base)", background: "var(--bg-base)", display: "flex",
-        alignItems: "center", padding: "0 var(--spacing-loose)", gap: "var(--spacing-base-tight)", flex: "none", boxShadow: "var(--sh-footer)" }}>
-        <button className="btn btn-secondary" onClick={onExit}><Icon name="chevron-left" size={16} />Previous step</button>
+      {/* On a phone the footer keeps only the three things you can act on;
+          the save note and the out-of-scope "Plan survey" would push them off
+          the screen. */}
+      <div className="qfoot">
+        <button className="btn btn-secondary" onClick={onExit}>
+          <Icon name="chevron-left" size={16} />{mobile ? "Back" : "Previous step"}</button>
         <div className="spacer" />
-        <span className="text-medium text-subdued">Last saved: just now</span>
-        <button className="btn btn-secondary" onClick={onSaveClose}>Save &amp; close</button>
+        {!mobile && <span className="text-medium text-subdued">Last saved: just now</span>}
+        <button className="btn btn-secondary" onClick={onSaveClose}>{mobile ? "Save" : <>Save &amp; close</>}</button>
         <button className={"btn btn-primary" + (chosen.length === 0 ? " is-disabled" : "")} disabled={chosen.length === 0}
-          onClick={() => {}}>Next step<Icon name="arrow-right" size={16} /></button>
-        <button className="btn btn-secondary is-disabled" disabled><Icon name="send" size={16} />Plan survey</button>
+          onClick={() => {}}>{mobile ? "Next" : "Next step"}<Icon name="arrow-right" size={16} /></button>
+        {!mobile && <button className="btn btn-secondary is-disabled" disabled><Icon name="send" size={16} />Plan survey</button>}
       </div>
 
       {rename && rename.kind === "survey" && <RenameDialog title="Rename survey" label="Survey name" tid="1"

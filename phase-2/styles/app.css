@@ -293,6 +293,32 @@ button.sel-btn.cq-sel { font-size: 14px; }
   .qsec-dropzone { height: 24px; }
   .qsec-list > .qsec-dropzone:last-child.is-armed { height: 24px; }
 }
+
+/* ---- dialogs on a small screen ------------------------------------------
+   A dialog that keeps its desktop measure on a phone is a postage stamp with
+   a scrollbar. Below 900px every dialog takes the whole viewport minus a 16px
+   margin — the big worksurfaces take the height too, small ones keep their
+   natural height so a two-line confirmation isn't stretched over the screen.
+   Select questions is the exception: it IS the screen there, edge to edge. */
+@media (max-width: 900px) {
+  .overlay { padding: var(--spacing-base); }
+  .dialog { width: 100%; max-width: 100%; max-height: 100%; padding: var(--spacing-loose); }
+  .dialog.cq-dialog, .dialog.bmq-dialog, .dialog.dialog-worksurface, .dialog.dialog-l {
+    width: 100%; max-width: 100%; height: 100%; }
+  /* The one dialog that is a page: no margin, no rounded corners. */
+  .overlay.is-fullbleed { padding: 0; }
+  .overlay.is-fullbleed .dialog.eq-dialog {
+    width: 100vw; max-width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; border: 0; }
+  .dialog.eq-wide .eq-main { padding: var(--spacing-loose) var(--spacing-loose) 0; }
+  .dialog.eq-wide > .dialog-footer { padding: var(--spacing-base) var(--spacing-loose); }
+  /* A footer note can't share a line with the buttons at this width: it takes
+     its own line above them instead of pushing them off the dialog. */
+  .dialog-footer { flex-wrap: wrap; row-gap: var(--spacing-tight); }
+  .cq-bench-note, .bmq-foot-note { flex: 1 0 100%; order: -1; }
+  /* The respondent preview keeps its shape by giving up padding, not width. */
+  .bmq-preview, .cq-preview { padding: var(--spacing-base); }
+  .bmq-card, .cq-card { padding: var(--spacing-base); }
+}
 .qsec-list { display: flex; flex-direction: column; padding-bottom: var(--spacing-base); }
 /* rows: full-width, divided by a top border, drag button aligned with the header one */
 .qsec-body { position: relative; display: flex; flex-direction: column; }
@@ -388,6 +414,8 @@ button.sel-btn.cq-sel { font-size: 14px; }
   min-height: 59px; border-bottom: 1px solid var(--border-base); cursor: pointer;
   transition: background var(--motion-fast) var(--ease-standard); }
 .aql-row:hover { background: var(--bg-base-hover); }
+/* Tags + type + actions as one group on the right of a row. */
+.aql-meta { display: flex; align-items: center; gap: var(--spacing-base-tight); flex: none; margin-left: auto; }
 /* Info variant of the DS system notification (blue left border) — used to tell
    the user a pressed question is required. */
 .sysnotif.is-info { border-left-color: var(--border-info); }
@@ -491,6 +519,30 @@ button.sel-btn.cq-sel { font-size: 14px; }
   border-top: 1px solid var(--border-white); border-bottom: 1px solid var(--border-white); }
 .ctxbar-inner { max-width: 960px; margin: 0 auto;
   display: flex; align-items: center; gap: var(--spacing-tight); }
+/* The step footer: one row of actions, with its own mobile trim. */
+.qfoot { height: 72px; flex: none; display: flex; align-items: center; gap: var(--spacing-base-tight);
+  padding: 0 var(--spacing-loose); background: var(--bg-base); border-top: 1px solid var(--border-base);
+  box-shadow: var(--sh-footer); }
+@media (max-width: 760px) {
+  /* Status above, actions below — side by side neither of them fits. */
+  .ctxbar-inner { flex-wrap: wrap; }
+  .ctxbar-status { flex: 1 0 100%; flex-direction: row; align-items: baseline; gap: 8px; }
+  .ctxbar-meta { font-size: 13px; }
+  .ctxbar-inner .spacer { display: none; }
+  .ctxbar-inner > .ctxbar-menu-wrap, .ctxbar-inner > .btn { flex: 1 1 0; }
+  .ctxbar-inner > .ctxbar-menu-wrap > .btn { width: 100%; justify-content: center; }
+  .qfoot { padding: 0 var(--spacing-base); }
+  /* A question row stacks: wording first, its tags and actions underneath.
+     The drag handles go — dragging isn't a touch gesture here, and the row and
+     topic menus both carry Move up / Move down. */
+  .qrow { flex-wrap: wrap; }
+  .qrow-main { flex: 1 0 100%; order: 1; }
+  .qrow > .tt-demo:first-child, .qsec-head > .tt-demo:first-child { display: none; }
+  /* Same stacking inside the Select questions rows. */
+  .aql-row { flex-wrap: wrap; row-gap: 6px; }
+  .aql-meta { flex: 1 0 100%; }
+  .qrow-meta { order: 2; margin-left: auto; }
+}
 .ctxbar-status { display: flex; flex-direction: column; min-width: 0; }
 .ctxbar-count { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
 .ctxbar-meta { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.6; color: var(--content-secondary); min-width: 0; }
@@ -1046,7 +1098,7 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .bmq-dd-opt > i { color: var(--content-brand); flex: none; }
 
 .bmq-scale { padding: 24px 24px 0; display: flex; flex-direction: column; gap: 16px; align-items: center; width: 100%; }
-.bmq-scale-row { display: flex; align-items: center; gap: 4px; justify-content: center; }
+.bmq-scale-row { display: flex; align-items: center; gap: 4px; justify-content: center; flex-wrap: wrap; }
 .bmq-scale-end { font-size: 14px; line-height: 1.6; color: var(--content-base); width: 148px; text-align: center; }
 .bmq-dot { width: 28px; height: 28px; border-radius: 50%; flex: none; margin: 6px;
   border: 5px solid var(--dot); background: var(--bg-base); box-shadow: 0 1px 2px rgba(25,39,67,.12);
@@ -1067,6 +1119,9 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .bmq-lang-text span { font-size: 12px; line-height: 19.2px; color: var(--content-secondary); }
 .bmq-lang-alert { display: flex; color: var(--content-warning); }
 .bmq-lang-note { font-size: 12px; line-height: 1.55; color: var(--content-subtle); padding: 12px 8px 4px; }
+/* Under the compact language select the note has the card below it, so it
+   loses the side list's padding. */
+.bmq-lang-note.is-inline { padding: 6px 2px 0; }
 
 /* Participant-style topic preview: full-bleed themed intro screen */
 .bmq-preview.is-participant { padding: 0; align-items: stretch; }
@@ -1401,6 +1456,7 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
    rail + rows need the room. Flagged as beyond the DS scale on purpose. */
 /* The frame's shape: the rail runs the full height flush to the dialog edge,
    the content column carries its own 32px padding, the footer spans both. */
+.dialog.eq-dialog { height: min(940px, calc(100vh - 64px)); }
 .dialog.eq-wide { width: min(1280px, calc(100vw - 48px)); padding: 0; gap: 0; }
 .dialog.eq-wide > .eq-frame { flex: 1; min-height: 0; gap: 0; }
 .dialog.eq-wide .eq-rail { padding: var(--spacing-loose); }

@@ -9,7 +9,7 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, Tooltip, ThemeTag } from "./shared.jsx";
+import { QTypeIcon, Tooltip, ThemeTag, useMediaQuery, MiniSelect } from "./shared.jsx";
 import { QTYPES, SCALE_LABELS } from "../data/data.js";
 import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 import { variantsOf } from "../data/variants.js";
@@ -141,6 +141,9 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   const [desc, setDesc] = useState(meta.desc);
   const [topic, setTopic] = useState(topicKey || q.topic);
   const [lang, setLang] = useState("en");
+  // Same breakpoint as the custom-question dialog: below it the language list
+  // can't sit next to the preview, so it becomes a select above it.
+  const compact = useMediaQuery("(max-width: 1160px)");
   const [topicOpen, setTopicOpen] = useState(false);
   const [detachAsk, setDetachAsk] = useState(false);
   // A description is ALWAYS the coordinator's own text: it clarifies the
@@ -156,6 +159,15 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   const wording = variant || q.text;
   const variants = variantsOf(q.text, allVariants, q.type);
   const primary = lang === "en";
+  // Mirrors the side list, so the compact menu reads the same way.
+  const langItems = [
+    { header: true, label: "Primary language" },
+    ...LANGUAGES.filter(l => l.primary).map(l => ({ value: l.code, label: l.label, sub: l.country,
+      lead: <span className="cq-flag"><img src={flagSrc(l.flag)} alt="" /></span> })),
+    { header: true, label: `Translations (${LANGUAGES.length - 1})` },
+    ...LANGUAGES.filter(l => !l.primary).map(l => ({ value: l.code, label: l.label, sub: l.country,
+      lead: <span className="cq-flag"><img src={flagSrc(l.flag)} alt="" /></span> })),
+  ];
   const t = (text) => (primary || !text ? text : autoTranslation(text, lang));
 
   const dirty = (variant || undefined) !== (meta.variant || undefined)
@@ -238,6 +250,16 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
           </div>
         </div>
 
+        {/* Above the stage, not inside it: the preview scrolls, and a language
+            control that scrolls out of view is a control you can't find. */}
+        {compact && (
+          <div className="cq-field cq-langsel">
+            <span className="cq-lbl">Languages</span>
+            <MiniSelect ariaLabel="Languages" value={lang} items={langItems} onChange={setLang} block />
+            {!primary && <div className="bmq-lang-note is-inline">Translations of benchmarked questions are provided by Effectory. Change the wording in the primary language.</div>}
+          </div>
+        )}
+
         <div className="bmq-stage">
           <div className="bmq-preview" style={design ? { background: designWash(design) } : undefined}>
             {/* margin:auto centers the group when there is room and degrades
@@ -302,7 +324,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               </div>
             </div>
           </div>
-          <div className="bmq-langs">
+          {!compact && <div className="bmq-langs">
             <div className="bmq-langs-head">Primary language</div>
             {LANGUAGES.filter(l => l.primary).map(l => (
               <button key={l.code} className={"bmq-lang" + (lang === l.code ? " is-selected" : "")} onClick={() => setLang(l.code)}>
@@ -318,7 +340,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               </button>
             ))}
             {!primary && <div className="bmq-lang-note">Translations of benchmarked questions are provided by Effectory. Change the wording in the primary language.</div>}
-          </div>
+          </div>}
         </div>
 
         <div className="dialog-footer">

@@ -181,18 +181,22 @@ function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, on
         ? <Checkbox on large locked onClick={(e) => { e.stopPropagation(); onRequiredPress(); }} />
         : <RowCheckbox on={on} onClick={(e) => { e.stopPropagation(); onToggle(); }} />}
       <div className="aql-text">{hl ? <Highlight text={q.text} q={hl} /> : q.text}</div>
-      {/* On the Custom questions page the "Custom question" tag is redundant —
-          you are on that page. The space carries where the question is used
-          instead, truncated, with the full sentence in its tooltip. */}
-      {q.theme
-        ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-above" float
-            onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
-        : usedInTag
-          ? (q.from ? <UsedInTag survey={q.from} /> : null)
-          : q.custom ? <CustomTag label="Custom question" pos="is-above" float onOpen={onEditCustom ? () => onEditCustom(q) : undefined} /> : null}
-      {required && <RequiredMarker size={24} />}
-      <QTypeIcon type={q.type} size={24} tip pos="is-above" float />
-      <RowActions q={q} on={on} onToggle={onToggle} onSettings={onSettings} onEditCustom={onEditCustom} onDelete={onDeleteCustom} />
+      {/* Tags and actions travel as one group so a narrow screen can drop them
+          to their own line instead of squeezing the wording into a column. */}
+      <div className="aql-meta">
+        {/* On the Custom questions page the "Custom question" tag is redundant —
+            you are on that page. The space carries where the question is used
+            instead, truncated, with the full sentence in its tooltip. */}
+        {q.theme
+          ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-above" float
+              onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
+          : usedInTag
+            ? (q.from ? <UsedInTag survey={q.from} /> : null)
+            : q.custom ? <CustomTag label="Custom question" pos="is-above" float onOpen={onEditCustom ? () => onEditCustom(q) : undefined} /> : null}
+        {required && <RequiredMarker size={24} />}
+        <QTypeIcon type={q.type} size={24} tip pos="is-above" float />
+        <RowActions q={q} on={on} onToggle={onToggle} onSettings={onSettings} onEditCustom={onEditCustom} onDelete={onDeleteCustom} />
+      </div>
     </div>
   );
 }
@@ -927,9 +931,11 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const toggleAllSecs = () => setCollapsed(allCollapsed ? new Set() : new Set(secKeys));
 
   return (
-    <div className="overlay" onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
-      <div className={"dialog dialog-l dialog-worksurface" + (nav === "sidebar" ? " eq-wide" : "")} role="dialog" aria-modal="true" aria-labelledby="eq-title"
-        style={{ display: "flex", flexDirection: "column", height: "min(940px, calc(100vh - 64px))" }}>
+    <div className="overlay is-fullbleed" onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
+      {/* Height lives in CSS (.eq-dialog): on a small screen this dialog IS
+          the screen, and an inline height would win over that rule. */}
+      <div className={"dialog dialog-l dialog-worksurface eq-dialog" + (nav === "sidebar" ? " eq-wide" : "")} role="dialog" aria-modal="true" aria-labelledby="eq-title"
+        style={{ display: "flex", flexDirection: "column" }}>
         {nav === "tabs" && (
           <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
             <button className="dialog-close" aria-label="Close" onClick={close}><Icon name="cross" /></button>
@@ -1258,9 +1264,11 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                           <Checkbox on={sel.has(oq.id)} large onClick={(e) => { e.stopPropagation(); toggleOrgQuestion(oq); }} />
                         </Tooltip>
                         <div className="aql-text">{oq.text}</div>
-                        <UsedInTag survey={oq.from} />
-                        <QTypeIcon type={oq.type} size={24} tip pos="is-above" float />
-                        <RowActions q={oq} on={sel.has(oq.id)} onToggle={() => toggleOrgQuestion(oq)} onEditCustom={setEditCustomQ} />
+                        <div className="aql-meta">
+                          <UsedInTag survey={oq.from} />
+                          <QTypeIcon type={oq.type} size={24} tip pos="is-above" float />
+                          <RowActions q={oq} on={sel.has(oq.id)} onToggle={() => toggleOrgQuestion(oq)} onEditCustom={setEditCustomQ} />
+                        </div>
                       </div>
                     ))}
                   </section>

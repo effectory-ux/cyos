@@ -14,7 +14,7 @@
 // translation stays editable, always.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, Tooltip, useMediaQuery } from "./shared.jsx";
+import { QTypeIcon, Tooltip, useMediaQuery, MiniSelect } from "./shared.jsx";
 import { QTYPES, TOPICS } from "../data/data.js";
 import { similarQuestions } from "../data/similar.js";
 import {
@@ -24,53 +24,6 @@ import { designWash } from "../data/designs.js";
 
 // Below this the dialog can't hold a 240px side list next to the preview.
 const COMPACT_QUERY = "(max-width: 1160px)";
-
-// ---- compact DS select (sel-btn trigger + .menu popover) ----------------
-// An item with `header: true` renders as a DS group label instead of an option,
-// so a grouped list (primary vs translations) keeps its structure in the menu.
-function MiniSelect({ value, placeholder, items, onChange, ariaLabel, block, invalid }) {
-  const [open, setOpen] = useState(false);
-  const sel = items.find(it => !it.header && it.value === value);
-  return (
-    <div className={"cq-menu-wrap" + (block ? " is-block" : "")}>
-      <button type="button" className={"sel-btn cq-sel" + (open ? " is-pressed" : "") + (invalid ? " is-error" : "")}
-        aria-haspopup="listbox" aria-expanded={open} aria-label={ariaLabel}
-        onClick={() => setOpen(o => !o)}>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          {sel && sel.lead}
-          <span className={sel ? "sel-btn-name" : "cq-sel-placeholder"}
-            style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {sel ? sel.label : placeholder}
-          </span>
-          {sel && sel.trail}
-        </span>
-        <Icon name="chevron-down" size={16} />
-      </button>
-      {open && (
-        <>
-          <div className="cq-menu-scrim" onMouseDown={() => setOpen(false)} />
-          <div className="menu cq-menu-pop" role="listbox">
-            {items.map((it, i) => (it.header ? (
-              <div key={"h" + i} className="menu-group-lbl" role="presentation">{it.label}</div>
-            ) : (
-              <div key={String(it.value)} role="option" aria-selected={it.value === value}
-                className={"menu-item" + (it.value === value ? " is-selected" : "") + (it.working ? " is-working" : "")}
-                onClick={() => { onChange(it.value); setOpen(false); }}>
-                {it.lead}
-                <span className="menu-item-body">
-                  <span className="menu-item-title">{it.label}</span>
-                  {it.sub && <span className="menu-item-sub">{it.sub}</span>}
-                </span>
-                {it.trail}
-                {it.value === value && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
-              </div>
-            )))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 // ---- 5-point scale preview (DS distribution colors) ---------------------
 const SCALE_DOTS = [
