@@ -426,7 +426,7 @@ function PagesMenu({ tab, onPick }) {
   return (
     <div ref={ref} style={{ position: "relative", flex: "none" }}>
       <Tooltip label={cur ? "Pages: " + cur.label : "Pages"}>
-        <button className={"ib ib-36 ib-tertiary" + (open ? " is-pressed" : "")} aria-label="Pages"
+        <button className={"ib ib-36 ib-secondary" + (open ? " is-pressed" : "")} aria-label="Pages"
           aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
           <Icon name="menu" size={16} />
         </button>
@@ -454,7 +454,7 @@ function PagesMenu({ tab, onPick }) {
 // this page, plus (while a search is running) which kind of result to keep. The
 // count badge says how many are actually narrowing anything — "All" on both is
 // the default and counts for nothing.
-function FilterMenu({ show, showOptions, onShow, kind, kindOptions, onKind }) {
+function FilterMenu({ show, showOptions, onShow, kind, kindOptions, onKind, compact }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -477,12 +477,22 @@ function FilterMenu({ show, showOptions, onShow, kind, kindOptions, onKind }) {
   );
   return (
     <div ref={ref} style={{ position: "relative", flex: "none" }}>
-      <button className={"sel-btn" + (open ? " is-pressed" : "")} aria-haspopup="menu" aria-expanded={open}
-        onClick={() => setOpen(o => !o)}>
-        <Icon name="filter" size={16} style={{ color: "var(--content-secondary)" }} />
-        <span className="sel-btn-name">Filter</span>
-        {active > 0 && <span className="eq-filter-count">{active}</span>}
-      </button>
+      {compact ? (
+        <Tooltip label={active > 0 ? `Filter (${active} active)` : "Filter"}>
+          <button className={"ib ib-36 ib-secondary" + (open ? " is-pressed" : "")} aria-label="Filter"
+            aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+            <Icon name="filter" size={16} />
+            {active > 0 && <span className="eq-filter-count is-dot">{active}</span>}
+          </button>
+        </Tooltip>
+      ) : (
+        <button className={"sel-btn" + (open ? " is-pressed" : "")} aria-haspopup="menu" aria-expanded={open}
+          onClick={() => setOpen(o => !o)}>
+          <Icon name="filter" size={16} style={{ color: "var(--content-secondary)" }} />
+          <span className="sel-btn-name">Filter</span>
+          {active > 0 && <span className="eq-filter-count">{active}</span>}
+        </button>
+      )}
       {open && (
         <div className="menu" role="menu" style={{ position: "absolute", right: 0, top: 44, width: 240, zIndex: 30 }}>
           {group("Show", show, showOptions, onShow)}
@@ -919,7 +929,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               <input type="search" className="srch" placeholder="Search questions, themes and templates"
                 value={gq} onChange={e => setGq(e.target.value)} />
             </div>
-            <FilterMenu
+            <FilterMenu compact={compact}
               show={tab === "themes" ? themeShow : tab === "templates" ? tmplShow : show}
               onShow={tab === "themes" ? setThemeShow : tab === "templates" ? setTmplShow : setShow}
               showOptions={GENERIC_SHOW[tab] || GENERIC_SHOW.questions}
@@ -928,8 +938,15 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
             {/* Creating a custom question is reachable from every page: it is
                 the answer when the library does not cover something, and that
                 is a realisation you have while browsing it. */}
-            <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
-              <Icon name="plus" size={16} />Add custom question</button>
+            {compact ? (
+              <Tooltip label="Add custom question">
+                <button className="ib ib-36 ib-secondary" aria-label="Add custom question" onClick={() => setCustomOpen(true)}>
+                  <Icon name="plus" size={16} /></button>
+              </Tooltip>
+            ) : (
+              <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
+                <Icon name="plus" size={16} />Add custom question</button>
+            )}
             <span className="eq-tool-div" aria-hidden="true" />
             <Tooltip label="Close" pos="is-left">
               <button className="ib ib-36 ib-tertiary" aria-label="Close" onClick={close}><Icon name="cross" size={16} /></button>

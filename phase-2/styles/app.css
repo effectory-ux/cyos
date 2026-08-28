@@ -1386,10 +1386,20 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .eq-usedin { flex: none; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
 /* One row at full width (as drawn); wraps instead of clipping when the dialog
    is squeezed, and the search never collapses to an icon. */
-.eq-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-base-tight); }
-.eq-toolbar-search { flex: 1 1 240px; min-width: 240px; }
+/* One row, always: the close button belongs in the top right corner of the
+   dialog, and a wrapping toolbar would push it down a line. Everything but the
+   search field is fixed-width (icon-only when the dialog is narrow), so the
+   field is the only thing that has to give. */
+.eq-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--spacing-base-tight); }
+.eq-toolbar-search { flex: 1 1 240px; min-width: 120px; }
 /* How many filters are actually narrowing something. Same grey pill the counts
    elsewhere use, sized to a circle for single digits. */
 .eq-filter-count { flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--radius-full);
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--bg-secondary); color: var(--content-secondary); font-size: 12px; font-weight: 600; }
+/* On the icon-only trigger the count rides the corner instead of sitting in a
+   label that isn't there. */
+.ib .eq-filter-count.is-dot { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px;
+  padding: 0 5px; font-size: 11px; background: var(--bg-brand); color: var(--content-on-brand-base);
+  border: 2px solid var(--bg-base); }
+.eq-toolbar .ib { position: relative; overflow: visible; flex: none; }

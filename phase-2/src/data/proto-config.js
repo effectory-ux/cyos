@@ -3,6 +3,13 @@
 // The toolbar component itself lives in src/proto/ and knows nothing of CYOS.
 export const PROTO_STORAGE_PREFIX = "cyos";
 
+// The toolbar is opt-in and unguessable: it renders only for a URL carrying
+// `?<key>-toolbar-active`. Minted once, at random, and kept in the repo so a
+// toolbar link stays valid between sessions — copy one from the bar's share
+// button rather than typing it. Rotate it here to invalidate every link handed
+// out so far.
+export const PROTO_TOOLBAR_KEY = "0c8ca4b4ce";
+
 export const START_POINTS = [
   { key: "surveys", label: "Surveys list" },
   { key: "template-dialog", label: "Choose a template" },

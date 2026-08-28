@@ -10,7 +10,7 @@ import { themeStatus, themesOf } from "./components/shared.jsx";
 import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
 import { libraryPool } from "./data/qlib.js";
 import { PrototypeBar, getStartAt } from "./proto/PrototypeBar.jsx";
-import { PROTO_STORAGE_PREFIX, START_POINTS, USE_CASES, VARIANTS } from "./data/proto-config.js";
+import { PROTO_STORAGE_PREFIX, PROTO_TOOLBAR_KEY, START_POINTS, USE_CASES, VARIANTS } from "./data/proto-config.js";
 import { serialize, writeRoute, parse } from "./data/routes.js";
 import { defaultEdges, EDGE_CASES } from "./data/edgecases.js";
 import { designById } from "./data/designs.js";
@@ -432,7 +432,7 @@ export function App() {
   return (
     <div className="proto-shell">
       <PrototypeBar useCases={USE_CASES} startPoints={START_POINTS} edgeCases={EDGE_CASES} variants={VARIANTS}
-        storagePrefix={PROTO_STORAGE_PREFIX}
+        storagePrefix={PROTO_STORAGE_PREFIX} toolbarKey={PROTO_TOOLBAR_KEY}
         onUseCase={gotoUseCase} edges={edges} onToggleEdge={toggleEdge}
         varState={variantsOn} onToggleVariant={toggleVariant} />
       <div className="app">

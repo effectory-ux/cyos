@@ -7,6 +7,17 @@ cases**, choose the **start point** — plus the current deep link with a copy
 button. Hide it with Ctrl+` or the close button; a peek tab in the top-left
 corner brings it back.
 
+## Who sees it
+
+The toolbar is **opt-in and unguessable**. It renders only when the URL carries
+`?<toolbarKey>-toolbar-active`, where `toolbarKey` is a random id the host mints
+once and passes in as a prop. Every other link — the default one, and anything a
+tester or participant is handed — is the plain prototype: no toolbar, no peek
+tab, no shortcut. The two copy buttons in the bar make the distinction explicit:
+the link icon copies the current step *without* the flag (share this), the share
+icon copies it *with* the flag (for a colleague who needs the toolbar). Rotating
+the key in the host's config invalidates every toolbar link handed out so far.
+
 ## What lives here
 
 - `PrototypeBar.jsx` — the component. No imports from the host app.

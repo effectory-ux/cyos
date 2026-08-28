@@ -18,20 +18,32 @@ import { Ic } from "./icons.jsx";
 import { initCopyEdits, enableEdit, disableEdit, discardEdits, editCount, undoEdit, redoEdit, canUndo, canRedo } from "./copyEdit.js";
 import "./prototype-bar.css";
 
-// Per-project localStorage keys, so two prototypes on one origin don't share
-// their toolbar state. The host passes the same prefix it uses at boot.
-// A link can opt the toolbar OUT entirely: ?toolbar=off renders nothing at all,
-// not even the reveal tab, so a participant or tester sees only the prototype.
-// Sharing that link is an action IN the toolbar; the plain link keeps it.
-const NO_BAR = (() => {
-  try { return new URLSearchParams(window.location.search).get("toolbar") === "off"; }
+// The toolbar is OPT-IN, and the opt-in is unguessable: it appears only when
+// the URL carries `?<toolbarKey>-toolbar-active`, where the key is a random id
+// minted per prototype (the host passes it in). Every other link — the one a
+// participant, a tester or a stranger ends up with — is the plain prototype,
+// with no toolbar and no reveal tab. Handing someone the toolbar is therefore a
+// deliberate act (the share button in the bar), not something they can type.
+const flagOf = (key) => `${key}-toolbar-active`;
+const barActive = (key) => {
+  try { return !!key && new URLSearchParams(window.location.search).has(flagOf(key)); }
   catch (_) { return false; }
-})();
-const participantLink = () => {
+};
+// The current step WITHOUT the toolbar flag: what you hand to a tester.
+const plainLink = (key) => {
   try {
     const u = new URL(window.location.href);
-    u.searchParams.set("toolbar", "off");
-    return u.toString();
+    u.searchParams.delete(flagOf(key));
+    return u.toString().replace(/\?(?=#|$)/, "");
+  } catch (_) { return window.location.href; }
+};
+// The current step WITH the flag: what you hand to a colleague.
+const toolbarLink = (key) => {
+  try {
+    const u = new URL(window.location.href);
+    u.searchParams.set(flagOf(key), "");
+    // A valueless flag reads better than `=`, and URLSearchParams can't write one.
+    return u.toString().replace(flagOf(key) + "=", flagOf(key));
   } catch (_) { return window.location.href; }
 };
 
@@ -52,7 +64,8 @@ const saveHidden = (prefix, v) => { try { localStorage.setItem(hideKey(prefix), 
 //                                        (varState map + onToggleVariant(key))
 //   storagePrefix                      — localStorage namespace, e.g. "cyos"
 export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], variants = [],
-  edges = {}, varState = {}, onUseCase = () => {}, onToggleEdge = () => {}, onToggleVariant = () => {}, storagePrefix = "proto" }) {
+  edges = {}, varState = {}, onUseCase = () => {}, onToggleEdge = () => {}, onToggleVariant = () => {},
+  storagePrefix = "proto", toolbarKey = "" }) {
   const [hidden, setHide] = useState(() => getHidden(storagePrefix));
   const [menu, setMenu] = useState(null); // "cases" | "start" | "edges" | null
   const [start, setStart] = useState(() => getStartAt(storagePrefix, startPoints[0] && startPoints[0].key));
@@ -90,16 +103,16 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
   }, [storagePrefix]);
 
   const copy = () => {
-    try { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch (_) {}
+    try { navigator.clipboard.writeText(plainLink(toolbarKey)); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch (_) {}
   };
-  const copyClean = () => {
-    try { navigator.clipboard.writeText(participantLink()); setShared(true); setTimeout(() => setShared(false), 1600); } catch (_) {}
+  const copyWithBar = () => {
+    try { navigator.clipboard.writeText(toolbarLink(toolbarKey)); setShared(true); setTimeout(() => setShared(false), 1600); } catch (_) {}
   };
   const pick = (key) => { setMenu(null); onUseCase(key); };
   const pickStart = (key) => { setStart(key); setStartAt(storagePrefix, key); setMenu(null); };
   const offCount = edgeCases.filter(e => edges[e.key] !== e.on).length;
 
-  if (NO_BAR) return null;
+  if (!barActive(toolbarKey)) return null;
 
   if (hidden) {
     return (
@@ -246,12 +259,14 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
         </>
       )}
 
+      {/* The plain link is the default one — no toolbar for whoever opens it.
+          The second button is how the toolbar gets handed to a colleague. */}
       <button className="pbar-icon pbar-tt is-right" onClick={copy}
-        data-tip={copied ? "Copied" : "Copy link to this step"} aria-label="Copy link to this step">
+        data-tip={copied ? "Copied" : "Copy link to this step (no toolbar)"} aria-label="Copy link to this step">
         <Ic name={copied ? "check" : "copy"} size={14} />
       </button>
-      <button className="pbar-icon pbar-tt is-right" onClick={copyClean}
-        data-tip={shared ? "Copied" : "Copy link for participants (no toolbar)"} aria-label="Copy link for participants">
+      <button className="pbar-icon pbar-tt is-right" onClick={copyWithBar}
+        data-tip={shared ? "Copied" : "Copy link with the toolbar"} aria-label="Copy link with the toolbar">
         <Ic name={shared ? "check" : "share"} size={14} />
       </button>
       <button className="pbar-icon pbar-tt is-right"
