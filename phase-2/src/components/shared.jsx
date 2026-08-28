@@ -140,6 +140,23 @@ function ProgressRing({ pct }) {
   );
 }
 
+// Marks every occurrence of the live query inside a result's text, so it is
+// obvious WHY a row matched.
+export function Highlight({ text, q }) {
+  if (!q) return text;
+  const parts = [];
+  const lower = (text || "").toLowerCase();
+  let at = 0;
+  for (let i = lower.indexOf(q); i >= 0; i = lower.indexOf(q, at)) {
+    if (i > at) parts.push(text.slice(at, i));
+    parts.push(<mark key={i} className="eq-hl">{text.slice(i, i + q.length)}</mark>);
+    at = i + q.length;
+  }
+  if (at === 0) return text;
+  if (at < text.length) parts.push(text.slice(at));
+  return <>{parts}</>;
+}
+
 // Theme tag whose look tracks how much of the theme is in the questionnaire:
 //   neutral (grey)      — no questions of the theme added yet
 //   in progress (light) — some added; a ring shows the fraction
@@ -155,7 +172,7 @@ function tagActivate(onOpen) {
   };
 }
 
-export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", float = false, onOpen }) {
+export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", float = false, hl, onOpen }) {
   const complete = total > 0 && kept >= total;
   const partial = kept > 0 && !complete;
   const state = complete ? "is-complete" : partial ? "is-progress" : "is-neutral";
@@ -169,7 +186,8 @@ export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", float = 
         {/* Complete needs no icon: the inverted fill (dark green, light text)
             already reads as a distinct state next to neutral's light grey. */}
         {partial ? <ProgressRing pct={kept / total} /> : null}
-        <span className="tag-ellip">{theme}</span>
+        {/* A row can match a search THROUGH this tag, so it highlights too. */}
+        <span className="tag-ellip">{hl ? <Highlight text={theme} q={hl} /> : theme}</span>
       </span>
     </Tooltip>
   );

@@ -7,28 +7,11 @@
 import { useState, useMemo, useRef, useEffect, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { themeStatus, themesOf, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag, RequiredMarker, useMediaQuery } from "./shared.jsx";
+import { themeStatus, themesOf, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag, RequiredMarker, useMediaQuery, Highlight } from "./shared.jsx";
 import { CustomQuestionDialog } from "./CustomQuestionDialog.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
 import { THEMES, POOL, TEMPLATES, BADGE_COLORS, ORG_CUSTOM } from "../data/data.js";
 import { templatePoolQuestions, TEMPLATE_META } from "../data/qlib.js";
-
-// Marks every occurrence of the live query inside a result's text, so it is
-// obvious WHY a row matched.
-function Highlight({ text, q }) {
-  if (!q) return text;
-  const parts = [];
-  const lower = (text || "").toLowerCase();
-  let at = 0;
-  for (let i = lower.indexOf(q); i >= 0; i = lower.indexOf(q, at)) {
-    if (i > at) parts.push(text.slice(at, i));
-    parts.push(<mark key={i} className="eq-hl">{text.slice(i, i + q.length)}</mark>);
-    at = i + q.length;
-  }
-  if (at === 0) return text;
-  if (at < text.length) parts.push(text.slice(at));
-  return <>{parts}</>;
-}
 
 // Two-line tooltip for a "select the whole subject" checkbox — names the current
 // state and the action a click performs (select the rest, or clear them).
@@ -189,7 +172,7 @@ function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, on
             instead, truncated, with the full sentence in its tooltip. */}
         {q.theme
           ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-above" float
-              onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
+              hl={hl} onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
           : usedInTag
             ? (q.from ? <UsedInTag survey={q.from} /> : null)
             : q.custom ? <CustomTag label="Custom question" pos="is-above" float onOpen={onEditCustom ? () => onEditCustom(q) : undefined} /> : null}
@@ -780,7 +763,13 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     // "Show" narrows search results too — one Filter button, so every option in
     // it has to actually do something while a query is live.
     const byShow = (x) => (show === "selected" ? sel.has(x.id) : show === "unselected" ? !sel.has(x.id) : true);
-    const direct = pool.filter(x => (x.text || "").toLowerCase().includes(gqt)).filter(byShow).sort(bySource);
+    // A question matches on its own wording OR on a tag it carries: searching a
+    // theme has to find the questions IN that theme, not only the theme card.
+    // Wording matches lead — they are what you typed — and tag matches follow.
+    const inText = (x) => (x.text || "").toLowerCase().includes(gqt);
+    const inTheme = (x) => themesOf(x).some(t => t.toLowerCase().includes(gqt));
+    const direct = pool.filter(x => inText(x) || inTheme(x)).filter(byShow)
+      .sort((a, b) => (inText(b) ? 1 : 0) - (inText(a) ? 1 : 0) || bySource(a, b));
     const seen = new Set(direct.map(x => x.id));
     // A theme or topic whose NAME matches brings its questions along. The
     // reason they matched is the group they sit in, not their own wording, so

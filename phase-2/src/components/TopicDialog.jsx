@@ -50,11 +50,10 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
   const tName = primary ? name : (reviewed(lang, "name") ?? autoTranslation(name, lang));
   const tDesc = primary ? desc : (desc.trim() ? (reviewed(lang, "desc") ?? autoTranslation(desc, lang)) : "");
   const setTrPart = (part, value) => setTr(prev => ({ ...prev, [lang + ":" + part]: value }));
-  // A user-authored string without a reviewed translation is machine translated.
-  const needsReview = (code) => !!(
-    (name.trim() && (isCustom || name.trim() !== originalName) && !reviewed(code, "name"))
-    || (desc.trim() && !reviewed(code, "desc"))
-  );
+  // Automatic translation is the normal state and needs no marker — every
+  // language is translated the moment the source is written. What is worth
+  // pointing at is the exception: a language somebody has edited by hand.
+  const handEdited = (code) => !!(reviewed(code, "name") || reviewed(code, "desc"));
 
   const save = () => {
     if (!valid || !dirty) return;
@@ -138,9 +137,9 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
               <button key={l.code} className={"bmq-lang" + (lang === l.code ? " is-selected" : "")} onClick={() => setLang(l.code)}>
                 <span className="lang-flag"><img src={flagSrc(l.flag)} alt="" /></span>
                 <span className="bmq-lang-text"><b>{l.label}</b><span>{l.country}</span></span>
-                {needsReview(l.code) && (
-                  <Tooltip label="Machine translated — review in Translations">
-                    <span className="bmq-lang-alert"><Icon name="alert-circle" size={16} /></span>
+                {handEdited(l.code) && (
+                  <Tooltip label="Manually translated">
+                    <span className="bmq-lang-manual"><Icon name="language" size={16} /></span>
                   </Tooltip>
                 )}
               </button>
