@@ -15,7 +15,7 @@
 // their tooltips.
 import { useState, useEffect, useRef } from "react";
 import { Ic } from "./icons.jsx";
-import { initCopyEdits, enableEdit, disableEdit, discardEdits, editCount, undoEdit, redoEdit, canUndo, canRedo } from "./copyEdit.js";
+import { initCopyEdits, enableEdit, disableEdit, discardEdits, editCount, undoEdit, redoEdit, canUndo, canRedo, isDevHost } from "./copyEdit.js";
 import "./prototype-bar.css";
 
 // Who gets the toolbar:
@@ -26,13 +26,6 @@ import "./prototype-bar.css";
 // without the toolbar, so a second way to say the same thing would only be
 // another thing to remember.
 const flagOf = (key) => `${key}-toolbar-active`;
-const DEV_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "[::1]"];
-const isDevHost = () => {
-  try {
-    const h = window.location.hostname;
-    return DEV_HOSTS.includes(h) || h.endsWith(".local") || /^(10|192\.168)\./.test(h);
-  } catch (_) { return false; }
-};
 const barActive = (key) => {
   try {
     return isDevHost() || (!!key && new URLSearchParams(window.location.search).has(flagOf(key)));
@@ -44,15 +37,6 @@ const plainLink = (key) => {
     const u = new URL(window.location.href);
     u.searchParams.delete(flagOf(key));
     return u.toString().replace(/\?(?=#|$)/, "");
-  } catch (_) { return window.location.href; }
-};
-// The current step WITH the flag: what you hand to a colleague.
-const toolbarLink = (key) => {
-  try {
-    const u = new URL(window.location.href);
-    u.searchParams.set(flagOf(key), "");
-    // A valueless flag reads better than `=`, and URLSearchParams can't write one.
-    return u.toString().replace(flagOf(key) + "=", flagOf(key));
   } catch (_) { return window.location.href; }
 };
 
@@ -128,11 +112,15 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
     return () => window.removeEventListener("keydown", h);
   }, [storagePrefix]);
 
+  // Two links, and the difference is who you are copying for. The link icon
+  // takes this step exactly as you are looking at it (flag and all, which is
+  // how a colleague gets the toolbar). Share is for everyone else: the same
+  // step with the toolbar stripped out.
   const copy = () => {
-    try { navigator.clipboard.writeText(plainLink(toolbarKey)); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch (_) {}
+    try { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch (_) {}
   };
-  const copyWithBar = () => {
-    try { navigator.clipboard.writeText(toolbarLink(toolbarKey)); setShared(true); setTimeout(() => setShared(false), 1600); } catch (_) {}
+  const share = () => {
+    try { navigator.clipboard.writeText(plainLink(toolbarKey)); setShared(true); setTimeout(() => setShared(false), 1600); } catch (_) {}
   };
   const pick = (key) => { setMenu(null); onUseCase(key); };
   const pickStart = (key) => { setStart(key); setStartAt(storagePrefix, key); setMenu(null); };
@@ -285,15 +273,12 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
         </>
       )}
 
-      {/* The plain link is just "the link" now: without the key it carries no
-          toolbar. The second button is how the toolbar gets handed to a
-          colleague who needs it. */}
       <button className="pbar-icon pbar-tt is-right" onClick={copy}
         data-tip={copied ? "Copied" : "Copy link to this step"} aria-label="Copy link to this step">
         <Ic name={copied ? "check" : "copy"} size={14} />
       </button>
-      <button className="pbar-icon pbar-tt is-right" onClick={copyWithBar}
-        data-tip={shared ? "Copied" : "Copy link with the toolbar"} aria-label="Copy link with the toolbar">
+      <button className="pbar-icon pbar-tt is-right" onClick={share}
+        data-tip={shared ? "Copied" : "Share without the toolbar"} aria-label="Share without the toolbar">
         <Ic name={shared ? "check" : "share"} size={14} />
       </button>
       <button className="pbar-icon pbar-tt is-right"

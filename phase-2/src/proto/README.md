@@ -19,10 +19,13 @@ corner brings it back.
 There is no "off" switch: the URL without the flag is already the version
 without the toolbar.
 
-The two copy buttons in the bar make the distinction explicit: the link icon
-copies the current step *without* the flag (share this), the share icon copies it
-*with* the flag (for a colleague who needs the toolbar). Rotating the key in the
-host's config invalidates every toolbar link handed out so far.
+The two copy buttons differ by who you are copying for: the **link** icon takes
+this step exactly as you see it (flag and all — that is how a colleague gets the
+toolbar), **Share** takes the same step with the toolbar stripped out. Rotating
+the key in the host's config invalidates every toolbar link handed out so far.
+
+Inline copy editing is dev-only by an explicit host check, not by a failed
+request: a deployed prototype never shows the Edit button.
 
 ## What lives here
 

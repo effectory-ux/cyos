@@ -23,6 +23,18 @@ const BAR = ".pbar, .pbar-menu, .pbar-scrim, .pbar-peek";
 const ENDPOINT = "/__proto/edits";
 const STATIC_FILE = "proto-edits.json";
 
+// Editing writes into the repo through the dev server, so it exists only while
+// one is running. The endpoint 404s anywhere else, but the check is explicit
+// rather than inferred from a failed request: a deployed prototype must never
+// offer an Edit button, whatever the host answers.
+export function isDevHost() {
+  try {
+    const h = window.location.hostname;
+    return ["localhost", "127.0.0.1", "0.0.0.0", "[::1]"].includes(h)
+      || h.endsWith(".local") || /^(10|192\.168)\./.test(h);
+  } catch (_) { return false; }
+}
+
 const state = {
   edits: new Map(),   // key -> { path, ti, tid?, text, orig }
   canEdit: false,     // dev server endpoint reachable?
@@ -473,6 +485,7 @@ export async function initCopyEdits(onStatus, onChange) {
   state.onChange = onChange || (() => {});
   let data = null;
   try {
+    if (!isDevHost()) throw new Error("not a dev host");
     const r = await fetch(ENDPOINT);
     // `proto: true` separates the plugin from Vite's catch-all SPA fallback,
     // which happily returns index.html with a 200 for this url.
