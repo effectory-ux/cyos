@@ -685,9 +685,10 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
               stays an action menu — its items navigate, so it closes. */}
           <div className="ctxbar-menu-wrap">
             <button className={"btn btn-secondary" + (barMenu === "display" ? " is-pressed" : "")}
+              title={compact ? "View" : undefined} aria-label="View"
               aria-haspopup="menu" aria-expanded={barMenu === "display"}
               onClick={() => setBarMenu(m => m === "display" ? null : "display")}>
-              <Icon name="layout" size={16} />View
+              <Icon name="layout" size={16} /><span className="ctxbar-btn-lbl">View</span>
             </button>
             {barMenu === "display" && (
               <>
@@ -728,9 +729,10 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
 
           <div className="ctxbar-menu-wrap">
             <button className={"btn btn-secondary" + (barMenu === "design" ? " is-pressed" : "")}
+              title={compact ? "Design" : undefined} aria-label="Design"
               aria-haspopup="menu" aria-expanded={barMenu === "design"}
               onClick={() => setBarMenu(m => m === "design" ? null : "design")}>
-              <Icon name="palette" size={16} />Design
+              <Icon name="palette" size={16} /><span className="ctxbar-btn-lbl">Design</span>
             </button>
             {barMenu === "design" && (
               <>
@@ -775,7 +777,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             <button className={"btn btn-primary" + (barMenu === "add" ? " is-pressed" : "")}
               aria-haspopup="menu" aria-expanded={barMenu === "add"}
               onClick={() => setBarMenu(m => m === "add" ? null : "add")}>
-              <Icon name="plus" size={16} />Add<Icon name="chevron-down" size={16} />
+              <Icon name="plus" size={16} /><span className="ctxbar-btn-lbl">Add</span><Icon name="chevron-down" size={16} />
             </button>
             {barMenu === "add" && (
               <>

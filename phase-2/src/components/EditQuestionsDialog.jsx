@@ -1352,6 +1352,22 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
             allVariants={!!tweaks.altWordings}
             topicOptions={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))].map(x => ({ value: x, label: x }))}
             onCancel={() => setSettingsQ(null)}
+            onDetach={({ text, topic }) => {
+              // Same move as in the questionnaire: the library question leaves
+              // the selection and a custom copy of it takes its place, opened
+              // for editing — wording is the reason anyone detaches.
+              const id = "c" + Date.now();
+              const custom = {
+                id, topic: topic || meta.topic || settingsQ.topic, theme: null, themes: undefined,
+                bench: false, type: settingsQ.type, custom: true, required: false,
+                text: text || settingsQ.text, desc: meta.desc || undefined, options: settingsQ.options,
+              };
+              setPool(p2 => [...p2, custom]);
+              setSel(s2 => { const n = new Set(s2); n.delete(settingsQ.id); n.add(id); return n; });
+              onUpdateQMeta && onUpdateQMeta(settingsQ.id, { variant: undefined, desc: undefined, topic: undefined });
+              setSettingsQ(null);
+              setEditCustomQ(custom);
+            }}
             onSave={({ qMeta: patch, topic }) => {
               onUpdateQMeta && onUpdateQMeta(settingsQ.id, patch);
               if (topic) onMoveTopic && onMoveTopic(settingsQ.id, topic);

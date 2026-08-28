@@ -72,8 +72,11 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .cq-selects { display: flex; gap: var(--spacing-base); }
 .cq-selects .cq-field { flex: 1; min-width: 0; }
 /* Body frame: language list on the left, respondent-eye preview on the right. */
+/* The stage behind a preview carries the SAME grey as the questionnaire list,
+   so a question looks the same in its dialog as it does on the page — and the
+   same design wash lands on both when a design is picked. */
 .cq-frame { flex: 1; min-height: 0; display: flex; align-items: stretch; overflow: hidden;
-  background: var(--bg-tertiary); border: 1px solid var(--border-base); border-radius: var(--radius-lg); }
+  background: var(--bg-secondary); border: 1px solid var(--border-base); border-radius: var(--radius-lg); }
 
 /* ---- language list (Figma 6238:25398) ---- */
 .cq-langs { flex: none; width: 240px; display: flex; flex-direction: column; padding: var(--spacing-base);
@@ -293,6 +296,11 @@ button.sel-btn.cq-sel { font-size: 14px; }
   .qsec-dropzone { height: 24px; }
   .qsec-list > .qsec-dropzone:last-child.is-armed { height: 24px; }
 }
+
+/* The prototype toolbar is a real row ABOVE the app, so a viewport-fixed
+   overlay would slide under it and lose the top of its dialog. The bar
+   publishes its height; overlays start below it. Zero when there is no bar. */
+.overlay { top: var(--proto-bar-h, 0px); }
 
 /* ---- dialogs on a small screen ------------------------------------------
    A dialog that keeps its desktop measure on a phone is a postage stamp with
@@ -520,6 +528,17 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .ctxbar-inner { max-width: 960px; margin: 0 auto;
   display: flex; align-items: center; gap: var(--spacing-tight); }
 /* The step footer: one row of actions, with its own mobile trim. */
+/* Context-bar actions as the window narrows: first View and Design drop their
+   labels (Add keeps its own — it is the one that writes), then all three share
+   a full-width row, and on the narrowest screens that row goes icon-only. */
+@media (max-width: 1100px) and (min-width: 761px) {
+  .ctxbar-inner > .ctxbar-menu-wrap > .btn.btn-secondary { padding: 0 10px; }
+  .ctxbar-inner > .ctxbar-menu-wrap > .btn.btn-secondary .ctxbar-btn-lbl { display: none; }
+}
+/* Only when three labelled buttons genuinely stop fitting. */
+@media (max-width: 360px) {
+  .ctxbar-btn-lbl { display: none; }
+}
 .qfoot { height: 72px; flex: none; display: flex; align-items: center; gap: var(--spacing-base-tight);
   padding: 0 var(--spacing-loose); background: var(--bg-base); border-top: 1px solid var(--border-base);
   box-shadow: var(--sh-footer); }
@@ -529,7 +548,8 @@ button.sel-btn.cq-sel { font-size: 14px; }
   .ctxbar-status { flex: 1 0 100%; flex-direction: row; align-items: baseline; gap: 8px; }
   .ctxbar-meta { font-size: 13px; }
   .ctxbar-inner .spacer { display: none; }
-  .ctxbar-inner > .ctxbar-menu-wrap, .ctxbar-inner > .btn { flex: 1 1 0; }
+  /* The three actions as one row of equal buttons, labels kept while they fit. */
+  .ctxbar-inner > .ctxbar-menu-wrap, .ctxbar-inner > .btn { flex: 1 1 0; min-width: 0; }
   .ctxbar-inner > .ctxbar-menu-wrap > .btn { width: 100%; justify-content: center; }
   .qfoot { padding: 0 var(--spacing-base); }
   /* A question row stacks: wording first, its tags and actions underneath.
@@ -1047,7 +1067,7 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .bmq-type-disabled .qtile { opacity: .6; }
 
 .bmq-stage { flex: 1; min-height: 0; display: flex; border: 1px solid var(--border-base); border-radius: 12px; overflow: hidden; }
-.bmq-preview { flex: 1; min-width: 0; background: var(--bg-tertiary); display: flex; flex-direction: column;
+.bmq-preview { flex: 1; min-width: 0; background: var(--bg-secondary); display: flex; flex-direction: column;
   align-items: center; justify-content: center; padding: 40px; overflow-y: auto; }
 /* Tags + card travel as one group. margin:auto centers the group while there
    is room and degrades to a normal scroll when there isn't — no fixed spacers,

@@ -13,7 +13,7 @@
 // the vertical tab on the middle of the right screen edge, or the same
 // shortcut. On narrow viewports the buttons drop their labels and rely on
 // their tooltips.
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Ic } from "./icons.jsx";
 import { initCopyEdits, enableEdit, disableEdit, discardEdits, editCount, undoEdit, redoEdit, canUndo, canRedo } from "./copyEdit.js";
 import "./prototype-bar.css";
@@ -95,6 +95,23 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
     if (window.confirm("Discard all copy edits and restore the original wording?")) discardEdits();
   };
 
+  // The bar is a real row above the prototype, but a dialog overlay is fixed to
+  // the viewport and would slide underneath it. Publishing the bar's height as
+  // a CSS variable lets the host offset its overlays by exactly that much.
+  const barRef = useRef(null);
+  useEffect(() => {
+    const set = () => {
+      const h = hidden || !barRef.current ? 0 : Math.round(barRef.current.getBoundingClientRect().height);
+      document.documentElement.style.setProperty("--proto-bar-h", h + "px");
+    };
+    set();
+    window.addEventListener("resize", set);
+    const ro = barRef.current ? new ResizeObserver(set) : null;
+    if (ro && barRef.current) ro.observe(barRef.current);
+    return () => { window.removeEventListener("resize", set); if (ro) ro.disconnect(); };
+  }, [hidden]);
+  useEffect(() => () => document.documentElement.style.removeProperty("--proto-bar-h"), []);
+
   // Ctrl+` toggles the bar — no browser binds it, and it can't collide with
   // typing because we ignore the shortcut while a field has focus.
   useEffect(() => {
@@ -134,7 +151,7 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
   }
 
   return (
-    <div className="pbar">
+    <div className="pbar" ref={barRef}>
       <span className="pbar-badge">Toolbar</span>
 
       {useCases.length > 0 && (
