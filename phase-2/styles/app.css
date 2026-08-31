@@ -511,9 +511,12 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .tmpl-qsec .aql-sechead { padding: var(--spacing-base); }
 .tmpl-qsec .aql-row { padding-left: var(--spacing-base); padding-right: var(--spacing-base); }
 .tmpl-qsec .aql-row:last-child { border-bottom: none; }
-/* Detail hero: the illustration sits beside the title + meta at roughly their
-   height. A fixed square — auto sizing lets an SVG grow to the container width. */
-.tpv-illus-fit { width: 72px; height: 72px; }
+/* Template detail takeover inside the wide Select-questions dialog: .eq-wide
+   zeroes the dialog's own padding (the rail layout pads itself), so the
+   takeover pads its header and body the way .eq-main does. Matches the DS
+   reference preview dialog (create-survey-dialog → prev-top / prev-body). */
+.dialog.eq-wide .tpv-dhead { padding: var(--spacing-loose) 48px 0 var(--spacing-extra-loose); }
+.dialog.eq-wide .dialog-body.tpv-body { padding: var(--spacing-loose) var(--spacing-extra-loose) var(--spacing-extra-loose); }
 
 /* Builder context bar (Figma 6293:26516). The step has no page title — the tab
    above already names it — so this bar carries the orientation instead: the

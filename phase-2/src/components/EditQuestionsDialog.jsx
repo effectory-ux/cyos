@@ -609,24 +609,24 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
   const allOn = t.total > 0 && t.selCount >= t.total;
   return (
     <>
-      <div className="dialog-header" style={{ paddingRight: 48 }}>
+      <div className="dialog-header tpv-dhead">
         <div className="tpv-topbar">
           <button className="btn btn-secondary" onClick={onBack}><Icon name="arrow-left" size={16} />Back to templates</button>
         </div>
       </div>
-      <div className="dialog-body scroll-y" style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-loose)" }}>
+      <div className="dialog-body scroll-y tpv-body">
         <div className="tpv-hero">
-          <img className="tpv-illus tpv-illus-fit" src={"assets/illustrations/" + t.illus} alt="" />
+          <img className="tpv-illus" src={"assets/illustrations/" + t.illus} alt="" />
           <div style={{ minWidth: 0 }}>
             <h2 className="dialog-title" id="tpv-title">{t.name}</h2>
             <div className="tpv-meta">Standard template · {t.total} questions · {meta.minutes || Math.max(3, Math.round(t.total * 0.5))} minutes</div>
           </div>
         </div>
-        <p className="text-medium" style={{ margin: 0, color: "var(--content-secondary)", lineHeight: 1.6 }}>{t.desc}</p>
+        <p className="text-medium" style={{ margin: 0, color: "var(--content-base)", lineHeight: 1.6 }}>{t.desc}</p>
         {t.why && (
           <div>
             <h3 className="tpv-section-title">Why is it valuable?</h3>
-            <p className="text-medium" style={{ margin: 0, color: "var(--content-secondary)", lineHeight: 1.6 }}>{t.why}{t.why2 ? " " + t.why2 : ""}</p>
+            <p className="text-medium" style={{ margin: 0, color: "var(--content-base)", lineHeight: 1.6 }}>{t.why}{t.why2 ? " " + t.why2 : ""}</p>
           </div>
         )}
         <div className="tmpl-qpanel">
