@@ -4,14 +4,14 @@
 export const PROTO_STORAGE_PREFIX = "cyos";
 
 // The key in `?<key>-toolbar-active`, the URL that carries the toolbar to
-// someone else's browser. Five digits, like a project id — enough that nobody
-// arrives at it by guessing, short enough to read out. Rotate it here to
-// invalidate every toolbar link handed out so far.
+// someone else's browser. A word you can remember and read out, obscure
+// enough that nobody types it by accident. Rotate it here to invalidate
+// every toolbar link handed out so far.
 //
 // It is not needed while PROTOTYPING: on localhost the toolbar is on by
 // default. The deployed prototype is the other way round — clean unless the
 // link carries the key.
-export const PROTO_TOOLBAR_KEY = "50168";
+export const PROTO_TOOLBAR_KEY = "backstage";
 
 export const START_POINTS = [
   { key: "surveys", label: "Surveys list" },
