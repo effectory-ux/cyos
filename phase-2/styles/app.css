@@ -511,8 +511,9 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .tmpl-qsec .aql-sechead { padding: var(--spacing-base); }
 .tmpl-qsec .aql-row { padding-left: var(--spacing-base); padding-right: var(--spacing-base); }
 .tmpl-qsec .aql-row:last-child { border-bottom: none; }
-/* Detail hero: the illustration matches the height of the title + meta beside it. */
-.tpv-illus-fit { width: auto; height: auto; align-self: stretch; aspect-ratio: 1 / 1; }
+/* Detail hero: the illustration sits beside the title + meta at roughly their
+   height. A fixed square — auto sizing lets an SVG grow to the container width. */
+.tpv-illus-fit { width: 72px; height: 72px; }
 
 /* Builder context bar (Figma 6293:26516). The step has no page title — the tab
    above already names it — so this bar carries the orientation instead: the
