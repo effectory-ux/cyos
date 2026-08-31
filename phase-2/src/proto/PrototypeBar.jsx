@@ -16,6 +16,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Ic } from "./icons.jsx";
 import { initCopyEdits, enableEdit, disableEdit, discardEdits, editCount, undoEdit, redoEdit, canUndo, canRedo, isDevHost } from "./copyEdit.js";
+import { EventLayer } from "./EventLayer.jsx";
 import "./prototype-bar.css";
 
 // Who gets the toolbar:
@@ -42,6 +43,7 @@ const plainLink = (key) => {
 
 const startKey = (prefix) => prefix + ".startAt";
 const hideKey = (prefix) => prefix + ".barHidden";
+const eventsKey = (prefix) => prefix + ".eventsOn";
 export const getStartAt = (prefix, fallback) => {
   try { return localStorage.getItem(startKey(prefix)) || fallback; } catch (_) { return fallback; }
 };
@@ -58,12 +60,24 @@ const saveHidden = (prefix, v) => { try { localStorage.setItem(hideKey(prefix), 
 //   storagePrefix                      — localStorage namespace, e.g. "cyos"
 export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], variants = [],
   edges = {}, varState = {}, onUseCase = () => {}, onToggleEdge = () => {}, onToggleVariant = () => {},
-  storagePrefix = "proto", toolbarKey = "" }) {
+  storagePrefix = "proto", toolbarKey = "", events = {}, funnels = {} }) {
   const [hidden, setHide] = useState(() => getHidden(storagePrefix));
   const [menu, setMenu] = useState(null); // "cases" | "start" | "edges" | null
   const [start, setStart] = useState(() => getStartAt(storagePrefix, startPoints[0] && startPoints[0].key));
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
+  // The Piwik spec layer: pins on tracked elements plus a fired-events log.
+  // A mode you leave on while walking a developer through the tracking, so
+  // it persists like the start point does.
+  const [eventsOn, setEventsOn] = useState(() => {
+    try { return localStorage.getItem(eventsKey(storagePrefix)) === "1"; } catch (_) { return false; }
+  });
+  const toggleEvents = () => setEventsOn(v => {
+    try { localStorage.setItem(eventsKey(storagePrefix), v ? "0" : "1"); } catch (_) {}
+    return !v;
+  });
+  const hasEvents = Object.keys(events).length > 0;
+  const layer = hasEvents && eventsOn ? <EventLayer events={events} funnels={funnels} /> : null;
   // Inline copy editing (copyEdit.js): available only while the dev server
   // runs — the deployed prototype still APPLIES saved edits, read-only.
   const [canEdit, setCanEdit] = useState(false);
@@ -130,15 +144,20 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
 
   if (hidden) {
     return (
-      <button className="pbar-peek" onClick={() => { setHide(false); saveHidden(storagePrefix, false); }}
-        title="Show toolbar (Ctrl+`)">
-        <Ic name="sliders" size={12} />
-        <span className="pbar-peek-lbl">Toolbar</span>
-      </button>
+      <>
+        {layer}
+        <button className="pbar-peek" onClick={() => { setHide(false); saveHidden(storagePrefix, false); }}
+          title="Show toolbar (Ctrl+`)">
+          <Ic name="sliders" size={12} />
+          <span className="pbar-peek-lbl">Toolbar</span>
+        </button>
+      </>
     );
   }
 
   return (
+    <>
+    {layer}
     <div className="pbar" ref={barRef}>
       <span className="pbar-badge">Toolbar</span>
 
@@ -273,6 +292,17 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
         </>
       )}
 
+      {hasEvents && (
+        <>
+          <button className={"pbar-btn pbar-tt is-right" + (eventsOn ? " is-editing" : "")}
+            data-tip={eventsOn ? "Hide Piwik events" : "Show Piwik events"} onClick={toggleEvents}>
+            <Ic name="pulse" size={14} />
+            <span className="pbar-lbl">Events</span>
+          </button>
+          <span className="pbar-sep" aria-hidden="true" />
+        </>
+      )}
+
       <button className="pbar-icon pbar-tt is-right" onClick={copy}
         data-tip={copied ? "Copied" : "Copy link to this step"} aria-label="Copy link to this step">
         <Ic name={copied ? "check" : "copy"} size={14} />
@@ -287,5 +317,6 @@ export function PrototypeBar({ useCases = [], edgeCases = [], startPoints = [], 
         <Ic name="collapse-right" size={14} />
       </button>
     </div>
+    </>
   );
 }

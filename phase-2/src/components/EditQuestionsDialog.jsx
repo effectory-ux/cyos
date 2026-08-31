@@ -1044,11 +1044,11 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 is a realisation you have while browsing it. */}
             {compact ? (
               <Tooltip label="Add custom question">
-                <button className="ib ib-36 ib-secondary" aria-label="Add custom question" onClick={() => setCustomOpen(true)}>
+                <button className="ib ib-36 ib-secondary" aria-label="Add custom question" data-piwik="eq.add-custom" onClick={() => setCustomOpen(true)}>
                   <Icon name="plus" size={16} /></button>
               </Tooltip>
             ) : (
-              <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
+              <button className="btn btn-secondary" style={{ flex: "none" }} data-piwik="eq.add-custom" onClick={() => setCustomOpen(true)}>
                 <Icon name="plus" size={16} />Add custom question</button>
             )}
             <span className="eq-tool-div" aria-hidden="true" />
@@ -1102,7 +1102,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               <input type="search" className="srch" placeholder="Search custom questions"
                 value={customQ} onChange={e => setCustomQ(e.target.value)} />
             </div>
-            <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
+            <button className="btn btn-secondary" style={{ flex: "none" }} data-piwik="eq.add-custom" onClick={() => setCustomOpen(true)}>
               <Icon name="plus" size={16} />Add custom question</button>
           </div>
         )}
@@ -1262,7 +1262,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                   The library covers most of what organizations measure. Write your own for
                   something specific to your context. Custom questions don't carry a benchmark.
                 </p>
-                <button className="btn btn-primary" onClick={() => setCustomOpen(true)}>
+                <button className="btn btn-primary" data-piwik="eq.add-custom" onClick={() => setCustomOpen(true)}>
                   <Icon name="plus" size={16} />Add custom question</button>
               </div>
             ) : (
@@ -1379,7 +1379,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           <span className="text-medium text-w500" style={{ color: "var(--content-base)" }}>{selCount} total {selCount === 1 ? "question" : "questions"} selected</span>
           <div className="spacer" />
           <button className="btn btn-secondary" onClick={close}>Cancel</button>
-          <button className="btn btn-primary" onClick={apply}>Confirm</button>
+          <button className="btn btn-primary" data-piwik="eq.confirm" onClick={apply}>Confirm</button>
         </div>
       </div>
 
