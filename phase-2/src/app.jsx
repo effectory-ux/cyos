@@ -9,7 +9,9 @@ import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus, themesOf } from "./components/shared.jsx";
 import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
 import { libraryPool } from "./data/qlib.js";
-import { PrototypeBar, getStartAt } from "./proto/PrototypeBar.jsx";
+// The prototype toolbar lives at the repo root (toolbar/) so every phase —
+// and any other project — can use the same one.
+import { PrototypeBar, getStartAt } from "../../toolbar/PrototypeBar.jsx";
 import { PROTO_STORAGE_PREFIX, PROTO_TOOLBAR_KEY, START_POINTS, USE_CASES, VARIANTS } from "./data/proto-config.js";
 import { PIWIK_EVENTS, PIWIK_FUNNELS } from "./data/piwik-events.js";
 import { serialize, writeRoute, parse } from "./data/routes.js";

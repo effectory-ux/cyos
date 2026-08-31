@@ -2,10 +2,20 @@
 
 A self-contained toolbar for React prototypes, in the spirit of the Figma /
 Claude Design prototype chrome: a dark, compact row **above** the prototype
-(never an overlay) with three menus — jump to a **use case**, flip **edge
-cases**, choose the **start point** — plus the current deep link with a copy
-button. Hide it with Ctrl+` or the close button; a peek tab in the top-left
-corner brings it back.
+(never an overlay) with four menus — jump to a **use case**, flip **edge
+cases**, compare **variants**, choose the **start point** — plus an **Events**
+mode (the Piwik analytics spec drawn over the live UI) and the current deep
+link with a copy button. Hide it with Ctrl+` or the close button; a peek tab
+on the right screen edge brings it back.
+
+This folder lives at the **repo root** and knows nothing about any one
+prototype: it is the single toolbar every phase imports (phase-2 does so from
+`phase-2/src/app.jsx` and `phase-2/vite.config.js`). Everything
+project-specific — use cases, start points, variants, the toolbar key, the
+Piwik event registry — comes in as props from the host's own config (in CYOS:
+`phase-2/src/data/proto-config.js` and `phase-2/src/data/piwik-events.js`).
+Change this folder and every consumer gets it; nothing in here may import
+from a host app.
 
 ## Who sees it
 
@@ -30,10 +40,33 @@ request: a deployed prototype never shows the Edit button.
 ## What lives here
 
 - `PrototypeBar.jsx` — the component. No imports from the host app.
+- `EventLayer.jsx` — the Piwik event spec layer (below).
 - `prototype-bar.css` — all its styles, imported by the component. Includes
   `.proto-shell`, the wrapper the host puts around its whole app.
 - `icons.jsx` — the glyphs it uses, inlined.
 - `copyEdit.js` + `vite-plugin-proto-edits.js` — inline copy editing (below).
+
+## Piwik events (EventLayer)
+
+In Figma the analytics spec lived in comments ("PIWIK event / Category: … /
+Action: …") for a developer to pick up. Here the host passes a registry of
+event definitions (`events` prop) and marks the triggering elements with
+`data-piwik="<key>"`; the toolbar's **Events** toggle then draws the spec on
+the working UI:
+
+- a **pin** on every tracked element — dot for a plain event, green play
+  triangle for a funnel start, amber square for a funnel end;
+- a **popover** per pin with the definition in the exact Figma-comment format
+  and a "Copy for developers" button;
+- a **fired-events log** (bottom right) that records every tracked interaction
+  live — `on: "click"` events when clicked, `on: "view"` events when their
+  element appears — and announces when a funnel completes.
+
+A definition: `{ label, category, action, on: "click"|"view",
+funnel?: { id, role: "start"|"end" } }`. Several events may share a funnel
+start (any of them begins the task); ending on a `view` event lets a funnel
+end on the outcome, whichever path led there. The `funnels` prop maps funnel
+ids to `{ label, desc }`.
 
 ## Inline copy editing
 
@@ -83,10 +116,14 @@ wired inside `PrototypeBar`.
 ```jsx
 <PrototypeBar
   storagePrefix="myproto"                 // localStorage namespace
+  toolbarKey="id-mykey"                   // the ?<key>-toolbar-active gate
   useCases={[{ key, label, desc }]}       // onUseCase(key) jumps there
   edgeCases={[{ key, label, desc, on }]}  // edges map + onToggleEdge(key)
+  variants={[{ key, label, desc }]}       // varState map + onToggleVariant(key)
   startPoints={[{ key, label }]}          // remembered across sessions
+  events={PIWIK_EVENTS} funnels={PIWIK_FUNNELS}  // the Events mode registry
   edges={edges} onUseCase={goto} onToggleEdge={toggle}
+  varState={variantsOn} onToggleVariant={toggleVariant}
 />
 ```
 

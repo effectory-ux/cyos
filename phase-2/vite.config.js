@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { protoEdits } from "./src/proto/vite-plugin-proto-edits.js";
+import { protoEdits } from "../toolbar/vite-plugin-proto-edits.js";
 
 // Dev server on a fixed port so the preview tooling can find it.
 // The Engage DS files (styles/*.css, icons.js, assets/icons/*) live at the
