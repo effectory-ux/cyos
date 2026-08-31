@@ -11,7 +11,7 @@ export const PROTO_STORAGE_PREFIX = "cyos";
 // It is not needed while PROTOTYPING: on localhost the toolbar is on by
 // default. The deployed prototype is the other way round — clean unless the
 // link carries the key.
-export const PROTO_TOOLBAR_KEY = "backstage";
+export const PROTO_TOOLBAR_KEY = "id-backstage";
 
 export const START_POINTS = [
   { key: "surveys", label: "Surveys list" },
