@@ -125,6 +125,17 @@ export const BADGE_COLORS = {
 export const DEFAULT_MC = ["", ""];
 export const SCALE_LABELS = ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"];
 
+// The answer options a question can TRIGGER logic with (question logic =
+// conditional visibility: show a later question only when one of the chosen
+// answers was given here). Open text has no fixed answers, so it can't
+// trigger; a rule stores answer INDICES into this list.
+export const answerOptionsOf = (q) => {
+  if (!q) return [];
+  if (q.type === "multiple" || q.type === "single") return q.options || [];
+  if (q.type === "text") return [];
+  return SCALE_LABELS;
+};
+
 // Build a real questionnaire (pool + all-selected) from a template's own
 // question set in the library export — so each template loads its own questions.
 // `preselectPerTopic` controls how many questions per topic start selected — the

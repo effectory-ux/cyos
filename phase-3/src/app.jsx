@@ -415,6 +415,21 @@ export function App() {
           { dialog: "question-settings", arg: q.id });
         break;
       }
+      case "question-logic": {
+        const sv = draftSurvey(); if (!sv) break;
+        // Two selected scale questions from one topic, in pool order: the
+        // earlier one triggers, the later one is masked (logic only looks
+        // backwards, and pool order matches the builder's initial order).
+        const sel = new Set(sv.selectedIds);
+        const scales = sv.pool.filter(x => !x.custom && x.type === "scale5" && sel.has(x.id));
+        // A required question always shows, so it can't be the masked target.
+        const trigger = scales.find(x => scales.some(y => y !== x && !y.required && y.topic === x.topic));
+        const target = trigger && scales.find(y => y !== trigger && !y.required && y.topic === trigger.topic);
+        if (!target) break;
+        openBuilder({ ...sv, qMeta: { ...sv.qMeta, [target.id]: { logic: { trigger: trigger.id, answers: [0, 1] } } } },
+          { dialog: "question-settings", arg: target.id });
+        break;
+      }
       case "topic-dialog": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "topic", arg: (sv.pool.find(q => sv.selectedIds.includes(q.id)) || {}).topic }); break; }
       case "topic-custom": {
         const sv = draftSurvey(); if (!sv) break;

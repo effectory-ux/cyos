@@ -31,6 +31,7 @@ export const USE_CASES = [
   { key: "select-questions", label: "Select questions", desc: "Library, custom, themes, templates" },
   { key: "question-settings", label: "Benchmarked question", desc: "Alternative wording + description" },
   { key: "question-edited", label: "Question with a variant", desc: "Alternative wording already applied" },
+  { key: "question-logic", label: "Question with logic", desc: "Shows only after a chosen answer on an earlier question" },
   { key: "topic-dialog", label: "Topic settings", desc: "Participant intro screen" },
   { key: "topic-custom", label: "Custom topic", desc: "A topic added in this survey" },
   { key: "translations", label: "Translations", desc: "Machine-translated strings to review" },

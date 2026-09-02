@@ -10,7 +10,7 @@ import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 import { QTypeIcon, Tooltip, ThemeTag, useMediaQuery, MiniSelect } from "./shared.jsx";
-import { QTYPES, SCALE_LABELS } from "../data/data.js";
+import { QTYPES, SCALE_LABELS, answerOptionsOf } from "../data/data.js";
 import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
 import { variantsOf } from "../data/variants.js";
 import { designWash } from "../data/designs.js";
@@ -135,11 +135,30 @@ function DetachWarning({ theme, completes, themeCount, onCancel, onConfirm }) {
   );
 }
 
-export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, allVariants = false, onCancel, onSave, onDetach }) {
+export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, allVariants = false, logicCandidates = [], onCancel, onSave, onDetach }) {
   // Staged edits — committed on Save only.
   const [variant, setVariant] = useState(meta.variant);
   const [desc, setDesc] = useState(meta.desc);
   const [topic, setTopic] = useState(topicKey || q.topic);
+  // Question logic (masking): show this question only when the participant
+  // gave one of the chosen answers to an EARLIER question. One rule per
+  // question; several chosen answers count as OR. `logicCandidates` is the
+  // ordered list of earlier questions with fixed answers — logic only looks
+  // backwards, so a question that comes later can never trigger this one.
+  const savedLogic = meta.logic && logicCandidates.some(c => c.id === meta.logic.trigger) ? meta.logic : null;
+  const [logicOn, setLogicOn] = useState(!!savedLogic);
+  const [trigger, setTrigger] = useState(savedLogic ? savedLogic.trigger : undefined);
+  const [logicAnswers, setLogicAnswers] = useState(savedLogic ? savedLogic.answers : []);
+  const [triggerOpen, setTriggerOpen] = useState(false);
+  // A required question always shows — it can't be masked.
+  const canLogic = logicCandidates.length > 0 && !q.required;
+  const triggerQ = logicCandidates.find(c => c.id === trigger) || null;
+  const triggerOpts = answerOptionsOf(triggerQ);
+  const toggleLogicAnswer = (i) => setLogicAnswers(a => (a.includes(i) ? a.filter(x => x !== i) : [...a, i].sort((x, y) => x - y)));
+  const pickTrigger = (id) => { setTrigger(id); setLogicAnswers([]); setTriggerOpen(false); };
+  // The staged rule this dialog would save: null while incomplete.
+  const stagedLogic = logicOn && triggerQ && logicAnswers.length > 0 ? { trigger, answers: logicAnswers } : null;
+  const logicOk = !logicOn || !!stagedLogic;
   const [lang, setLang] = useState("en");
   // Same breakpoint as the custom-question dialog: below it the language list
   // can't sit next to the preview, so it becomes a select above it.
@@ -172,12 +191,13 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
 
   const dirty = (variant || undefined) !== (meta.variant || undefined)
     || (desc || undefined) !== (meta.desc || undefined)
-    || topic !== (topicKey || q.topic);
+    || topic !== (topicKey || q.topic)
+    || JSON.stringify(stagedLogic) !== JSON.stringify(savedLogic);
 
   const save = () => {
     if (!dirty) { onCancel(); return; }
     onSave({
-      qMeta: { variant: variant || undefined, desc: desc || undefined },
+      qMeta: { variant: variant || undefined, desc: desc || undefined, logic: stagedLogic || undefined },
       topic: topic !== (topicKey || q.topic) ? topic : undefined,
     });
   };
@@ -203,6 +223,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             {variant && <span className="infotag is-alt">Alternative wording</span>}
             {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below" />}
             {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
+            {stagedLogic && <span className="infotag is-logic"><Icon name="eye" size={12} />Conditional</span>}
           </div>
           <h2 className="dialog-title" id="bmq-title" data-t={"q-" + q.id}>{title}</h2>
           <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
@@ -248,6 +269,80 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               <Icon name="chevron-down" size={16} />
             </div>
           </div>
+        </div>
+
+        {/* Logic sits with the other settings (topic, answer type), not in the
+            preview: it decides WHO gets the question, not what it looks like. */}
+        <div className="bmq-logic">
+          <div className="bmq-logic-head">
+            <span className="bmq-logic-ic"><Icon name="eye" size={16} /></span>
+            <span className="bmq-logic-text">
+              <span className="bmq-logic-title">Show this question conditionally</span>
+              <span className="bmq-logic-sub">
+                {canLogic
+                  ? "Only participants who gave a chosen answer to an earlier question get this question."
+                  : q.required
+                    ? "This question is required, so everyone gets it — logic can't hide it."
+                    : "Logic needs an earlier question with fixed answers. Move this question later, or add questions before it."}
+              </span>
+            </span>
+            <button type="button" role="switch" aria-checked={logicOn} aria-label="Show this question conditionally"
+              className={"bmq-switch" + (logicOn ? " is-on" : "") + (canLogic ? "" : " is-off-limits")}
+              disabled={!canLogic} onClick={() => setLogicOn(v => !v)} />
+          </div>
+          {logicOn && canLogic && (
+            <div className="bmq-logic-body">
+              <div className="bmq-field">
+                <span className="bmq-lbl">Earlier question</span>
+                <div style={{ position: "relative" }}>
+                  <button type="button" className={"sel-btn bmq-top-sel" + (triggerOpen ? " is-pressed" : "")}
+                    aria-haspopup="listbox" aria-expanded={triggerOpen} onClick={() => setTriggerOpen(o => !o)}>
+                    <span className={"sel-btn-name" + (triggerQ ? "" : " is-placeholder")}
+                      style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {triggerQ ? triggerQ.text : "Choose a question"}
+                    </span>
+                    <span className="spacer" />
+                    <Icon name="chevron-down" size={16} />
+                  </button>
+                  {triggerOpen && (
+                    <>
+                      <div className="cq-menu-scrim" onMouseDown={() => setTriggerOpen(false)} />
+                      <div className="menu" role="listbox" style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 3, maxHeight: 260, overflowY: "auto" }}>
+                        {logicCandidates.map(c => (
+                          <div key={c.id} role="option" aria-selected={c.id === trigger}
+                            className={"menu-item" + (c.id === trigger ? " is-selected" : "")}
+                            onClick={() => pickTrigger(c.id)}>
+                            <span className="menu-item-body"><span className="menu-item-title">{c.text}</span></span>
+                            {c.id === trigger && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+              {triggerQ && (
+                <div className="bmq-field">
+                  <span className="bmq-lbl">Show when the answer is
+                    <Tooltip label="Any chosen answer counts — one match is enough.">
+                      <span className="cq-info"><Icon name="info" size={16} /></span>
+                    </Tooltip>
+                  </span>
+                  <div className="bmq-logic-answers" role="group" aria-label="Answers that show this question">
+                    {triggerOpts.map((o, i) => (
+                      <label key={i} className={"bmq-logic-answer" + (logicAnswers.includes(i) ? " is-on" : "")}>
+                        <span className="cb-wrap">
+                          <input type="checkbox" className="cb" checked={logicAnswers.includes(i)} onChange={() => toggleLogicAnswer(i)} />
+                        </span>
+                        <span>{o}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {logicAnswers.length === 0 && <span className="bmq-logic-hint">Choose at least one answer</span>}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Above the stage, not inside it: the preview scrolls, and a language
@@ -347,7 +442,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
         <div className="dialog-footer">
           <div className="spacer" />
           <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-          <button className={"btn btn-primary" + (dirty ? "" : " is-disabled")} disabled={!dirty} onClick={save}>Save</button>
+          <button className={"btn btn-primary" + (dirty && logicOk ? "" : " is-disabled")} disabled={!dirty || !logicOk} onClick={save}>Save</button>
         </div>
       </div>
       {detachAsk && <DetachWarning onCancel={() => setDetachAsk(false)} onConfirm={doDetach}

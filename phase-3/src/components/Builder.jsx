@@ -7,7 +7,7 @@ import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
 import { TranslationsDialog } from "./TranslationsDialog.jsx";
-import { THEMES, CUSTOM_GROUP } from "../data/data.js";
+import { THEMES, CUSTOM_GROUP, answerOptionsOf } from "../data/data.js";
 import { DESIGNS, designById, designWash } from "../data/designs.js";
 import { LANGUAGES, PRIMARY_LANGUAGE, flagSrc, autoTranslation } from "../data/i18n.js";
 
@@ -182,7 +182,7 @@ function TopNav({ name, onRename, compact, mobile }) {
   );
 }
 
-function BuilderRow({ q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, pulsing, onSeen, themeInfo, onOpenTheme, onDragStart, onDragEnd }) {
+function BuilderRow({ q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, pulsing, onSeen, themeInfo, onOpenTheme, onDragStart, onDragEnd, logic }) {
   const [menu, setMenu] = useState(false);
   // "Move to topic" opens a nested submenu BESIDE the menu (DS pattern: a
   // trailing .menu-chevron item flying out a second .menu) instead of swapping
@@ -235,6 +235,16 @@ function BuilderRow({ q, meta, tr, showDesc, onRemove, onEdit, onSettings, onRes
           ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-left"
               onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
           : q.custom ? <CustomTag pos="is-left" onOpen={() => onEdit && onEdit(q)} /> : null}
+        {/* Question logic: this row shows only for participants who gave one
+            of the chosen answers earlier — say so, and say the rule on hover. */}
+        {logic && (
+          <Tooltip pos="is-left" label={<>
+            <span className="tt-title">Shows conditionally</span>
+            {`Only when "${logic.trigger.text}" is answered with ${logic.answers.map(a => `"${a}"`).join(" or ")}`}
+          </>}>
+            <span className="tag tag-logic"><Icon name="eye" size={12} /><span className="tag-ellip">Conditional</span></span>
+          </Tooltip>
+        )}
         {q.required && <RequiredMarker size={24} />}
         <QTypeIcon type={q.type} size={24} tip />
         <div className="qrow-menu-wrap">
@@ -608,6 +618,24 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // disappear when their last question goes.
   const visibleSections = layout.filter(s => s.items.length || customTopicSet.has(s.key));
 
+  // The questionnaire's display order — the ground truth for question logic:
+  // a rule may only look BACKWARDS (a participant must have answered the
+  // trigger before the masked question can show or hide).
+  const flatOrder = visibleSections.flatMap(s => s.items);
+  const orderIndex = {}; flatOrder.forEach((x, i) => { orderIndex[x.id] = i; });
+  // A saved rule is ACTIVE only while its trigger is still in the survey and
+  // still earlier than its target; otherwise it lies dormant and shows nothing
+  // (reordering or removing the trigger shouldn't strand a broken tag).
+  const logicInfoFor = (qq) => {
+    const rule = ((qMeta[qq.id] || {}).logic);
+    if (!rule) return null;
+    const trg = flatOrder.find(x => x.id === rule.trigger);
+    if (!trg || orderIndex[trg.id] >= orderIndex[qq.id]) return null;
+    const opts = answerOptionsOf(trg);
+    const answers = (rule.answers || []).map(i => opts[i]).filter(Boolean);
+    return answers.length ? { trigger: trg, answers } : null;
+  };
+
   // Flag questions/sections that appeared since the last render (i.e. an Apply)
   // so they can animate in; clear the flag once the animation has run.
   useEffect(() => {
@@ -954,7 +982,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                 )}
                 {previewItems(s).map((qq) => {
                   const i = s.items.findIndex(x => x.id === qq.id);
-                  return <BuilderRow key={qq.id} q={qq} meta={qMeta[qq.id]} tr={tr} showDesc={showDesc}
+                  return <BuilderRow key={qq.id} q={qq} meta={qMeta[qq.id]} tr={tr} showDesc={showDesc} logic={logicInfoFor(qq)}
                     onRemove={onRemoveQuestion} onEdit={onEditCustom} dragging={!!drag && drag.kind === "q" && drag.id === qq.id}
                     onSettings={(qq2) => qq2.custom ? (onEditCustom && onEditCustom(qq2)) : setSettingsQId(qq2.id)}
                     onResetDesc={() => onUpdateQMeta && onUpdateQMeta(qq.id, { desc: undefined, descHidden: undefined, variant: undefined })}
@@ -1039,6 +1067,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         return q ? (
           <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]} design={design}
             allVariants={edges.altWordings}
+            logicCandidates={flatOrder.slice(0, orderIndex[q.id] ?? 0).filter(x => answerOptionsOf(x).length > 0)}
             topicOptions={visibleSections.map(x => ({ value: x.key, label: topicName(x.key) }))}
             onCancel={() => setSettingsQId(null)}
             onDetach={({ text, topic }) => { setSettingsQId(null); onDetachQuestion && onDetachQuestion(q, text, topic); }}
