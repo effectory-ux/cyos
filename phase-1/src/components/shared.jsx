@@ -166,8 +166,8 @@ export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", float = 
   return (
     <Tooltip label={<><span className="tt-title">{theme}</span>{status}</>} pos={pos} float={float}>
       <span className={"tag tag-thm " + state + (onOpen ? " is-interactive" : "")} {...tagActivate(onOpen)}>
-        {complete ? <span className="tag-ic"><Icon name="check" size={10} /></span>
-          : partial ? <ProgressRing pct={kept / total} /> : null}
+        {/* Complete = the positive green speaks for itself, no check icon. */}
+        {partial ? <ProgressRing pct={kept / total} /> : null}
         <span className="tag-ellip">{theme}</span>
       </span>
     </Tooltip>

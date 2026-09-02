@@ -398,7 +398,7 @@ input[type="checkbox"].cb.cb-subtle:checked { background-color: var(--bg-brand-s
    in-progress = light BLUE + blue ring + blue text; complete = filled DARK teal
    + white check + white text. Custom questions = inverted blue. */
 .tag-thm.is-progress { background: var(--bg-info-subtle); color: var(--content-info-base); }
-.tag-thm.is-complete { background: var(--content-brand-secondary); color: var(--content-on-brand-base); }
+.tag-thm.is-complete { background: var(--bg-positive-base); color: var(--content-on-brand-base); }
 .tag-custom-q { background: var(--content-accent-blue-base); color: var(--content-inverse-base); }
 /* Interactive tags (open a dialog on click) get a hover/press + focus affordance. */
 .tag-thm.is-interactive, .tag-custom-q.is-interactive { cursor: pointer; transition: filter var(--motion-fast) var(--ease-standard); }
