@@ -103,6 +103,9 @@ export function App() {
   };
 
   // ---- Prototype toolbar wiring ------------------------------------------
+  // Design variants (toolbar): flip between candidate designs live.
+  const [variantsOn, setVariantsOn] = useState(PROTO.defaultVariants);
+  const toggleVariant = (key) => setVariantsOn(v => ({ ...v, [key]: !v[key] }));
   // Edge-case switches. "required" is not cosmetic: the org-required questions
   // actually leave / return to the current survey.
   const [edges, setEdges] = useState(PROTO.defaultEdges);
@@ -198,12 +201,14 @@ export function App() {
   return (
     <div className="proto-shell">
       <PrototypeBar config={PROTO} versions={VERSIONS}
-        onUseCase={gotoUseCase} edges={edges} onToggleEdge={toggleEdge} />
+        onUseCase={gotoUseCase} edges={edges} onToggleEdge={toggleEdge}
+        varState={variantsOn} onToggleVariant={toggleVariant} />
       <div className="app">
       {screen === "surveys" && <Sidebar />}
       {screen === "surveys"
         ? <SurveysPage rows={surveysList} onCreate={() => setModal(true)} onDeleteDraft={deleteSurvey} onOpen={openSurvey} />
-        : <Builder survey={survey} onEditQuestions={() => { setEditTab("questions"); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
+        : <Builder survey={survey} showTemplateTags={variantsOn.templateTags}
+            onEditQuestions={() => { setEditTab("questions"); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveCustomTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}

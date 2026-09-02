@@ -226,7 +226,7 @@ function reconcileLayout(prev, groups) {
   return next;
 }
 
-export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates }) {
+export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, showTemplateTags = true }) {
   const { name, isTemplate, selectedIds, pool } = survey;
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
@@ -470,7 +470,9 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
               </div>
               <button className="btn btn-primary" style={{ flex: "none" }} onClick={onEditQuestions}><Icon name="plus" size={16} />Add questions</button>
             </div>
-            {chosen.length > 0 && activeTemplates.length > 0 && (
+            {/* The template tags are a design variant under exploration —
+                the toolbar's Variants menu switches them off. */}
+            {showTemplateTags && chosen.length > 0 && activeTemplates.length > 0 && (
               <div className="ov-tags">
                 {activeTemplates.map(t => {
                   const b = BADGE_COLORS[t.badge] || {};

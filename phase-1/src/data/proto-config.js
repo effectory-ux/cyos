@@ -27,6 +27,14 @@ export const USE_CASES = [
   { key: "select-questions", label: "Add questions", desc: "Library, custom, themes, templates" },
 ];
 
+// Design variants under exploration (the toolbar's Variants menu). Once one
+// wins, it becomes the default and leaves this list.
+export const VARIANTS = [
+  { key: "templateTags", label: "Active templates on the summary",
+    desc: "DEFAULT — the summary card tags each template that is fully in the questionnaire; the tag opens it in Templates. Off = no template tags on the card." },
+];
+export const defaultVariants = { templateTags: true };
+
 // Not every account is the same — flip these to show a use case both ways.
 export const EDGE_CASES = [
   { key: "required", label: "Org-required questions", on: true,
