@@ -15,7 +15,12 @@ body {
 ::selection { background: var(--bg-brand-subtle); }
 
 /* ---- app shell ---- */
-.app { height: 100vh; display: flex; overflow: hidden; background: var(--bg-secondary); }
+/* Inside the toolbar's .proto-shell (100vh flex column) the app fills what
+   the bar leaves over; standalone it still fills the viewport. */
+.app { flex: 1; min-height: 0; display: flex; overflow: hidden; background: var(--bg-secondary); }
+/* Dialog overlays are viewport-fixed and would slide under the toolbar row —
+   offset them by its published height. */
+.overlay { top: var(--proto-bar-h, 0px); }
 .col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
 /* ---- generic card / surface ---- */

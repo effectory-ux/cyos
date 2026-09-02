@@ -9,6 +9,11 @@ import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus, themesOf } from "./components/shared.jsx";
 import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
 import { libraryPool } from "./data/qlib.js";
+// The prototype toolbar lives at the repo root (toolbar/) so every phase —
+// and any other project — can use the same one.
+import { PrototypeBar } from "../../toolbar/PrototypeBar.jsx";
+import { VERSIONS } from "../../prototype-versions.js";
+import { PROTO_STORAGE_PREFIX, PROTO_TOOLBAR_KEY } from "./data/proto-config.js";
 
 // Behaviour the design iterations landed on: removing the last question of a
 // complete theme soft-locks (asks first), and "Add custom question" lives in
@@ -139,7 +144,9 @@ export function App() {
   });
 
   return (
-    <div className="app">
+    <div className="proto-shell">
+      <PrototypeBar storagePrefix={PROTO_STORAGE_PREFIX} toolbarKey={PROTO_TOOLBAR_KEY} versions={VERSIONS} />
+      <div className="app">
       {screen === "surveys" && <Sidebar />}
       {screen === "surveys"
         ? <SurveysPage rows={surveysList} onCreate={() => setModal(true)} onDeleteDraft={deleteSurvey} onOpen={openSurvey} />
@@ -164,6 +171,7 @@ export function App() {
         onCancel={() => setEditCustom(null)} onSubmit={saveCustomEdit}
         onDelete={(q) => { removeFromSurvey(q); setEditCustom(null); }} />}
       {outOfScope && <OutOfScopeDialog row={outOfScope} onClose={() => setOutOfScope(null)} />}
+      </div>
     </div>
   );
 }
