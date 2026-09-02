@@ -1,5 +1,5 @@
 // app.jsx — flow controller
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Sidebar, SurveysPage, OutOfScopeDialog } from "./components/Shell.jsx";
 import { Builder } from "./components/Builder.jsx";
 import { TemplateModal } from "./components/TemplateModal.jsx";
@@ -7,13 +7,14 @@ import { EditQuestionsDialog, ThemeConfirm } from "./components/EditQuestionsDia
 import { CustomQuestionDialog } from "./components/CustomQuestionDialog.jsx";
 import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus, themesOf } from "./components/shared.jsx";
-import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
+import { SEED_SURVEYS, TEMPLATES, surveyFromTemplate } from "./data/data.js";
 import { libraryPool } from "./data/qlib.js";
 // The prototype toolbar lives at the repo root (toolbar/) so every phase —
-// and any other project — can use the same one.
-import { PrototypeBar } from "../../toolbar/PrototypeBar.jsx";
+// and any other project — can use the same one. It reads this prototype's
+// settings straight from the proto-config module (config={PROTO}).
+import { PrototypeBar, getStartAt } from "../../toolbar/PrototypeBar.jsx";
 import { VERSIONS } from "../../prototype-versions.js";
-import { PROTO_STORAGE_PREFIX, PROTO_TOOLBAR_KEY } from "./data/proto-config.js";
+import * as PROTO from "./data/proto-config.js";
 
 // Behaviour the design iterations landed on: removing the last question of a
 // complete theme soft-locks (asks first), and "Add custom question" lives in
@@ -101,6 +102,57 @@ export function App() {
     }
   };
 
+  // ---- Prototype toolbar wiring ------------------------------------------
+  // Edge-case switches. "required" is not cosmetic: the org-required questions
+  // actually leave / return to the current survey.
+  const [edges, setEdges] = useState(PROTO.defaultEdges);
+  // Which questions were org-required before the switch went off, so the
+  // toggle round-trips exactly instead of guessing.
+  const wasRequired = useRef(null);
+  const toggleEdge = (key) => {
+    const on = !edges[key];
+    setEdges(prev => ({ ...prev, [key]: on }));
+    if (key !== "required") return;
+    setSurvey(sv => {
+      if (!sv) return sv;
+      if (!on) {
+        wasRequired.current = new Set(sv.pool.filter(q => q.required).map(q => q.id));
+        return { ...sv, pool: sv.pool.map(q => (q.required ? { ...q, required: false } : q)) };
+      }
+      const back = wasRequired.current;
+      if (!back) return sv;
+      return { ...sv, pool: sv.pool.map(q => (back.has(q.id) ? { ...q, required: true } : q)) };
+    });
+  };
+
+  // Jump to a state (the toolbar's Use cases menu + the remembered start
+  // point). Resets every layer first, then builds the requested one.
+  const gotoUseCase = (key) => {
+    setModal(false); setPending(null); setEditing(false); setEditCustom(null);
+    setRemoveConfirm(null); setOutOfScope(null); setChanging(false);
+    const t = TEMPLATES[0];
+    const templateSurvey = () => ({ ...surveyFromTemplate(t.id, null, t.name), id: "uc-" + t.id, name: t.name });
+    switch (key) {
+      case "template-dialog": setScreen("surveys"); setModal(true); break;
+      case "name-dialog": setScreen("surveys"); setPending({ suggested: t.name, survey: surveyFromTemplate(t.id, null, t.name) }); break;
+      case "builder": setSurvey(templateSurvey()); setScreen("builder"); break;
+      case "builder-scratch": {
+        const pool = libraryPool().map(q => ({ ...q, required: false }));
+        setSurvey({ id: "uc-scratch", name: "Untitled survey", templateName: null, isTemplate: false, selectedIds: [], pool });
+        setScreen("builder");
+        break;
+      }
+      case "select-questions": setSurvey(templateSurvey()); setScreen("builder"); setEditTab("questions"); setEditing(true); break;
+      default: setScreen("surveys");
+    }
+  };
+
+  // Open at the remembered start point (the toolbar's Start at menu).
+  useEffect(() => {
+    const start = getStartAt(PROTO.PROTO_STORAGE_PREFIX, "surveys");
+    if (start && start !== "surveys") gotoUseCase(start);
+  }, []); // eslint-disable-line
+
   const saveQuestions = (ids, pool) => { setSurvey(s => ({ ...s, selectedIds: ids, pool })); setEditing(false); };
   // Add/remove a theme's questions from the builder's "View details" dialog.
   const toggleQuestion = (id) => setSurvey(s => ({ ...s, selectedIds: s.selectedIds.includes(id) ? s.selectedIds.filter(x => x !== id) : [...s.selectedIds, id] }));
@@ -145,7 +197,8 @@ export function App() {
 
   return (
     <div className="proto-shell">
-      <PrototypeBar storagePrefix={PROTO_STORAGE_PREFIX} toolbarKey={PROTO_TOOLBAR_KEY} versions={VERSIONS} />
+      <PrototypeBar config={PROTO} versions={VERSIONS}
+        onUseCase={gotoUseCase} edges={edges} onToggleEdge={toggleEdge} />
       <div className="app">
       {screen === "surveys" && <Sidebar />}
       {screen === "surveys"

@@ -263,7 +263,10 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   // On-page ordering the user can drag-reorder. Lives only here — the Add
   // questions dialog always works from the library order, never this one.
   const [layout, setLayout] = useState(() => groups.map(g => ({ key: g.key, label: g.label, items: g.items })));
-  const sig = selectedIds.join(",") + "|" + pool.map(p => p.id + ":" + (p.topic || "") + ":" + (p.text || "")).join(",");
+  // The reconcile signature must cover everything a row RENDERS from the pool
+  // (topic, text, required) or a change there won't reach the layout snapshot —
+  // the required flag is flipped live by the toolbar's edge-case switch.
+  const sig = selectedIds.join(",") + "|" + pool.map(p => p.id + ":" + (p.topic || "") + ":" + (p.text || "") + ":" + (p.required ? "1" : "0")).join(",");
   useEffect(() => { setLayout(prev => reconcileLayout(prev, groups)); }, [sig]); // eslint-disable-line
 
   // Drag & drop via static drop targets — nothing reorders while dragging; the

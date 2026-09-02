@@ -1,8 +1,6 @@
 // proto-config.js — what THIS prototype puts in the (generic) prototype
-// toolbar. Phase 1 is the finished first flow, kept as a reference: it gets
-// the bar for identity and version switching (plus the link/share buttons),
-// but no use cases, edge cases or variants — menus without entries are not
-// rendered. Add them here if phase 1 ever needs presenting states again.
+// toolbar. The whole module is handed to the bar as `config={PROTO}`: declare
+// a setting here and its menu shows up, no extra wiring in the bar.
 export const PROTO_STORAGE_PREFIX = "cyos";
 
 // The key in `?<key>-toolbar-active`, the URL that carries the toolbar to
@@ -11,3 +9,27 @@ export const PROTO_STORAGE_PREFIX = "cyos";
 // rotate it here (and in prototype-versions.js) to invalidate handed-out
 // phase-1 toolbar links.
 export const PROTO_TOOLBAR_KEY = "id-backstage";
+
+export const START_POINTS = [
+  { key: "surveys", label: "Surveys list" },
+  { key: "template-dialog", label: "Choose a template" },
+  { key: "builder", label: "Questionnaire (draft survey)" },
+  { key: "builder-scratch", label: "Questionnaire (empty)" },
+];
+
+// States that are otherwise fiddly to reproduce by hand while presenting.
+export const USE_CASES = [
+  { key: "surveys", label: "Surveys list", desc: "The landing page" },
+  { key: "template-dialog", label: "Choose a template", desc: "6 templates, search, start from scratch" },
+  { key: "name-dialog", label: "Name your survey", desc: "After choosing a template" },
+  { key: "builder", label: "Questionnaire", desc: "A draft built from a template" },
+  { key: "builder-scratch", label: "Questionnaire: empty", desc: "Nothing added yet" },
+  { key: "select-questions", label: "Add questions", desc: "Library, custom, themes, templates" },
+];
+
+// Not every account is the same — flip these to show a use case both ways.
+export const EDGE_CASES = [
+  { key: "required", label: "Org-required questions", on: true,
+    desc: "Questions the organization always asks: pre-selected and not removable" },
+];
+export const defaultEdges = { required: true };
