@@ -1,0 +1,1547 @@
+/* app.css — LAYOUT ONLY. All values come from Engage DS tokens.
+   Components themselves use components.css classes. This file only
+   positions things and defines the few token-driven patterns the DS
+   builds ad-hoc (tags, the type-tile, list rows). The overlay/dialog
+   chrome and animations come from the DS (components.css). */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Poppins', sans-serif;
+  background: var(--bg-interface-body);
+  color: var(--content-base);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--bg-brand-subtle); }
+
+/* ---- app shell ---- */
+.app { flex: 1; min-height: 0; display: flex; overflow: hidden; background: var(--bg-secondary); }
+.col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+.scroll-y { overflow: auto; }
+.scroll-y::-webkit-scrollbar { width: 10px; height: 10px; }
+.scroll-y::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: var(--radius-base); border: 2px solid transparent; background-clip: padding-box; }
+.scroll-y::-webkit-scrollbar-track { background: transparent; }
+
+.tag-neutral { background: var(--bg-secondary); color: var(--content-secondary); }
+.tag-count { background: var(--bg-secondary); color: var(--content-secondary); border-radius: var(--radius-full); min-width: 22px; justify-content: center; padding: 0 7px; }
+.tag-benchmark { background: var(--bg-accent-turquoise-subtle); color: var(--content-accent-turquoise); }
+.tag-theme { background: var(--bg-brand-subtle); color: var(--content-brand); }
+.tag-theme-broken { background: var(--bg-warning-subtle); color: var(--content-warning); }
+/* Custom = blue accent. Shares a min-width with Benchmark so the two badges
+   occupy the same footprint in the question-list meta column. */
+.tag-custom { background: var(--bg-accent-blue-subtle); color: var(--content-accent-blue); }
+.tag-standard { background: var(--bg-accent-turquoise-subtle); color: var(--content-accent-turquoise); }
+.tag-benchmark, .tag-custom { min-width: 92px; justify-content: center; }
+.tag-draft { background: var(--bg-tertiary); color: var(--content-secondary); }
+/* Builder question tags (per the Unified-survey-page frame): theme = turquoise,
+   custom = grey. */
+.tag-theme-q { background: var(--bg-accent-turquoise-subtle); color: var(--content-accent-turquoise); }
+.tag-custom-q { background: var(--bg-tertiary); color: var(--content-secondary); }
+
+
+/* ---- Create-a-custom-question dialog ---- */
+/* Figma 6248:26489 — fixed height so the language list has room to scroll. */
+.cq-dialog { width: 1080px; height: min(760px, calc(100vh - 96px)); padding: var(--spacing-extra-loose); gap: var(--spacing-loose); }
+.cq-dialog .dialog-title { font-size: 20px; line-height: 28px; }
+.cq-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--spacing-loose); }
+.cq-lbl { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600;
+  color: var(--content-base); }
+.cq-lbl .cq-info { display: inline-flex; color: var(--content-subtle); cursor: help; }
+.cq-lbl .cq-info i { display: flex; width: 16px; height: 16px; }
+.cq-field { display: flex; flex-direction: column; gap: var(--spacing-extra-tight); }
+.cq-sel { width: 100%; justify-content: space-between; height: 36px; }
+button.sel-btn.cq-sel { font-size: 14px; }
+.cq-sel-placeholder { color: var(--content-placeholder); font-weight: 400; }
+.cq-menu-wrap { position: relative; }
+.cq-menu-wrap.is-block { width: 100%; }
+.cq-menu-pop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 2; }
+.cq-menu-scrim { position: fixed; inset: 0; z-index: 1; }
+
+/* Inline "Heads up" notification (Figma 143:5017): dismissible info banner. */
+.inline-note { display: flex; align-items: center; gap: var(--spacing-base-tight); padding: var(--spacing-base-tight);
+  background: var(--bg-info-subtle); border: 1px solid var(--border-info-subtle); border-radius: var(--radius-md); }
+.inline-note-ic { display: flex; flex: none; color: var(--content-info); }
+.inline-note-ic i { display: flex; width: 20px; height: 20px; }
+.inline-note-txt { flex: 1; min-width: 0; margin: 0; font-size: 14px; line-height: 1.6; color: var(--content-base); }
+.inline-note-txt b { font-weight: 600; }
+.inline-note-x { flex: none; }
+.ib-28 { width: 28px; height: 28px; } .ib-28 svg { width: 16px; height: 16px; }
+
+/* Selects row (Add to topic + Answer type, side by side above the panel). */
+.cq-selects { display: flex; gap: var(--spacing-base); }
+.cq-selects .cq-field { flex: 1; min-width: 0; }
+/* Body frame: language list on the left, respondent-eye preview on the right. */
+/* The stage behind a preview carries the SAME grey as the questionnaire list,
+   so a question looks the same in its dialog as it does on the page — and the
+   same design wash lands on both when a design is picked. */
+.cq-frame { flex: 1; min-height: 0; display: flex; align-items: stretch; overflow: hidden;
+  background: var(--bg-secondary); border: 1px solid var(--border-base); border-radius: var(--radius-lg); }
+
+/* ---- language list (Figma 6238:25398) ---- */
+.cq-langs { flex: none; width: 240px; display: flex; flex-direction: column; padding: var(--spacing-base);
+  background: var(--bg-base); border: 1px solid var(--border-base); overflow: hidden; }
+.cq-langs-head { display: flex; align-items: center; gap: 6px; padding: 4px var(--spacing-tight) var(--spacing-base);
+  font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
+.cq-langs-head.is-count { padding-top: var(--spacing-base); }
+/* Only the title flexes — scoping this to `span` also caught the Tooltip's
+   wrapper span, which split the row in half and wrapped the heading. */
+.cq-langs-title { flex: 1; min-width: 0; }
+/* Any trailing mark sits flush right, lining up with the rows' own markers. */
+.cq-langs-head > :last-child:not(.cq-langs-title) { margin-left: auto; }
+/* The list bleeds across the panel's full right padding so the scrollbar lives
+   in that gutter instead of eating into the rows (6px keeps content clear of it). */
+.cq-langs-scroll { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 1px;
+  margin-right: calc(-1 * var(--spacing-base)); padding-right: 6px;
+  /* Reserve the scrollbar gutter whether or not the list actually overflows —
+     otherwise a short list renders its rows 10px wider than the pinned primary
+     row above it, and the right-hand markers stop lining up. */
+  scrollbar-gutter: stable; }
+
+.cq-lang { display: flex; align-items: center; gap: var(--spacing-tight); width: 100%; padding: var(--spacing-tight);
+  border: 0; background: var(--bg-base); border-radius: var(--radius-base); font: inherit; text-align: left;
+  color: var(--content-base); cursor: pointer; }
+.cq-lang:hover { background: var(--bg-base-hover); }
+.cq-lang.is-active { background: var(--bg-brand-subtle-selected); color: var(--content-brand); }
+.cq-lang.is-active .cq-lang-name { font-weight: 600; }
+.cq-lang.is-active .cq-lang-country { color: inherit; }
+.cq-lang-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cq-lang-name { font-size: 14px; font-weight: 500; line-height: 22.4px; }
+.cq-lang-country { font-size: 12px; font-weight: 400; line-height: 19.2px; color: var(--content-secondary); }
+
+/* Flag: 20px box holding an 18.33 x 13.34 leaf, exactly as the DS country marks. */
+.cq-flag, .lang-flag { flex: none; display: grid; place-items: center; width: 20px; height: 20px; }
+.cq-flag img, .lang-flag img { display: block; width: 18.33px; height: 13.34px; border-radius: 1px; object-fit: cover;
+  box-shadow: 0 0 0 1px #f5f7fa; /* neutral/N4 — the hairline the DS flags carry */ }
+
+/* Anything mid-translation pulses — quieter than a spinner, and it marks the
+   exact items that are working rather than adding a separate status icon. */
+.cq-lang.is-working, .cq-card.is-working, .menu-item.is-working { animation: cq-pulse 1.4s ease-in-out infinite; }
+@keyframes cq-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) {
+  .cq-lang.is-working, .cq-card.is-working, .menu-item.is-working { animation: none; opacity: .6; }
+}
+
+/* ---- preview side ---- */
+.cq-preview { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--spacing-base); padding: var(--spacing-loose); overflow: auto; }
+/* The card holds a survey question, so it keeps a readable measure instead of
+   stretching to the grey stage; it only narrows when the dialog does. */
+.cq-card { width: 100%; max-width: 694px; display: flex; flex-direction: column; gap: var(--spacing-base); padding: var(--spacing-loose);
+  background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-xl); }
+.cq-card-note { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;
+  font-size: 12px; line-height: 19.2px; color: var(--content-secondary); }
+/* A hand-edited translation whose source has since changed — needs a look. */
+.cq-card-note.is-stale { color: var(--content-warning); }
+.cq-note-action { padding: 0; border: 0; background: none; font: inherit; font-weight: 600;
+  color: inherit; text-decoration: underline; cursor: pointer; }
+/* Permanent marker on a hand-edited translation — informational, not a warning. */
+.cq-lang-manual { display: flex; flex: none; color: var(--content-info); }
+.cq-lang.is-active .cq-lang-manual { color: inherit; }
+.cq-answer { width: 100%; padding: var(--spacing-tight) 0 0; }
+
+/* Benchmark note sits in the footer beside Cancel/Create, so the frame stays
+   free for a long description. Regular weight — it's an aside, not a label. */
+.cq-bench-note { display: inline-flex; align-items: center; gap: 6px; margin-right: var(--spacing-tight);
+  font-size: 14px; font-weight: 400; line-height: 22.4px; color: var(--content-secondary); }
+.cq-bench-note i { color: var(--content-secondary); }
+
+/* Compact (< ~1160px): the side list becomes a "Languages" dropdown on top.
+   The dialog sizes to its content here instead of holding a fixed height —
+   with no list to scroll, a nested scroller inside the frame is just noise. */
+.cq-frame.is-compact { flex-direction: column; }
+.cq-frame.is-compact .cq-preview { justify-content: flex-start; overflow: visible; }
+.cq-langsel { width: 100%; }
+@media (max-width: 1160px) {
+  .cq-dialog { height: auto; }
+}
+
+/* Shown when a translation language is opened before the source exists. */
+.cq-empty { max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: var(--spacing-tight);
+  padding: var(--spacing-loose); text-align: center; }
+.cq-empty-ic { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 4px;
+  border-radius: var(--radius-full); background: var(--bg-base); color: var(--content-secondary); }
+.cq-empty-title { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
+.cq-empty-body { margin: 0 0 var(--spacing-tight); font-size: 14px; line-height: 1.6; color: var(--content-secondary); }
+
+/* Inputs follow the DS text field exactly: white bg, subtle action shadow, and
+   only the BORDER changes on hover/focus (no background swap, no focus ring). */
+/* Height is driven by content (see AutoTextarea), so never show a scrollbar. */
+.cq-qfield, .cq-descfield { width: 100%; text-align: center; font-family: inherit; outline: none;
+  border: 1px solid var(--border-action); border-radius: var(--radius-base); background: var(--bg-input);
+  box-shadow: var(--sh-action); color: var(--content-base); resize: none; overflow: hidden; transition: border-color .1s; }
+.cq-qfield { font-size: 16px; font-weight: 600; padding: 12px 16px; min-height: 48px; line-height: 24px; }
+.cq-qfield::placeholder { color: var(--content-placeholder); font-weight: 600; }
+.cq-descfield { font-size: 14px; font-weight: 400; padding: 8px 12px; min-height: 38px; line-height: 20px; }
+.cq-descfield::placeholder { color: var(--content-placeholder); }
+.cq-qfield:hover, .cq-descfield:hover { border-color: var(--border-action-hover); }
+.cq-qfield:focus, .cq-descfield:focus { border-color: var(--border-brand); }
+.cq-qfield.is-error, .cq-descfield.is-error { border-color: var(--border-negative); }
+.cq-field .tf-err { margin-top: 2px; }
+
+/* Inputs follow the DS text field exactly: white bg, subtle action shadow, and
+   only the BORDER changes on hover/focus (no background swap, no focus ring). */
+.cq-qfield, .cq-descfield { width: 100%; text-align: center; font-family: inherit; outline: none;
+  border: 1px solid var(--border-action); border-radius: var(--radius-base); background: var(--bg-input);
+  box-shadow: var(--sh-action); color: var(--content-base); resize: none; overflow: hidden; transition: border-color .1s; }
+.cq-qfield { font-size: 16px; font-weight: 600; padding: 12px 16px; min-height: 48px; line-height: 24px; }
+.cq-qfield::placeholder { color: var(--content-placeholder); font-weight: 600; }
+.cq-descfield { font-size: 14px; font-weight: 400; padding: 8px 12px; min-height: 38px; line-height: 20px; }
+.cq-descfield::placeholder { color: var(--content-placeholder); }
+.cq-qfield:hover, .cq-descfield:hover { border-color: var(--border-action-hover); }
+.cq-qfield:focus, .cq-descfield:focus { border-color: var(--border-brand); }
+.cq-qfield.is-error, .cq-descfield.is-error { border-color: var(--border-negative); }
+.cq-field .tf-err { margin-top: 2px; }
+
+/* ---- template preview (full takeover inside the template dialog) ---- */
+.tpv-topbar { display: flex; align-items: center; justify-content: space-between; }
+.tpv-hero { display: flex; align-items: center; gap: var(--spacing-base); }
+.tpv-illus { width: 64px; height: 64px; flex: none; }
+.tpv-meta { font-size: 14px; color: var(--content-secondary); margin-top: 4px; }
+.tpv-section-title { font-size: 16px; font-weight: 600; color: var(--content-base); margin: 0 0 var(--spacing-base-tight); }
+.tpv-why { display: inline; }
+.tpv-showmore { background: none; border: none; padding: 0; margin-left: 6px; cursor: pointer;
+  color: var(--content-brand); font: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.tpv-count { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 8px;
+  border-radius: var(--radius-full); background: var(--bg-tertiary); color: var(--content-secondary); font-size: 12px; font-weight: 600; }
+
+/* questionnaire block — grey container holding the topic sections (Figma) */
+.tpv-qbox { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: var(--spacing-loose); }
+.tpv-qbox > section + section { margin-top: var(--spacing-loose); }
+.tpv-seclabel { display: flex; align-items: center; gap: 10px; margin-bottom: var(--spacing-base-tight); padding: 0 2px; }
+.tpv-seclabel h4 { margin: 0; }
+.tpv-trow { display: flex; align-items: stretch; min-height: 60px; }
+.tpv-trow .qrow-main { flex: 1; min-width: 0; display: flex; align-items: center; padding: var(--spacing-base-tight) var(--spacing-base); }
+.tpv-tcell { display: grid; place-items: center; width: 72px; flex: none; border-left: 1px solid var(--border-base); }
+.tpv-tcell.is-tag { width: 116px; }
+.tpv-tcell .tag { margin: 0; }
+
+.cq-scale { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: var(--spacing-base) 0; }
+.cq-scale-row { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+.cq-scale-end { font-size: 14px; font-weight: 500; color: var(--content-secondary); white-space: nowrap; }
+.cq-dots { display: flex; align-items: center; gap: 12px; }
+/* Each dot is wrapped by Tooltip's .tt-demo span — keep it out of the layout. */
+.cq-dots .tt-demo { display: flex; flex: none; }
+.cq-dot { width: 26px; height: 26px; border-radius: var(--radius-full); border: 3px solid var(--dot, var(--border-base)); background: transparent; flex: none; cursor: help; }
+.cq-dot:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; }
+.cq-idk { font-size: 14px; color: var(--content-secondary); }
+
+/* ---- question-type tile ---- */
+/* Required-question marker (Figma 6191:21502): a static grey tile with an
+   asterisk, shown instead of the checkbox (dialog) / as an extra tile (builder). */
+.req-mark { flex: none; display: grid; place-items: center; border-radius: var(--radius-sm);
+  background: var(--bg-tertiary); border: 1px solid var(--border-white); color: var(--content-secondary); }
+.req-mark i { display: flex; }
+.qtile { width: 24px; height: 24px; border-radius: var(--radius-sm); display: grid; place-items: center; flex: none;
+  border: 1px solid var(--bg-base); }
+.qtile i { display: flex; width: 16px; height: 16px; }
+
+/* ---- "Keep the theme complete" dialog (Figma 6143:12943): an info-tinted
+   "Results example" panel holding a theme card with a short description and two
+   thin score bars (group score vs. benchmark). ---- */
+.tc-example { display: flex; flex-direction: column; align-items: center; gap: var(--spacing-loose);
+  padding: var(--spacing-loose) var(--spacing-loose) var(--spacing-super-loose); border-radius: var(--radius-sm);
+  background: var(--bg-info-subtle); }
+.tc-example-tag { display: inline-flex; align-items: center; height: 24px; padding: 2px 8px; border-radius: var(--radius-full);
+  background: var(--bg-info); color: var(--content-on-brand-base); font-size: 12px; font-weight: 600; line-height: 16px; }
+.tc-theme-card { width: 360px; max-width: 100%; display: flex; flex-direction: column; gap: var(--spacing-tight);
+  padding: var(--spacing-loose); background: var(--bg-base); border: 1px solid var(--border-info-subtle); border-radius: var(--radius-md); }
+.tc-theme-name { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
+.tc-theme-desc { margin: 0; font-size: 14px; font-weight: 400; line-height: 1.6; color: var(--content-secondary);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tc-bars { display: flex; flex-direction: column; gap: var(--spacing-base-tight); margin-top: var(--spacing-extra-tight); }
+.tc-pbar { display: flex; flex-direction: column; gap: var(--spacing-tight); }
+.tc-pbar-lbl { display: flex; align-items: center; gap: var(--spacing-tight); }
+.tc-pbar-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; line-height: 22.4px; color: var(--content-secondary); }
+.tc-pbar-val { font-size: 14px; font-weight: 500; line-height: 22.4px; color: var(--content-base); text-align: right; }
+.tc-track { height: 8px; border-radius: 10px; background: var(--bg-tertiary); overflow: hidden; display: flex; align-items: center; }
+.tc-fill { height: 8px; border-radius: 10px; border: 2px solid var(--bg-base); box-sizing: content-box; }
+.tc-fill-current { background: var(--bg-results-current); }
+.tc-fill-bench { background: var(--bg-results-benchmark); }
+/* Multiple broken themes: the example cards stack, each offset down-right and
+   overlapping the one behind (front card shows the scores; the rest peek). The
+   multi description is cut to one clamped sentence. */
+.tc-stack { display: inline-flex; flex-direction: column; align-items: flex-start; max-width: 100%; }
+.tc-stack .tc-theme-card { width: 300px; box-shadow: var(--sh-popovers); }
+.tc-stack .tc-theme-card + .tc-theme-card { margin-top: -64px; margin-left: 32px; }
+.tc-theme-card.is-multi .tc-theme-desc { -webkit-line-clamp: 1; }
+
+/* ---- builder row kebab menu ---- */
+.qrow-menu-wrap { position: relative; }
+
+/* ---- questionnaire page: draggable sections (matches Figma _question-toptic) ---- */
+/* One bordered card per topic (matches the Unified-survey-page frame): a header
+   band, then question rows separated by full-width dividers. No overflow:hidden
+   (it clipped the kebab dropdowns) — child corners are rounded instead. */
+.qsec { position: relative; background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-lg);
+  box-shadow: var(--sh-card); display: flex; flex-direction: column;
+  transition: box-shadow var(--motion-base) var(--ease-standard), opacity var(--motion-base) var(--ease-standard); }
+.qsec-head { border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0; }
+.qsec-body .qrow:last-child { border-radius: 0 0 calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px); }
+/* Topic header (Figma _Topic, not-selectable): 60px tall, 12px padding, 12px gap. */
+.qsec-head { display: flex; align-items: center; gap: var(--spacing-base-tight); min-height: 60px;
+  padding: var(--spacing-base-tight); }
+/* Dedicated drag icon-button (only it is draggable, not the whole row/card). */
+.drag-ib { cursor: grab; }
+.drag-ib:active { cursor: grabbing; }
+.qsec-title { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
+.qsec-count { font-size: 14px; font-weight: 500; color: var(--content-base); white-space: nowrap; }
+.qsec-menu-wrap { position: relative; flex: none; }
+/* The questionnaire page: one measure, centred, with room around it. Narrow
+   windows spend that room on content instead — 16px at the sides, and 24px of
+   air above and between the cards (the drop zones ARE those gaps). */
+.qpage { max-width: 960px; margin: 0 auto; padding: 32px 56px 0; box-sizing: content-box; }
+@media (max-width: 1100px) {
+  .qpage { padding: 24px 16px 0; }
+  .qsec-dropzone { height: 24px; }
+  .qsec-list > .qsec-dropzone:last-child.is-armed { height: 24px; }
+}
+
+/* The prototype toolbar is a real row ABOVE the app, so a viewport-fixed
+   overlay would slide under it and lose the top of its dialog. The bar
+   publishes its height; overlays start below it. Zero when there is no bar. */
+.overlay { top: var(--proto-bar-h, 0px); }
+
+/* ---- dialogs on a small screen ------------------------------------------
+   A dialog that keeps its desktop measure on a phone is a postage stamp with
+   a scrollbar. Below 900px every dialog takes the whole viewport minus a 16px
+   margin — the big worksurfaces take the height too, small ones keep their
+   natural height so a two-line confirmation isn't stretched over the screen.
+   Select questions is the exception: it IS the screen there, edge to edge. */
+@media (max-width: 900px) {
+  .overlay { padding: var(--spacing-base); }
+  .dialog { width: 100%; max-width: 100%; max-height: 100%; padding: var(--spacing-loose); }
+  .dialog.cq-dialog, .dialog.bmq-dialog, .dialog.dialog-worksurface, .dialog.dialog-l {
+    width: 100%; max-width: 100%; height: 100%; }
+  /* The one dialog that is a page: no margin, no rounded corners. */
+  .overlay.is-fullbleed { padding: 0; }
+  .overlay.is-fullbleed .dialog.eq-dialog {
+    width: 100vw; max-width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; border: 0; }
+  .dialog.eq-wide .eq-main { padding: var(--spacing-loose) var(--spacing-loose) 0; }
+  .dialog.eq-wide > .dialog-footer { padding: var(--spacing-base) var(--spacing-loose); }
+  /* A footer note can't share a line with the buttons at this width: it takes
+     its own line above them instead of pushing them off the dialog. */
+  .dialog-footer { flex-wrap: wrap; row-gap: var(--spacing-tight); }
+  .cq-bench-note, .bmq-foot-note { flex: 1 0 100%; order: -1; }
+  /* The respondent preview keeps its shape by giving up padding, not width. */
+  .bmq-preview, .cq-preview { padding: var(--spacing-base); }
+  .bmq-card, .cq-card { padding: var(--spacing-base); }
+}
+.qsec-list { display: flex; flex-direction: column; padding-bottom: var(--spacing-base); }
+/* rows: full-width, divided by a top border, drag button aligned with the header one */
+.qsec-body { position: relative; display: flex; flex-direction: column; }
+/* Question row (Figma _Question, not-selectable): min-height 56px, 12px padding, 12px gap. */
+.qsec-body .qrow { position: relative; border-top: 1px solid var(--border-base); border-bottom: none;
+  padding: var(--spacing-base-tight); gap: var(--spacing-base-tight); min-height: 56px; background: var(--bg-base); }
+
+/* ---- drag & drop feedback ----
+   Nothing reorders while dragging. Sections drop into static zones sitting in
+   the gaps between cards; a question drops onto an insertion line within its
+   own topic. Static targets can't oscillate the way live reordering did. */
+.qsec.is-dragging { opacity: .5; box-shadow: var(--sh-card-hover); }
+.qsec-body .qrow.is-dragging { opacity: .4; }
+/* Section drop zones (Figma _DropZone 6142:16542): 40px targets in the gaps
+   between cards (Builder renders one before each card and one after the last).
+   Idle/armed they are invisible spacers; only the hovered zone shows a brand
+   insertion line with a centred knob. Leading/trailing zones collapse until a
+   drag arms them. */
+.qsec-dropzone { position: relative; flex: none; display: flex; align-items: center; height: 40px;
+  transition: height var(--motion-fast) var(--ease-standard); }
+/* The zone above the first card is a permanent drop target (it doubles as the
+   gap under the summary card) so starting a drag never shifts the page. Only
+   the trailing zone collapses until a drag arms it. */
+.qsec-list > .qsec-dropzone:last-child { height: 0; }
+.qsec-list > .qsec-dropzone:last-child.is-armed { height: 40px; }
+/* Sensitivity: while a section drag is active, each zone catches the pointer a
+   little beyond its visible band, so a near-miss over a card edge still drops. */
+.qsec-dropzone::after { content: ""; position: absolute; left: 0; right: 0; top: -14px; bottom: -14px; pointer-events: none; }
+.qsec-dropzone.is-armed::after { pointer-events: auto; z-index: 5; }
+.qsec-dropzone-strip { flex: 1; height: 2px; border-radius: var(--radius-full); background: transparent; position: relative;
+  transition: background var(--motion-fast) var(--ease-standard); }
+.qsec-dropzone.is-over .qsec-dropzone-strip { background: var(--border-brand); }
+.qsec-dropzone.is-over .qsec-dropzone-strip::before { content: ""; position: absolute; left: 50%; top: 50%;
+  width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--border-brand); }
+/* Insertion line shown between rows when a question is dropped within its topic. */
+.qrow-insert { height: 0; margin: -1px var(--spacing-base-tight); border-top: 2px solid var(--border-brand);
+  border-radius: var(--radius-full); position: relative; z-index: 3; }
+/* Dragging a STANDARD question over another topic locks it — the card dims and
+   shows a light-blue info pill (Unified-survey-page frame). */
+.qsec.is-locked .qsec-head, .qsec.is-locked .qsec-body > .qrow { opacity: .35; }
+.qsec-lock-msg { position: absolute; inset: 0; z-index: 4; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--bg-base) 55%, transparent); pointer-events: none;
+  animation: lock-msg-in var(--motion-base) var(--ease-out); }
+.qsec-lock-msg span { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--radius-full);
+  background: var(--bg-secondary); color: var(--content-secondary); border: 1px solid var(--border-base);
+  font-size: 14px; font-weight: 500; box-shadow: var(--sh-popovers); }
+.qsec-lock-msg i { display: flex; width: 16px; height: 16px; }
+@keyframes lock-msg-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .qsec-lock-msg { animation: none; } }
+/* Dragging a CUSTOM question over another topic: that topic is a valid drop
+   target and highlights (custom questions can change topic). */
+.qsec.is-drop-target { box-shadow: 0 0 0 2px var(--border-brand), var(--sh-card-hover); }
+.qsec.is-drop-target .qsec-head { background: var(--bg-brand-subtle); }
+
+/* ---- dialog: card chrome, scrim and enter-animation come from the DS
+   (.overlay + .dialog in components.css — 32px padding, 24px gaps).
+   Layout-only additions: viewport clamp + a tall working dialog whose body
+   scrolls between a fixed header & footer, keeping the DS spacing intact. ---- */
+.dialog { max-height: calc(100vh - 96px); }
+.dialog.dialog-worksurface .dialog-body { flex: 1; min-height: 0; overflow: auto; }
+
+/* ---- list rows (question list) ---- */
+.qrow { display: flex; align-items: center; gap: var(--spacing-base-tight); padding: var(--spacing-base-tight) var(--spacing-base);
+  border-bottom: 1px solid var(--border-base); background: var(--bg-base); }
+.qrow:last-child { border-bottom: none; }
+.qrow-main { flex: 1; min-width: 0; }
+.qrow-meta { display: flex; align-items: center; gap: var(--spacing-base-tight); flex: none; }
+/* Tags inside a question row carry a 1px surface-coloured ring so they read
+   cleanly against both white and brand-tinted (selected) row backgrounds. */
+.qrow-meta .tag, .tpv-trow .tag { border: 1px solid var(--bg-base); }
+/* ---- Add-question-from-library dialog (Unified-survey-page frame) ----
+   Plain white rows divided by full-width borders; the selection state lives in
+   the checkbox, not the row background. */
+.aql-sec + .aql-sec { margin-top: var(--spacing-super-loose); }
+/* Topic header (Figma _Topic 6142:15859): 12px gap, only bottom padding (20px),
+   a bottom divider. */
+.aql-sechead { display: flex; align-items: center; gap: var(--spacing-extra-tight); padding: 0 0 20px;
+  border-bottom: 1px solid var(--border-base); }
+.aql-sechead h3 { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
+.aql-count { font-size: 14px; font-weight: 500; color: var(--content-base); white-space: nowrap; }
+/* Questions-tab headers carry a 36px collapse chevron; trim the vertical padding
+   so the header stays about the same height (~48px) despite the taller button. */
+.aql-sec > .aql-sechead { padding: 4px 0 8px; }
+.aql-sec-toggle { width: 36px; height: 36px; }
+.aql-sec-toggle svg { width: 16px; height: 16px; }
+/* Collapse/expand chevron on a library section header — points down when the
+   section is collapsed (can be expanded), flips up when it's expanded. */
+.aql-chevron { transition: transform var(--motion-fast) var(--ease-standard); }
+.aql-chevron.is-expanded { transform: rotate(180deg); }
+/* Question row (Figma _Question 6165:15366): 12px gap, 12px vertical padding, a
+   bottom divider, ~59px tall. */
+.aql-row { display: flex; align-items: center; gap: var(--spacing-base-tight); padding: 12px 0;
+  min-height: 59px; border-bottom: 1px solid var(--border-base); cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard); }
+.aql-row:hover { background: var(--bg-base-hover); }
+/* Tags + type + actions as one group on the right of a row. */
+.aql-meta { display: flex; align-items: center; gap: var(--spacing-base-tight); flex: none; margin-left: auto; }
+/* Info variant of the DS system notification (blue left border) — used to tell
+   the user a pressed question is required. */
+.sysnotif.is-info { border-left-color: var(--border-info); }
+.sysnotif.is-info .sysnotif-action { color: var(--border-info); }
+.aql-text { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; line-height: 22.4px; color: var(--content-base); }
+/* Theme + custom tags (Figma 154:4080). Theme tag tracks how much of the theme
+   is in the questionnaire: neutral (grey) → in-progress (light turquoise + ring)
+   → complete (filled turquoise + check). Custom = light-blue with edit icon. */
+.tag-thm, .tag-custom-q { border-radius: var(--radius-base); max-width: 140px; border: 1px solid var(--border-white); }
+.tag-thm.is-neutral { background: var(--bg-tertiary); color: var(--content-secondary); }
+/* More visual distinction between the three states (Figma 6189:32359):
+   in-progress = light BLUE + blue ring + blue text; complete = filled DARK teal
+   + white check + white text. Custom questions = inverted blue. */
+.tag-thm.is-progress { background: var(--bg-info-subtle); color: var(--content-info); }
+/* Complete = positive green, matching the positive message in the theme's
+   details dialog. The check stays as a non-color completeness cue. */
+.tag-thm.is-complete { background: var(--bg-positive); color: var(--content-on-brand-base); }
+.tag-custom-q { background: var(--content-accent-blue); color: var(--content-inverse); }
+/* Interactive tags (open a dialog on click) get a hover/press + focus affordance. */
+.tag-thm.is-interactive, .tag-custom-q.is-interactive { cursor: pointer; transition: filter var(--motion-fast) var(--ease-standard); }
+.tag-thm.is-interactive:hover, .tag-custom-q.is-interactive:hover { filter: brightness(0.94); }
+.tag-thm.is-interactive:active, .tag-custom-q.is-interactive:active { filter: brightness(0.88); }
+.tag-thm.is-interactive:focus-visible, .tag-custom-q.is-interactive:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 1px; }
+.tag-ring { flex: none; display: block; }
+.tag-ic { display: inline-flex; flex: none; }
+.tag-ic i, .tag-custom-q i { display: flex; width: 10px; height: 10px; }
+/* Let a long tag label truncate with an ellipsis inside its tag. */
+.tag-ellip { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Themes tab placeholder */
+.aql-themes-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--spacing-base-tight);
+  padding: var(--spacing-super-extra-loose) 0; color: var(--content-subtle); text-align: center; }
+
+/* ---- Themes tab: theme cards (Figma 6141:12986) ----
+   Clicking a card adds/removes the whole theme. A progress bar shows how far the
+   theme is toward complete; a composite-score line (turquoise + check once full)
+   tells the user a complete theme becomes one benchmarked score in results. */
+.aql-themes-intro { margin: 0 0 var(--spacing-base); font-size: 14px; line-height: 1.6; color: var(--content-secondary); }
+/* Theme card (Figma 6170:26068) + template card (Figma 6168:22956): one 3-column
+   grid; both end in TWO equal-width (flex:1) buttons with a 16px gap. Theme cards
+   use gap-16/title-16/2-line desc + a progress bar; template cards use
+   gap-20/title-18/3-line desc + a 64px illustration badge. */
+.thm-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--spacing-loose); }
+.cc-card { display: flex; flex-direction: column; padding: 24px; text-align: left; cursor: pointer;
+  background: var(--bg-base); border: 1px solid var(--border-base); border-radius: 12px; box-shadow: var(--sh-card);
+  transition: border-color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard); }
+.cc-card:hover { border-color: var(--border-action); box-shadow: var(--sh-card-hover); }
+.cc-card:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; }
+.cc-card.is-active { background: var(--bg-brand-subtle-selected); border-color: var(--border-brand); }
+.cc-card.is-active:hover { border-color: var(--border-brand); }
+.cc-theme { gap: 16px; }
+.cc-template { gap: 20px; }
+.cc-head { display: flex; flex-direction: column; align-items: flex-start; width: 100%; }
+.cc-theme .cc-head { gap: 8px; }
+.cc-template .cc-head { gap: 12px; }
+.cc-illus { width: 64px; height: 64px; border-radius: 64px; flex: none; display: grid; place-items: center; border: 1px solid var(--bg-base); }
+.cc-title { font-weight: 600; color: var(--content-base); }
+.cc-theme .cc-title { font-size: 16px; line-height: 24px; }
+.cc-template .cc-title { font-size: 18px; line-height: 27px; }
+.cc-desc { margin: 0; font-weight: 400; font-size: 14px; line-height: 1.6; color: var(--content-secondary); width: 100%;
+  display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.cc-theme .cc-desc { -webkit-line-clamp: 2; min-height: 45px; }
+.cc-template .cc-desc { -webkit-line-clamp: 3; min-height: 67px; }
+.cc-meter { display: flex; flex-direction: column; gap: 8px; padding-bottom: 8px; width: 100%; }
+.cc-count { width: 100%; min-width: 0; font-size: 14px; font-weight: 500; line-height: 22.4px; color: var(--content-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Progress bar: the white ring sits OUTSIDE the fill's box (content-box) and the
+   track centres + clips it, so the coloured fill keeps its full 8px height. */
+.cc-progress { height: 8px; border-radius: 10px; background: var(--bg-tertiary); overflow: hidden; display: flex; align-items: center; width: 100%; }
+/* Partial progress is BLUE (matches the in-progress theme tag); a complete theme
+   card (.is-active) turns its full bar teal. */
+.cc-progress-fill { height: 8px; box-sizing: content-box; border-radius: 10px; background: var(--bg-info); border: 2px solid var(--bg-base);
+  transition: width var(--motion-base) var(--ease-out), background var(--motion-base) var(--ease-out); }
+.cc-card.is-active .cc-progress-fill { background: var(--bg-brand); }
+.cc-foot { display: flex; align-items: stretch; gap: 16px; width: 100%; }
+.cc-foot .btn { flex: 1 0 0; min-width: 0; justify-content: center; }
+/* Template detail (View details takeover): a grey questionnaire panel with a
+   Select-all action, holding one bordered card per subject. */
+.tmpl-qpanel { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: var(--spacing-loose);
+  display: flex; flex-direction: column; gap: var(--spacing-base); }
+.tmpl-qpanel-head { display: flex; align-items: center; gap: var(--spacing-base); }
+.tmpl-qpanel-head .btn { margin-left: auto; flex: none; }
+/* Subject card: rows span the full card width so their dividers are edge-to-edge
+   (like the builder). No card padding — the rows carry the horizontal padding. */
+.tmpl-qsec { background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-lg); overflow: hidden; }
+.tmpl-qsec .aql-sechead { padding: var(--spacing-base); }
+.tmpl-qsec .aql-row { padding-left: var(--spacing-base); padding-right: var(--spacing-base); }
+.tmpl-qsec .aql-row:last-child { border-bottom: none; }
+/* Template detail takeover inside the wide Select-questions dialog: .eq-wide
+   zeroes the dialog's own padding (the rail layout pads itself), so the
+   takeover pads its header and body the way .eq-main does. Matches the DS
+   reference preview dialog (create-survey-dialog → prev-top / prev-body). */
+.dialog.eq-wide .tpv-dhead { padding: var(--spacing-loose) 48px 0 var(--spacing-extra-loose); }
+.dialog.eq-wide .dialog-body.tpv-body { padding: var(--spacing-loose) var(--spacing-extra-loose) var(--spacing-extra-loose); }
+
+/* Builder context bar (Figma 6293:26516). The step has no page title — the tab
+   above already names it — so this bar carries the orientation instead: the
+   survey's status on the left, the button group on the right. The whole page
+   behind it is grey (or the survey's design color), and the bar is a wash over
+   that: a dark neutral alpha on the neutral page, a white alpha once a colored
+   design is applied (the wash + page background are composed inline, so the
+   bar stays opaque while stuck). Only THIS bar is sticky: the main nav above
+   scrolls away with the page. White hairlines top and bottom seam it to the
+   white main nav without a grey line between them — this page only. */
+.ctxbar { position: sticky; top: 0; z-index: 30; flex: none; padding: var(--spacing-base);
+  border-top: 1px solid var(--border-white); border-bottom: 1px solid var(--border-white); }
+.ctxbar-inner { max-width: 960px; margin: 0 auto;
+  display: flex; align-items: center; gap: var(--spacing-tight); }
+/* The step footer: one row of actions, with its own mobile trim. */
+/* Context-bar actions as the window narrows: first View and Design drop their
+   labels (Add keeps its own — it is the one that writes), then all three share
+   a full-width row, and on the narrowest screens that row goes icon-only. */
+@media (max-width: 1100px) and (min-width: 761px) {
+  .ctxbar-inner > .ctxbar-menu-wrap > .btn.btn-secondary { padding: 0 10px; }
+  .ctxbar-inner > .ctxbar-menu-wrap > .btn.btn-secondary .ctxbar-btn-lbl { display: none; }
+}
+/* Only when three labelled buttons genuinely stop fitting. */
+@media (max-width: 360px) {
+  .ctxbar-btn-lbl { display: none; }
+}
+.qfoot { height: 72px; flex: none; display: flex; align-items: center; gap: var(--spacing-base-tight);
+  padding: 0 var(--spacing-loose); background: var(--bg-base); border-top: 1px solid var(--border-base);
+  box-shadow: var(--sh-footer); }
+@media (max-width: 760px) {
+  /* Status above, actions below — side by side neither of them fits. */
+  .ctxbar-inner { flex-wrap: wrap; }
+  .ctxbar-status { flex: 1 0 100%; flex-direction: row; align-items: baseline; gap: 8px; }
+  .ctxbar-meta { font-size: 13px; }
+  .ctxbar-inner .spacer { display: none; }
+  /* The three actions as one row of equal buttons, labels kept while they fit. */
+  .ctxbar-inner > .ctxbar-menu-wrap, .ctxbar-inner > .btn { flex: 1 1 0; min-width: 0; }
+  .ctxbar-inner > .ctxbar-menu-wrap > .btn { width: 100%; justify-content: center; }
+  .qfoot { padding: 0 var(--spacing-base); }
+  /* A question row stacks: wording first, its tags and actions underneath.
+     The drag handles go — dragging isn't a touch gesture here, and the row and
+     topic menus both carry Move up / Move down. */
+  .qrow { flex-wrap: wrap; }
+  .qrow-main { flex: 1 0 100%; order: 1; }
+  .qrow > .tt-demo:first-child, .qsec-head > .tt-demo:first-child { display: none; }
+  /* Same stacking inside the Select questions rows. */
+  .aql-row { flex-wrap: wrap; row-gap: 6px; }
+  .aql-meta { flex: 1 0 100%; }
+  .qrow-meta { order: 2; margin-left: auto; }
+}
+.ctxbar-status { display: flex; flex-direction: column; min-width: 0; }
+.ctxbar-count { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
+.ctxbar-meta { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.6; color: var(--content-secondary); min-width: 0; }
+.ov-dot { flex: none; width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .55; }
+/* Suggestions (Figma "sentiment-button"): a white button with an informative
+   blue border — set apart from the plain buttons beside it, but not an action
+   color. Only exists while there is something to say. */
+.ctxbar-sugg { display: inline-flex; align-items: center; gap: 8px; min-height: 36px;
+  padding: 6px 12px; border: 1px solid var(--border-info); border-radius: var(--radius-base);
+  background: var(--bg-base); color: var(--content-base); box-shadow: var(--sh-action);
+  font-family: inherit; font-size: 14px; font-weight: 500; line-height: 22.4px; cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard); }
+.ctxbar-sugg:hover { background: var(--bg-base-hover); }
+.ctxbar-sugg i { flex: none; color: var(--content-info-secondary); }
+.ctxbar-menu-wrap { position: relative; flex: none; }
+/* This menu is short and its options are the point — the DS's 280px cap would
+   put "Reset view" behind a scrollbar. */
+.ctxbar-menu { position: absolute; top: calc(100% + 4px); left: 0; width: 300px; z-index: 40;
+  max-height: none; overflow: visible; }
+.ctxbar-menu.is-right { left: auto; right: 0; }
+/* The one line that says a menu changes nothing about the survey. Quiet, above
+   the options, and never mistaken for one of them. */
+.ctxbar-menu-note { margin: -2px 10px 8px; font-size: 12px; line-height: 1.5; color: var(--content-secondary); }
+
+/* Design menu (Figma 6293:27553): the org's designs as mini participant
+   screens — chrome strip with the org mark, the question card, the button in
+   the design's accent. Applied one gets the dark scrim + check. */
+.dsg-menu { position: absolute; top: calc(100% + 4px); z-index: 40; width: max-content;
+  display: grid; grid-template-columns: repeat(2, 123px); gap: var(--spacing-base); padding: var(--spacing-base); }
+.dsg-tile-wrap { padding: 0; border: none; background: none; cursor: pointer; border-radius: 6px;
+  filter: drop-shadow(0 2px 2px rgba(25, 39, 67, 0.04)); }
+.dsg-tile-wrap:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; }
+.dsg-tile { position: relative; display: block; width: 123px; height: 81px; border-radius: 6px; overflow: hidden; }
+.dsg-tile-dim { position: absolute; inset: 0; background: rgba(18, 18, 18, 0.2); }
+.dsg-chrome { position: absolute; top: 0; left: 0; right: 0; height: 11.33%;
+  background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; }
+.dsg-mark { width: 7px; height: 7px; border-radius: 2px; font-size: 5px; font-weight: 700; line-height: 7px; text-align: center; }
+/* The mini participant screen inside a tile is built from the real thing: a
+   WHITE question card, the question text in the base content colour, and the
+   five answer dots in the distribution colours. Translucent white on a
+   lightened wash had no contrast left at this size. */
+.dsg-card { position: absolute; left: 24.7%; right: 24.7%; top: 32.1%; bottom: 28.1%;
+  background: var(--bg-base); border-radius: 4px; box-shadow: 0 0.5px 2px rgba(25, 39, 67, 0.14);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.dsg-card-title { width: 46%; height: 3px; border-radius: 2px; background: var(--content-base); }
+.dsg-dots { display: flex; gap: 3px; }
+.dsg-dots i { width: 4px; height: 4px; border-radius: 50%; }
+.dsg-dots i:nth-child(1) { background: var(--bg-distribution-strongly-disagree); }
+.dsg-dots i:nth-child(2) { background: var(--bg-distribution-disagree); }
+.dsg-dots i:nth-child(3) { background: var(--bg-distribution-neither); }
+.dsg-dots i:nth-child(4) { background: var(--bg-distribution-agree); }
+.dsg-dots i:nth-child(5) { background: var(--bg-distribution-strongly-agree); }
+.dsg-btn { position: absolute; left: 40%; right: 40%; top: 84.1%; bottom: 9%;
+  border-radius: 5px; box-shadow: 0 0.5px 2px rgba(25, 39, 67, 0.12);
+  /* A white button on a lightened tile needs an edge to exist at all. */
+  border: 1px solid rgba(25, 39, 67, 0.14); }
+.dsg-selected { position: absolute; inset: 0; border-radius: 6px; background: rgba(25, 39, 67, 0.3);
+  display: grid; place-items: center; color: #fff; }
+
+/* Intro screen card (Figma 6293:26527): the first thing participants see, so
+   the first card on the page. Same 12px radius and border treatment as the
+   topic cards, 24px padding, and it behaves like a question row — background
+   hover, click anywhere to edit. Its bottom margin is 0: the section list's
+   drop zone above the first topic already provides the same gap the topics
+   have between each other. */
+.intro-card { display: flex; align-items: center; gap: var(--spacing-base-tight); padding: var(--spacing-loose);
+  background: var(--bg-base); border: 1px solid var(--p-color-neutral-alpha-15); border-radius: var(--radius-lg);
+  box-shadow: var(--sh-card); cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard); }
+.intro-card:hover { background: var(--bg-base-hover); }
+.intro-card:active { background: var(--bg-secondary); }
+.intro-card:has(.ib:hover) { background: var(--bg-base); }
+.intro-card:focus-visible { outline: 2px solid var(--border-brand); outline-offset: -2px; }
+.intro-card-body { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.intro-card-title { font-size: 20px; font-weight: 600; line-height: 28px; color: var(--content-base); }
+.intro-card-desc { font-size: 14px; font-weight: 500; line-height: 20px; color: var(--content-base);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.intro-card-desc.is-empty { color: var(--content-placeholder); font-weight: 400; }
+
+/* A question's description, shown only when Display > Descriptions is on. */
+.qrow-desc { margin-top: 2px; font-size: 13px; line-height: 20px; color: var(--content-secondary); }
+
+/* Suggestions: one row per finding — mark, what it is, why it matters, and the
+   single action that resolves it. */
+.sgp-list { display: flex; flex-direction: column; gap: var(--spacing-tight); }
+.sgp-item { display: flex; gap: var(--spacing-base-tight); padding: var(--spacing-base-tight);
+  border: 1px solid var(--border-base); border-radius: var(--radius-md); background: var(--bg-base); }
+.sgp-item-mark { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg-secondary); color: var(--content-secondary); }
+.sgp-item-mark.is-theme { background: var(--bg-info-subtle); color: var(--content-info-secondary); }
+.sgp-item-mark.is-custom { background: var(--bg-warning-subtle); color: var(--content-warning-secondary); }
+.sgp-item-mark.is-length { background: var(--bg-secondary); color: var(--content-secondary); }
+.sgp-item-body { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.sgp-item-title { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
+.sgp-item-why { font-size: 13px; line-height: 20px; color: var(--content-secondary); }
+.sgp-item-btn { margin-top: 6px; }
+.sgp-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: var(--spacing-extra-loose) var(--spacing-base); text-align: center; }
+.sgp-empty-mark { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg-positive-subtle); color: var(--content-positive-secondary); }
+.sgp-empty-title { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
+.sgp-empty-sub { font-size: 13px; line-height: 20px; color: var(--content-secondary); max-width: 260px; }
+/* Empty / start-from-scratch placeholder (Figma 6165:15267): a grey panel with a
+   heading, hint, and three greyed-out sample question rows. */
+.qb-empty { margin-top: var(--spacing-base); background: var(--bg-secondary); border: 1px solid var(--border-base); border-radius: 16px;
+  min-height: 486px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: var(--spacing-loose); text-align: center; }
+.qb-empty-title { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
+.qb-empty-sub { font-size: 14px; font-weight: 400; line-height: 1.6; color: var(--content-secondary); }
+.qb-empty-rows { display: flex; flex-direction: column; gap: 8px; padding: 13px 0; }
+.qb-empty-row { display: flex; align-items: center; gap: 10px; box-sizing: border-box; width: 235px; height: 32px; padding: 0 9px;
+  background: var(--bg-base); border: 1px solid var(--border-action); border-radius: 12px; }
+.qb-empty-row i { flex: none; color: var(--content-subtle); }
+.qb-empty-bar { flex: none; height: 8px; border-radius: 99px; background: var(--content-subtle); }
+
+/* Theme-details rows show the question's topic above the text so people can
+   find the questions again (only in this dialog). */
+.thm-q-text { display: block; font-size: 14px; font-weight: 500; line-height: 22.4px; color: var(--content-base); }
+.thm-q-topic { display: block; font-size: 12px; font-weight: 400; line-height: 16px; color: var(--content-secondary); margin-top: 2px; }
+
+/* The theme-details composite banner uses the DS `.inline-notif` component
+   (components.css) with the pre-coloured notification-{information,positive}
+   icons as <img>, so it matches the Figma "inline notifications" exactly. */
+
+/* ---- motion ----------------------------------------------------------------
+   Perceptible but calm enters/exits so slower, less technical users can follow
+   what changes — decelerated easing, modest travel, never bouncy. Shared across
+   the common patterns (dialogs, popover menus, list rows, cards). */
+
+
+/* Popover menus & selects scale-fade down from their anchor. */
+.menu { animation: menu-in 140ms var(--ease-out); transform-origin: top center; }
+@keyframes menu-in { from { opacity: 0; transform: translateY(-8px) scale(0.96); } to { opacity: 1; transform: none; } }
+
+/* An inline notification (e.g. the custom-question "Heads up") drops in. */
+.inline-note { animation: note-in 220ms var(--ease-out); }
+@keyframes note-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* Add-questions rows ease in on appear (dialog open, filter/search change). */
+.aql-row { animation: aql-row-in 240ms var(--ease-out) both; }
+@keyframes aql-row-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+/* A filter-hidden row collapses away softly. min-height is overridden here so
+   max-height can actually animate to 0 (the row's 56px min-height blocks it);
+   the tight start value keeps the collapse visible across the whole duration. */
+.aql-row.is-leaving { min-height: 0; overflow: hidden; pointer-events: none; animation: row-collapse 280ms var(--ease-standard) forwards; }
+@keyframes row-collapse {
+  from { opacity: 1; max-height: 64px; }
+  35%  { opacity: 0; }
+  to   { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; border-bottom-width: 0; }
+}
+
+/* Questions/topics added via "Apply selection" settle into the builder — a
+   clearly-visible slide + fade over the full duration (a max-height reveal
+   front-loads under decelerated easing and finishes too fast to read). */
+.qsec-body .qrow.is-entering { animation: row-reveal 420ms var(--ease-out); }
+@keyframes row-reveal { from { opacity: 0; transform: translateY(-14px) scale(0.98); } to { opacity: 1; transform: none; } }
+.qsec.is-entering { animation: card-reveal 420ms var(--ease-out); }
+@keyframes card-reveal { from { opacity: 0; transform: translateY(-16px) scale(0.98); } to { opacity: 1; transform: none; } }
+/* A just-added row keeps breathing for five seconds after a one-second pause,
+   so it stays findable in a topic that already had questions. Two slow cycles;
+   hover removes the class, which ends it for good. */
+.qsec-body .qrow.is-fresh { animation: row-pulse 2500ms var(--ease-standard) 1s 2; }
+@keyframes row-pulse {
+  0%, 100% { background: transparent; }
+  50% { background: var(--bg-brand-subtle); }
+}
+/* Scrolled-to topics clear the sticky context bar. */
+.qsec { scroll-margin-top: 92px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay > .dialog, .menu, .inline-note, .aql-row, .aql-row.is-leaving,
+  .qsec-body .qrow.is-entering, .qsec.is-entering, .qsec-body .qrow.is-fresh { animation: none; }
+}
+
+/* ---- surveys list: clickable rows ---- */
+.survey-row { cursor: pointer; transition: background var(--motion-fast) var(--ease-standard); }
+.survey-row:hover { background: var(--bg-base-hover); }
+.survey-row:focus-visible { outline: 2px solid var(--border-brand); outline-offset: -2px; }
+
+/* ---- icon-button tooltips: DS .tooltip bubble, revealed on hover/focus ---- */
+.tt-demo > .tooltip { opacity: 0; pointer-events: none; transition: opacity var(--motion-fast) var(--ease-out); }
+.tt-demo:hover > .tooltip, .tt-demo:focus-within > .tooltip { opacity: 1; }
+/* Suppress tooltips right after a drag (until the pointer moves) so the drag
+   button's stuck :hover/focus doesn't leave a tooltip over the reordered item. */
+.tips-off .tt-demo > .tooltip { opacity: 0 !important; }
+/* Two-line tooltip: bold title on its own line, status beneath. */
+.tooltip .tt-title { display: block; font-weight: 600; margin-bottom: 1px; }
+@media (prefers-reduced-motion: reduce) { .tt-demo > .tooltip { transition: none; } }
+/* Floating tooltip (portal + fixed): escapes overflow-clipping ancestors. JS
+   sets left/top at the trigger edge; the transform pins the correct corner so
+   the bubble + its arrow line up exactly like the CSS-anchored version. */
+.tooltip-float { position: fixed; z-index: 3000; width: max-content; max-width: 240px; pointer-events: none;
+  opacity: 0; animation: tt-float-in var(--motion-fast) var(--ease-out) forwards; }
+.tooltip-float.is-above { transform: translate(-50%, -100%); }
+.tooltip-float.is-below { transform: translate(-50%, 0); }
+.tooltip-float.is-left  { transform: translate(-100%, -50%); }
+.tooltip-float.is-right { transform: translate(0, -50%); }
+@keyframes tt-float-in { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .tooltip-float { animation: none; opacity: 1; } }
+/* The DS close button is absolutely positioned; hand that position to the
+   tooltip wrapper so the bubble anchors correctly and the button sits inside. */
+.dialog-close-tt { position: absolute; top: 15px; right: 15px; z-index: 2; }
+.dialog-close-tt .dialog-close { position: static; }
+
+/* ---- misc layout ---- */
+.row { display: flex; align-items: center; }
+.gap-t { gap: var(--spacing-tight); } .gap-bt { gap: var(--spacing-base-tight); } .gap-b { gap: var(--spacing-base); }
+.spacer { flex: 1; }
+.divider { height: 1px; background: var(--border-base); }
+
+/* ============================================================
+   All surveys landing page — DS reference port (all-surveys.html):
+   .ph header · Latest-projects carousel · elevated list card with a
+   working filter bar (search + my-only + Sort + Status) · .srow rows
+   with status pills + response-rate bars.
+   ============================================================ */
+/* Page shell: white body, centred wide-1200 column, responsive padding (DS §11). */
+.surveys-page { --pg-x: calc(var(--spacing-extra-loose) * 2); --pg-y: calc(var(--spacing-loose) * 2);
+  flex: 1; min-width: 0; height: 100vh; overflow-y: auto; background: var(--bg-interface-body); }
+@media (max-width: 1199px) { .surveys-page { --pg-x: var(--spacing-loose); --pg-y: var(--spacing-extra-loose); } }
+@media (max-width: 575px)  { .surveys-page { --pg-x: var(--spacing-base); --pg-y: var(--spacing-loose); } }
+.surveys-inner { max-width: calc(1200px + 2 * var(--pg-x)); margin-inline: auto;
+  padding: var(--pg-y) var(--pg-x) var(--spacing-super-extra-loose);
+  display: flex; flex-direction: column; gap: var(--spacing-super-loose); }
+
+
+
+/* Section header (Latest projects) */
+.sec-head { display: flex; align-items: center; gap: var(--spacing-base-tight); margin-bottom: var(--spacing-loose); }
+.sec-head h2 { margin: 0; flex: 1; min-width: 0; }
+.sec-head .btn { flex-shrink: 0; }
+
+/* Project cards carousel — exactly 3 across the 1200px row, rest paged via arrows.
+   Clip horizontally but keep vertical room so the card shadow isn't cut off. */
+.proj-viewport { overflow: hidden; padding: 6px 0 12px; margin: -6px 0 -12px; }
+.proj-track { display: flex; gap: var(--spacing-base); transition: transform .32s var(--ease-standard); }
+.proj-card { flex: 0 0 calc((100% - var(--spacing-base) * 2) / 3); height: 172px; padding: var(--spacing-extra-loose);
+  display: flex; flex-direction: column; text-decoration: none; }
+.proj-card:hover { border-color: var(--border-action-hover); }
+.proj-title { flex: 1; font-size: 16px; font-weight: 600; line-height: 1.5; color: var(--content-base); }
+.proj-meta { display: flex; align-items: center; gap: var(--spacing-tight); font-size: 14px; font-weight: 500; color: var(--content-secondary); }
+.proj-meta i { width: 16px; height: 16px; display: flex; flex-shrink: 0; color: var(--content-secondary); }
+
+/* All surveys list card + filter bar */
+.surveys-list { padding: 0; overflow: hidden; }
+.flt-bar { display: flex; align-items: center; gap: var(--spacing-base-tight); padding: var(--spacing-base-tight) var(--spacing-base); border-bottom: 1px solid var(--border-base); }
+.flt-bar .search-wrap { flex: 1; min-width: 120px; }
+.flt-bar input[type="search"].srch { border-color: transparent; background: transparent; box-shadow: none; }
+.flt-bar input[type="search"].srch:hover { border-color: var(--border-action-hover); background: var(--bg-input-hover); }
+.flt-bar input[type="search"].srch:focus { border-color: var(--border-brand); background: var(--bg-input); }
+.flt-cb { display: inline-flex; align-items: center; gap: var(--spacing-tight); font-size: 14px; font-weight: 500;
+  color: var(--content-secondary); white-space: nowrap; cursor: pointer; height: 36px; padding: 0 var(--spacing-base-tight); }
+.flt-bar .sel-btn-inline { white-space: nowrap; }
+.flt-bar .sel-btn-inline, .flt-bar .sel-btn-inline .sel-btn-name, .flt-bar .sel-btn-inline .sel-btn-value { font-size: 14px; }
+/* Filter dropdown popover: position:fixed so the card's overflow:hidden never clips it. */
+.flt-menu { position: fixed; margin: 0; z-index: 1000; width: max-content; min-width: 180px; }
+.flt-menu .spill { width: auto; align-self: flex-start; }
+.flt-menu.flt-sort .menu-item-check { visibility: hidden; }
+.flt-menu.flt-sort .menu-item.is-selected .menu-item-check { visibility: visible; }
+
+/* Survey rows */
+.srow { display: flex; align-items: center; gap: var(--spacing-loose); min-height: 94px; padding: var(--spacing-loose);
+  border-bottom: 1px solid var(--border-base); cursor: pointer; transition: background .12s ease; text-align: left; }
+.srow:last-child { border-bottom: none; }
+.srow:hover { background: var(--bg-secondary); }
+.srow-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.srow-name { font-size: 16px; font-weight: 600; line-height: 1.5; color: var(--content-base); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.srow-proj { display: flex; align-items: center; gap: var(--spacing-extra-tight); font-size: 12px; color: var(--content-secondary); min-width: 0; }
+.srow-proj i { width: 12px; height: 12px; display: flex; flex-shrink: 0; }
+.srow-proj span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Status pill */
+.spill { flex-shrink: 0; width: 212px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--spacing-extra-tight); padding: var(--spacing-extra-tight) var(--spacing-tight); border-radius: var(--radius-base);
+  border: 1px solid var(--border-white); font-size: 12px; font-weight: 400; line-height: 16px; text-align: center; }
+.spill b { font-weight: 600; }
+.spill-merged    { background: var(--bg-info);      color: #fff; }
+.spill-completed { background: var(--bg-positive);  color: #fff; }
+.spill-running   { background: var(--bg-highlight-base); color: var(--content-base); }
+.spill-starts    { background: var(--bg-inverse);   color: #fff; }
+.spill-draft     { background: var(--bg-tertiary);       color: var(--content-base); }
+
+/* Response rate */
+.srow-rr { flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; width: 56px; }
+.srow-rr-top { display: flex; align-items: center; justify-content: center; gap: var(--spacing-extra-tight); font-size: 14px; font-weight: 500; color: var(--content-base); }
+.srow-rr-top i { width: 14px; height: 14px; display: flex; flex-shrink: 0; color: var(--content-secondary); }
+.srow-bar { height: 6px; border-radius: var(--radius-sm); background: var(--bg-tertiary); overflow: hidden; }
+.srow-bar-fill { height: 100%; border-radius: var(--radius-full); background: var(--bg-info); }
+.srow-empty { padding: var(--spacing-super-loose) var(--spacing-loose); text-align: center; color: var(--content-secondary); font-size: 14px; }
+@media (max-width: 760px) { .srow-proj span { max-width: 160px; } .spill { width: auto; } }
+
+/* ---- Phase 2: survey-scoped customization ------------------------------- */
+/* Topic + question descriptions in the questionnaire view */
+.qsec-desc { padding: 0 var(--spacing-loose) var(--spacing-base) 60px; margin-top: -6px; }
+.qsec-desc-text { font-size: 13.5px; line-height: 1.6; color: var(--content-secondary); cursor: text;
+  border-radius: var(--radius-base); padding: 2px 6px; margin-left: -6px; }
+.qsec-desc-text:hover { background: var(--bg-base-hover); }
+.qsec-desc-ghost { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;
+  color: var(--content-subtle); background: none; border: none; cursor: pointer; padding: 2px 6px; margin-left: -6px;
+  border-radius: var(--radius-base); font-family: inherit; }
+.qsec-desc-ghost:hover { color: var(--content-secondary); background: var(--bg-base-hover); }
+.qsec-desc-ghost i { display: flex; }
+.desc-edit { width: 100%; font-family: inherit; font-size: 13.5px; line-height: 1.6; color: var(--content-base);
+  border: 1px solid var(--border-brand); border-radius: var(--radius-base); padding: 6px 8px; outline: none;
+  resize: vertical; min-height: 34px; background: var(--bg-base); }
+.qrow-desc { font-size: 13px; line-height: 1.55; color: var(--content-secondary); margin-top: 2px; }
+
+/* "Show descriptions" view toggle row */
+.view-toggles { display: flex; justify-content: flex-end; align-items: center; margin: 0 0 var(--spacing-base-tight); }
+
+/* Add topic (dashed card-like button after the last section) */
+.add-topic-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  margin-top: var(--spacing-base); padding: 18px; font-family: inherit; font-size: 14px; font-weight: 600;
+  color: var(--content-secondary); background: none; cursor: pointer;
+  border: 1.5px dashed var(--border-base); border-radius: var(--radius-lg);
+  transition: border-color var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard); }
+.add-topic-btn:hover { border-color: var(--border-action); color: var(--content-base); background: var(--bg-base-hover); }
+.add-topic-btn i { display: flex; }
+
+/* Empty (custom) topic body */
+.qsec-empty { padding: var(--spacing-loose); border-top: 1px solid var(--border-base);
+  font-size: 13.5px; color: var(--content-subtle); text-align: center; }
+/* The empty state as the action it calls for: a full-row tertiary button. */
+button.qsec-empty.is-action { display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; background: none; font-family: inherit; font-size: 14px; font-weight: 600;
+  color: var(--content-action); cursor: pointer; border-left: 0; border-right: 0; border-bottom: 0;
+  transition: background var(--motion-fast) var(--ease-standard); }
+button.qsec-empty.is-action:hover { background: var(--bg-base-hover); }
+
+/* Question settings sidepane */
+.qsp-scrim { position: fixed; inset: 0; z-index: 70; background: var(--bg-interface-overlay); }
+.qsp { position: fixed; top: 0; right: 0; bottom: 0; z-index: 71; width: 440px; max-width: 92vw;
+  background: var(--bg-base); box-shadow: var(--sh-popovers); display: flex; flex-direction: column;
+  animation: qsp-in var(--motion-slow, .24s) var(--ease-standard); }
+@keyframes qsp-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.qsp-head { display: flex; align-items: center; gap: var(--spacing-base-tight); padding: var(--spacing-loose);
+  border-bottom: 1px solid var(--border-base); }
+.qsp-title { margin: 0; font-size: 18px; font-weight: 600; }
+.qsp-body { flex: 1; overflow-y: auto; padding: var(--spacing-loose); display: flex; flex-direction: column;
+  gap: var(--spacing-loose); }
+.qsp-sec { display: flex; flex-direction: column; gap: var(--spacing-tight); }
+.qsp-lbl { font-size: 13px; font-weight: 600; color: var(--content-secondary); }
+.qsp-card { border: 1px solid var(--border-base); border-radius: var(--radius-md); padding: var(--spacing-base);
+  font-size: 14px; line-height: 1.6; color: var(--content-base); background: var(--bg-secondary); }
+.qsp-note { display: flex; gap: 8px; font-size: 12.5px; line-height: 1.55; color: var(--content-secondary); }
+.qsp-note i { display: flex; flex: none; margin-top: 2px; color: var(--content-subtle); }
+.qsp-scale { display: flex; flex-direction: column; gap: 6px; }
+.qsp-scale-row { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--content-base); }
+.qsp-scale-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--dot); }
+.qsp-desc-ta { width: 100%; font-family: inherit; font-size: 14px; line-height: 1.6; padding: 8px 12px;
+  border: 1px solid var(--border-action); border-radius: var(--radius-base); outline: none; resize: vertical;
+  min-height: 60px; color: var(--content-base); background: var(--bg-base); }
+.qsp-desc-ta:hover { border-color: var(--border-action-hover); }
+.qsp-desc-ta:focus { border-color: var(--border-brand); }
+.qsp-desc-ta::placeholder { color: var(--content-placeholder); }
+.qsp-i18n-row { display: flex; align-items: center; gap: var(--spacing-tight); font-size: 13.5px;
+  color: var(--content-secondary); }
+
+/* Translations dialog */
+.trd-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border-base); }
+.trd-tab { border: none; background: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500;
+  color: var(--content-secondary); padding: 10px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.trd-tab:hover { color: var(--content-base); }
+.trd-tab.is-active { color: var(--content-brand); font-weight: 600; border-bottom-color: var(--border-brand); }
+.trd-group { font-size: 13px; font-weight: 600; color: var(--content-secondary); margin: var(--spacing-base) 0 4px; }
+.trd-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--spacing-base);
+  padding: var(--spacing-base-tight) 0; border-bottom: 1px solid var(--border-base); align-items: start; }
+.trd-src { font-size: 14px; line-height: 1.55; color: var(--content-secondary); padding-top: 8px; }
+.trd-src-lbl, .trd-tgt-status { font-size: 11.5px; font-weight: 600; letter-spacing: .01em;
+  color: var(--content-subtle); display: block; margin-bottom: 3px; }
+.trd-tgt input, .trd-tgt textarea { width: 100%; font-family: inherit; font-size: 14px; line-height: 1.5;
+  padding: 7px 10px; border: 1px solid var(--border-action); border-radius: var(--radius-base); outline: none;
+  color: var(--content-base); background: var(--bg-base); resize: vertical; }
+.trd-tgt input:focus, .trd-tgt textarea:focus { border-color: var(--border-brand); }
+.trd-status { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600;
+  border-radius: var(--radius-base); padding: 2px 8px; margin-top: 5px; }
+.trd-status.is-auto { background: var(--bg-tertiary); color: var(--content-secondary); }
+.trd-status.is-reviewed { background: var(--bg-positive-subtle); color: var(--content-positive); }
+.trd-status i { display: flex; }
+.trd-empty { text-align: center; padding: var(--spacing-super-loose) var(--spacing-loose); color: var(--content-secondary); }
+.trd-empty-title { font-size: 16px; font-weight: 600; color: var(--content-base); margin-bottom: 6px; }
+
+/* Custom question dialog: answer options editor */
+.cq-opts { display: flex; flex-direction: column; gap: var(--spacing-tight); }
+.cq-opt { display: flex; align-items: center; gap: var(--spacing-tight); }
+.cq-opt-input { flex: 1; font-family: inherit; font-size: 14px; padding: 8px 12px;
+  border: 1px solid var(--border-action); border-radius: var(--radius-base); outline: none;
+  color: var(--content-base); background: var(--bg-base); }
+.cq-opt-input:focus { border-color: var(--border-brand); }
+.cq-opt-input.is-error { border-color: var(--border-negative); }
+.cq-add-opt { align-self: flex-start; }
+
+/* ---- Phase 2: Figma "Advanced settings" dialogs (6198:4145) -------------- */
+/* Question settings pane V2 — "View standard question" slide-in */
+.qsp.qsp2 { width: 760px; }
+.qsp2-head { display: flex; align-items: center; gap: var(--spacing-base); padding: var(--spacing-base);
+  background: var(--bg-base); }
+.qsp2-tags { display: flex; gap: 8px; align-items: center; flex: 1; min-width: 0; }
+.infotag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-base);
+  font-size: 12px; font-weight: 600; background: var(--bg-accent-turquoise-subtle); color: var(--content-secondary); }
+.infotag .qtile { width: 16px !important; height: 16px !important; background: transparent !important; }
+.infotag .qtile svg { width: 12px; height: 12px; }
+.infotag.is-standard { color: var(--content-accent-turquoise); }
+.infotag.is-custom { background: var(--bg-accent-blue-subtle); color: var(--content-accent-blue); }
+.qsp2-vdiv { width: 1px; height: 16px; background: var(--border-base); border-radius: 2px; flex: none; }
+.qsp2-body { padding: var(--spacing-loose) 40px; gap: var(--spacing-loose); }
+.qsp2-question { margin: 0; font-size: 24px; font-weight: 600; line-height: 32px; color: var(--content-base); }
+.qsp2-meta { display: flex; flex-direction: column; }
+.qsp2-meta-row { display: flex; align-items: flex-start; }
+.qsp2-meta-lbl { display: flex; align-items: center; gap: 8px; width: 160px; flex: none; padding: 8px 0;
+  font-size: 14px; font-weight: 500; color: var(--content-base); }
+.qsp2-meta-lbl i { display: flex; color: var(--content-secondary); }
+.qsp2-meta-val { flex: 1; min-width: 0; padding: 8px; font-size: 14px; font-weight: 500;
+  color: var(--content-secondary); line-height: 22.4px; }
+.qsp2-divider { height: 1px; background: var(--border-base); width: 100%; }
+.qsp2-section-head { display: flex; align-items: center; gap: 8px; width: 100%; }
+.qsp2-section-title { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
+.qsp2-langcard { display: flex; flex-direction: column; gap: 2px; width: 100%;
+  border: 1px solid var(--border-base); border-radius: var(--radius-lg); padding: 12px 16px;
+  background: var(--bg-base); }
+.qsp2-langstack { display: flex; flex-direction: column; width: 100%; }
+.qsp2-langstack .qsp2-langcard.is-joined { border-radius: 0; margin-top: -1px; }
+.qsp2-langstack .qsp2-langcard.is-joined:first-child { border-radius: var(--radius-lg) var(--radius-lg) 0 0; margin-top: 0; }
+.qsp2-langstack .qsp2-langcard.is-joined:last-child { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+.qsp2-lang-lbl { font-size: 12px; font-weight: 500; line-height: 19.2px; color: var(--content-secondary); }
+.qsp2-lang-text { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
+.qsp2-lang-desc { display: flex; align-items: flex-start; gap: 6px; font-size: 13px; line-height: 1.55;
+  color: var(--content-secondary); margin-top: 4px; }
+.qsp2-lang-desc i { display: flex; flex: none; margin-top: 3px; color: var(--content-subtle); }
+.qsp2-lang-note { font-size: 12px; line-height: 1.5; color: var(--content-subtle); margin-top: 4px; }
+.qsp2-footer { display: flex; align-items: center; gap: var(--spacing-tight); padding: 16px 24px;
+  border-top: 1px solid var(--border-base); background: var(--bg-base); flex: none; }
+.qsp2-footer-note { flex: 1; min-width: 0; font-size: 12px; line-height: 19.2px; color: var(--content-secondary); }
+
+/* Change benchmarked question dialog */
+.cbq-lbl { font-size: 14px; font-weight: 600; color: var(--content-base); }
+.cbq-current { background: var(--bg-secondary); border: 1px solid var(--border-base); border-radius: var(--radius-lg);
+  padding: var(--spacing-base); font-size: 14px; font-weight: 500; line-height: 22.4px; color: var(--content-base); }
+.radio-card { position: relative; display: flex; align-items: flex-start; gap: 12px; width: 100%; cursor: pointer;
+  background: var(--bg-base); border: 1px solid var(--border-action); border-radius: var(--radius-lg);
+  padding: 16px 16px 16px 44px; box-shadow: var(--sh-action); transition: border-color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard); }
+.radio-card:hover { border-color: var(--border-action-hover); }
+.radio-card.is-selected { border-color: var(--border-brand); background: var(--bg-brand-subtle); }
+.radio-card-input { position: absolute; opacity: 0; pointer-events: none; }
+.radio-card-circle { position: absolute; left: 15px; top: 17px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--bg-base); border: 1px solid var(--border-action); }
+.radio-card.is-selected .radio-card-circle { border: 5px solid var(--bg-brand); }
+.radio-card:has(.radio-card-input:focus-visible) { outline: 2px solid var(--border-brand); outline-offset: 2px; }
+.radio-card-text { display: flex; flex-direction: column; gap: 2px; font-size: 14px; font-weight: 500;
+  line-height: 22.4px; color: var(--content-base); }
+.radio-card-hint { font-size: 12px; font-weight: 400; color: var(--content-subtle); }
+
+/* Add description dialog (worksurface, form + live preview) */
+.adq-dialog { width: 1120px; max-width: 94vw; height: min(860px, 90vh); padding: 0; display: flex; flex-direction: column;
+  overflow: hidden; }
+.adq-cols { flex: 1; min-height: 0; display: flex; }
+.adq-form { width: 440px; flex: none; padding: 40px; display: flex; flex-direction: column; gap: var(--spacing-loose);
+  overflow-y: auto; }
+.adq-divider { height: 1px; background: var(--border-base); width: 100%; flex: none; }
+.adq-field { display: flex; flex-direction: column; gap: 4px; }
+.adq-field.is-disabled { opacity: .55; }
+.adq-field-head { display: flex; align-items: baseline; justify-content: space-between; }
+.adq-field-lbl { font-size: 14px; font-weight: 500; color: var(--content-base); line-height: 20px; }
+.adq-count { font-size: 12px; color: var(--content-secondary); }
+.adq-ta { width: 100%; font-family: inherit; font-size: 14px; line-height: 20px; padding: 12px;
+  border: 1px solid var(--border-action); border-radius: var(--radius-md); outline: none; resize: vertical;
+  min-height: 88px; color: var(--content-base); background: var(--bg-base); }
+.adq-ta:hover:not(:disabled) { border-color: var(--border-action-hover); }
+.adq-ta:focus { border-color: var(--border-brand); }
+.adq-ta::placeholder { color: var(--content-placeholder); }
+.adq-ta:disabled { background: var(--bg-secondary); cursor: not-allowed; }
+.adq-auto { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--content-subtle); }
+.adq-auto i { display: flex; }
+.adq-preview { flex: 1; min-width: 0; position: relative; background: var(--bg-secondary);
+  background-image: radial-gradient(var(--border-base) 1.5px, transparent 1.5px); background-size: 24px 24px;
+  box-shadow: inset 1px 0 4px rgba(0,0,0,.05); display: flex; flex-direction: column; padding: 40px; }
+.adq-preview-lang { display: flex; flex-direction: column; gap: 4px; }
+.adq-lang-btn { width: 100%; justify-content: flex-start; }
+.adq-preview-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--spacing-loose); }
+.adq-preview-hint { font-size: 14px; font-weight: 500; color: var(--content-secondary); text-align: center; }
+.adq-example { background: rgba(255,255,255,.95); border-radius: var(--radius-xl, 16px); box-shadow: var(--sh-card);
+  padding: 40px 32px; display: flex; flex-direction: column; align-items: center; gap: var(--spacing-loose);
+  width: min(512px, 100%); }
+.adq-example-q { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); text-align: center; }
+.adq-example-desc { font-size: 13.5px; line-height: 1.6; color: var(--content-secondary); text-align: center;
+  margin-top: -12px; }
+.adq-footer { border-top: 1px solid var(--border-base); padding: 24px 40px; margin: 0; }
+.adq-dialog { gap: 0; }
+
+/* Question settings as a centered dialog (was a right slide-in) */
+.qsp2-dialog { width: 760px; max-width: 94vw; padding: 0; gap: 0; }
+.qsp2-dialog .qsp-body { flex: 1; min-height: 0; overflow-y: auto; }
+/* Whole question row opens its settings */
+.qsec-body .qrow { cursor: pointer; }
+.qsec-body .qrow:hover { background: var(--bg-base-hover); }
+
+/* Static topic description (editing moves to the upcoming topic dialog) */
+.qsec-desc-static { font-size: 13.5px; line-height: 1.6; color: var(--content-secondary); }
+
+/* ---- Benchmarked question + topic dialogs (Figma 6271:7232, 6271:9052) --- */
+.bmq-dialog { width: 1080px; max-width: 94vw; height: min(860px, 90vh); display: flex; flex-direction: column; }
+.bmq-selects { display: flex; gap: var(--spacing-base); flex: none; }
+/* "Show translations" reveal (Figma 6304:27970): right-aligned in the selects
+   row, bottom-aligned with the inputs beside it (the fields carry labels). */
+.cq-tr-toggle { margin-left: auto; align-self: flex-end; flex: none; }
+.bmq-field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.bmq-lbl { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--content-base); }
+.bmq-top-sel { width: 100%; }
+.bmq-type-disabled { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px;
+  border: 1px solid var(--border-action); border-radius: var(--radius-md); background: var(--bg-disabled);
+  color: var(--content-disabled); font-size: 14px; cursor: not-allowed; }
+.bmq-type-disabled .qtile { opacity: .6; }
+
+.bmq-stage { flex: 1; min-height: 0; display: flex; border: 1px solid var(--border-base); border-radius: 12px; overflow: hidden; }
+.bmq-preview { flex: 1; min-width: 0; background: var(--bg-secondary); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 40px; overflow-y: auto; }
+/* Tags + card travel as one group. margin:auto centers the group while there
+   is room and degrades to a normal scroll when there isn't — no fixed spacers,
+   so the preview never shows a scrollbar unless content truly overflows. */
+.bmq-inner { margin: auto; width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+/* In the dialog header the tags share one 28px size so the row reads as one
+   set next to the title. */
+.dialog-header .bmq-kind :is(.infotag, .tag) {
+  height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; line-height: 1; border-radius: var(--radius-base); }
+/* Kind tags pinned to the dialog's very corner (design-canvas edit, 26 Aug):
+   they mirror the close button's 15px inset on the other side, and the dialog
+   gets extra top padding so the title clears them. Question dialogs only. */
+.dialog.has-corner-tags { padding-top: 64px; }
+.dialog.has-corner-tags .dialog-header .bmq-kind { position: absolute; top: 16px; left: 16px; }
+.bmq-card { background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-xl);
+  box-shadow: 0 4px 6px rgba(25,39,67,.08); padding: 24px; width: 100%; max-width: 694px;
+  display: flex; flex-direction: column; gap: 16px; align-items: center; }
+
+/* Selects living inside the respondent preview: look like the content, open
+   the approved-alternatives dropdown. */
+.bmq-sel-wrap { position: relative; width: 100%; }
+.bmq-sel { display: flex; width: 100%; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer;
+  background: var(--bg-base); border: 1px solid var(--border-action); border-radius: var(--radius-md);
+  font-family: inherit; font-size: 14px; color: var(--content-base); box-shadow: var(--sh-action); }
+.bmq-sel:hover:not(.is-disabled) { border-color: var(--border-action-hover); }
+.bmq-sel.is-open { border-color: var(--border-brand); }
+.bmq-sel.is-disabled { cursor: default; }
+.bmq-sel > i { color: var(--content-secondary); flex: none; }
+.bmq-sel-text { flex: 1; min-width: 0; text-align: center; line-height: 1.6; }
+.bmq-sel-text.is-placeholder { color: var(--content-placeholder); }
+.bmq-sel-wrap.is-big .bmq-sel { padding: 12px; }
+.bmq-sel-wrap.is-big .bmq-sel-text { font-size: 16px; font-weight: 600; line-height: 24px; }
+/* Portalled to <body> (the preview scroller and the dialog both clip
+   overflow); position + width come measured from the trigger, inline. */
+.bmq-dropdown { position: fixed; z-index: 1201; padding: 8px;
+  background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-base);
+  box-shadow: var(--sh-popovers); display: flex; flex-direction: column; gap: 1px; max-height: 320px; overflow-y: auto; }
+.bmq-dd-explain { padding: 12px; font-size: 12px; line-height: 19.2px; color: var(--content-secondary); text-align: left; }
+.bmq-dd-explain-title { font-weight: 600; }
+.bmq-dd-opt { display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: var(--radius-base); cursor: pointer; }
+.bmq-dd-opt:hover { background: var(--bg-base-hover); }
+.bmq-dd-opt.is-selected { background: var(--bg-brand-subtle); }
+.bmq-dd-opt-text { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; line-height: 24px;
+  color: var(--content-base); text-align: left; }
+.bmq-dd-opt.is-muted .bmq-dd-opt-text { font-size: 14px; font-weight: 400; color: var(--content-secondary); }
+.bmq-dd-opt > i { color: var(--content-brand); flex: none; }
+
+.bmq-scale { padding: 24px 24px 0; display: flex; flex-direction: column; gap: 16px; align-items: center; width: 100%; }
+.bmq-scale-row { display: flex; align-items: center; gap: 4px; justify-content: center; flex-wrap: wrap; }
+.bmq-scale-end { font-size: 14px; line-height: 1.6; color: var(--content-base); width: 148px; text-align: center; }
+.bmq-dot { width: 28px; height: 28px; border-radius: 50%; flex: none; margin: 6px;
+  border: 5px solid var(--dot); background: var(--bg-base); box-shadow: 0 1px 2px rgba(25,39,67,.12);
+  cursor: default; transition: transform var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard); }
+.bmq-dot:hover, .bmq-dot:focus-visible { transform: scale(1.12); box-shadow: 0 2px 6px rgba(25,39,67,.18); outline: none; }
+.bmq-idk { font-size: 14px; color: var(--content-base); }
+
+/* Language list (right rail) */
+.bmq-langs { width: 240px; flex: none; background: var(--bg-base);
+  padding: 16px; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; }
+.bmq-langs-head { font-size: 14px; font-weight: 600; color: var(--content-base); padding: 4px 8px 16px; }
+.bmq-lang { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px; border: none;
+  border-radius: var(--radius-md); background: none; cursor: pointer; font-family: inherit; text-align: left; }
+.bmq-lang:hover { background: var(--bg-base-hover); }
+.bmq-lang.is-selected { background: var(--bg-brand-subtle-selected); }
+.bmq-lang-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.bmq-lang-text b { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
+.bmq-lang-text span { font-size: 12px; line-height: 19.2px; color: var(--content-secondary); }
+/* The one language marker: this translation was edited by hand. Informative
+   blue, never a warning — an automatic translation is the normal state. */
+.bmq-lang-manual { display: flex; flex: none; color: var(--content-info); }
+.bmq-lang-note { font-size: 12px; line-height: 1.55; color: var(--content-subtle); padding: 12px 8px 4px; }
+/* Under the compact language select the note has the card below it, so it
+   loses the side list's padding. */
+.bmq-lang-note.is-inline { padding: 6px 2px 0; }
+
+/* Participant-style topic preview: full-bleed themed intro screen */
+.bmq-preview.is-participant { padding: 0; align-items: stretch; }
+/* No design picked = the questionnaire's own grey, like everywhere else. Every
+   design wash is light too, so this screen is dark-on-light in both cases —
+   which is what keeps the editable title and description readable. */
+.tpd-screen { width: 100%; min-height: 100%; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 12px; padding: 48px;
+  background-color: var(--bg-secondary);
+  background-image: radial-gradient(rgba(255,255,255,.55) 3px, transparent 3.5px),
+    radial-gradient(rgba(25,39,67,.07) 3px, transparent 3.5px);
+  background-size: 104px 104px, 104px 104px; background-position: 0 0, 52px 52px; }
+.tpd-title-input { width: 100%; max-width: 620px; padding: 6px 12px; background: rgba(255,255,255,.55);
+  border: 1.5px dashed rgba(25,39,67,.30); border-radius: var(--radius-md); outline: none;
+  color: var(--content-base); font-family: inherit; font-size: 28px; font-weight: 700; line-height: 1.3; text-align: center;
+  transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+.tpd-title-input::placeholder { color: var(--content-secondary); }
+.tpd-title-input:hover { background: rgba(255,255,255,.8); border-color: rgba(25,39,67,.5); }
+.tpd-title-input:focus { background: var(--bg-base); border-color: var(--border-brand); border-style: solid; color: var(--content-base); }
+.tpd-title-input:focus::placeholder { color: var(--content-placeholder); }
+.tpd-count { color: var(--content-secondary); font-size: 15px; }
+.tpd-desc-input { width: 100%; max-width: 620px; padding: 8px 12px; background: rgba(255,255,255,.55);
+  border: 1.5px dashed rgba(25,39,67,.30); border-radius: var(--radius-md); outline: none; resize: none;
+  color: var(--content-base); font-family: inherit; font-size: 16px; line-height: 1.6; text-align: center;
+  transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+.tpd-desc-input::placeholder { color: var(--content-secondary); }
+.tpd-desc-input:hover:not(:disabled) { background: rgba(255,255,255,.8); border-color: rgba(25,39,67,.5); }
+.tpd-desc-input:focus { background: var(--bg-base); border-color: var(--border-brand); border-style: solid; color: var(--content-base); }
+.tpd-desc-input:focus::placeholder { color: var(--content-placeholder); }
+.tpd-desc-input:disabled { background: transparent; border-color: rgba(25,39,67,.18); cursor: not-allowed; }
+.tpd-next { width: 48px; height: 48px; border-radius: 50%; flex: none; margin-top: 20px;
+  background: #17171b; color: #fff; display: grid; place-items: center; }
+.qsec-title.is-clickable { cursor: pointer; border-radius: var(--radius-base); padding: 2px 6px; margin-left: -6px; }
+.qsec-title.is-clickable:hover { background: var(--bg-base-hover); }
+
+/* Org-required questions: checked but locked — reads as disabled, not actionable */
+input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disabled); border-color: transparent; }
+.cb-wrap:has(input.cb-locked:checked)::after { background-color: var(--content-disabled); }
+
+/* ---- Template selection grid (layout only; the card itself is the DS Card) --
+   Everything visual — surface, radius, padding, title/text type, action row —
+   comes from .card / .card-body / .card-title / .card-text / .card-actions.
+   These rules only place app-specific content inside that structure. */
+.tpl-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--spacing-loose); }
+.tpl-card { position: relative; }
+.tpl-card .card-body { flex: 1; }
+/* .card has overflow:hidden, so let the action row wrap instead of clipping
+   when a card gets narrow (below the dialog's intended desktop width). */
+.tpl-card .card-actions { flex-wrap: wrap; }
+.tpl-illus { width: 52px; height: 52px; border-radius: var(--radius-full); flex: none;
+  display: grid; place-items: center; margin-bottom: var(--spacing-tight); }
+.tpl-meta { font-size: 12px; line-height: 19.2px; }
+.tpl-desc { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.tpl-recommended { position: absolute; top: var(--spacing-base); right: var(--spacing-base); z-index: 1; }
+
+/* ---- Create-survey dialog — layout only ---------------------------------
+   Follows the design-system reference prototype `create-survey-dialog`.
+   Surfaces, type and controls are DS: .dialog/.dialog-l, .dialog-header/
+   body/footer, .search-wrap + input.srch, .inline-notif, .card*, .tf-*,
+   .slt-*, .btn-big and the .text-* helpers. Only sizing/placement lives here.
+   The grid-auto-rows and flex-shrink rules are load-bearing per the
+   reference's "layout gotchas" — don't clean them up. */
+.tpl-dialog { height: min(880px, calc(100vh - 64px)); }
+/* Keep the title clear of the DS .dialog-close (28px at top/right 15px). */
+.dialog-header.has-close { padding-right: var(--spacing-extra-loose); }
+.tpl-toolbar { display: flex; gap: var(--spacing-base-tight); align-items: center; }
+.tpl-toolbar .search-wrap { flex: 1; }
+.tpl-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-loose); grid-auto-rows: min-content; }
+.tpl-card { position: relative; }
+.tpl-card .card-body { flex: 1; gap: var(--spacing-tight); }
+.tpl-card-img { width: 64px; height: 64px; flex-shrink: 0; margin-bottom: var(--spacing-tight); }
+.tpl-name, .tpl-meta, .tpl-desc { flex-shrink: 0; }
+.tpl-meta { color: var(--content-secondary); }
+.tpl-desc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+/* Both actions share the card width, 16px apart (reference). */
+.tpl-actions { gap: var(--spacing-base); }
+.tpl-actions .btn { flex: 1; }
+.tpl-empty { display: flex; flex-direction: column; align-items: center; gap: var(--spacing-loose);
+  padding: var(--spacing-extra-loose) 0; text-align: center; }
+.tpl-empty img { width: 380px; max-width: 100%; flex-shrink: 0; }
+.tpl-footnote { justify-content: center; gap: var(--spacing-tight); font-size: 14px; color: var(--content-secondary); }
+.tpl-footnote i { color: var(--content-info); display: flex; flex: none; }
+
+/* "Let's get started" — name + (conditional) project */
+.ns-body { display: flex; flex-direction: column; gap: var(--spacing-loose); }
+/* Rendered in a fixed layer (portal) so .dialog's overflow:hidden can't clip it. */
+.ns-menu-scrim { position: fixed; inset: 0; z-index: 1010; }
+.ns-proj-menu { position: fixed; z-index: 1011; max-height: 240px; overflow-y: auto; }
+
+/* Template preview (in-dialog takeover) */
+.tpv-body { display: flex; flex-direction: column; gap: var(--spacing-loose); }
+.tpv-hero-text { min-width: 0; }
+.tpv-para { margin: 0; color: var(--content-secondary); }
+.tpv-qtext { font-size: 14px; font-weight: 500; line-height: 1.5; }
+.tpv-trow:last-child { border-bottom: none; }
+.tpv-section-title.is-lg { font-size: 20px; margin-bottom: var(--spacing-base); }
+.tpv-footer { justify-content: center; }
+/* .btn-big is the DS Button Big; the reference pins it to 326px. */
+.tpv-cta { min-width: 326px; justify-content: center; }
+
+/* "Move to topic" flyout — a nested .menu beside the row menu, rendered in a
+   fixed layer so cards/scroll containers can't clip it. */
+.qrow-submenu { position: fixed; z-index: 1010; max-height: 320px; overflow-y: auto; }
+
+/* Per-topic select-all: a tertiary button + grey total pill, at the row's right
+   end (replaces the old select-all checkbox). */
+.aql-selectall { flex: none; gap: var(--spacing-tight); }
+/* The total rides in a grey circle; --bg-secondary is too faint against the
+   button's transparent fill, so the pill uses the stronger neutral. */
+.aql-selectall .tag-count { pointer-events: none; background: var(--bg-tertiary);
+  color: var(--content-secondary); height: 20px; min-width: 20px; padding: 0 6px; }
+
+
+/* Wording dropdown footer: the way out of the approved list. */
+.bmq-dd-foot { border-top: 1px solid var(--border-base); margin-top: 4px; padding-top: 4px; }
+.bmq-dd-detach { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 10px 12px;
+  border: none; border-radius: var(--radius-base); background: transparent; cursor: pointer;
+  font-family: inherit; text-align: left; color: var(--content-base); }
+.bmq-dd-detach:hover { background: var(--bg-base-hover); }
+.bmq-dd-detach > i { display: flex; flex: none; margin-top: 2px; color: var(--content-secondary); }
+.bmq-dd-detach b { display: block; font-size: 14px; font-weight: 600; }
+.bmq-dd-detach span span { display: block; margin-top: 2px; font-size: 12px; line-height: 1.5;
+  color: var(--content-secondary); }
+
+/* ---- Topic row states (builder) -----------------------------------------
+   The whole row opens the topic's settings, so it needs the same feedback a
+   clickable row gets anywhere else: hover, pressed, and a keyboard focus ring.
+   Buttons inside keep their own states — hovering the kebab or the drag handle
+   shouldn't read as "the row is armed". */
+.qsec-head.is-clickable { cursor: pointer; transition: background var(--motion-fast) var(--ease-standard); }
+.qsec-head.is-clickable:hover { background: var(--bg-base-hover); }
+.qsec-head.is-clickable:active { background: var(--bg-secondary); }
+.qsec-head.is-clickable:has(.ib:hover) { background: var(--bg-base); }
+.qsec-head.is-clickable:focus-visible { outline: 2px solid var(--border-brand); outline-offset: -2px; }
+.qsec-head.is-clickable .qsec-title { transition: color var(--motion-fast) var(--ease-standard); }
+.qsec-head.is-clickable:hover .qsec-title { color: var(--content-brand); }
+
+/* Locked (derived) text in a translation view: the same shape as the select it
+   replaces, without implying it can be changed there. */
+.bmq-locked { width: 100%; padding: 8px 12px; font-size: 14px; line-height: 1.6; text-align: center;
+  color: var(--content-base); }
+.bmq-locked.is-big { font-size: 16px; font-weight: 600; line-height: 24px; }
+
+/* Free-text description (the escape hatch from the approved list) */
+.bmq-descfree { width: 100%; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.bmq-descfield { width: 100%; font-family: inherit; font-size: 14px; line-height: 1.6; padding: 8px 12px;
+  text-align: center; color: var(--content-base); background: var(--bg-base);
+  border: 1px solid var(--border-brand); border-radius: var(--radius-md); outline: none; resize: vertical; }
+.bmq-descfield::placeholder { color: var(--content-placeholder); }
+.bmq-descfree-back { border: none; background: none; padding: 0; cursor: pointer; font-family: inherit;
+  font-size: 12px; font-weight: 500; color: var(--content-secondary); text-decoration: underline; }
+.bmq-descfree-back:hover { color: var(--content-base); }
+
+/* Answer categories / open answer in the preview */
+.bmq-opts { width: 100%; display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
+.bmq-opt { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--content-base); }
+.bmq-opt-radio { width: 18px; height: 18px; border-radius: 50%; flex: none;
+  border: 1.5px solid var(--border-action); background: var(--bg-base); }
+.bmq-textbox { width: 100%; min-height: 72px; margin-top: 8px; padding: 10px 12px; border-radius: var(--radius-md);
+  border: 1px solid var(--border-base); background: var(--bg-secondary); color: var(--content-placeholder);
+  font-size: 14px; }
+
+/* Questionnaire overview actions (top of the page) */
+
+/* What kind of question this is — the title only carries its text. */
+.bmq-kind { display: flex; align-items: center; gap: var(--spacing-tight); flex-wrap: wrap; }
+.infotag.is-alt { background: var(--bg-tertiary); color: var(--content-secondary); }
+
+/* ---- Intro-screen preview: the real participant anatomy ------------------- */
+.tpd-meta { display: flex; gap: 44px; justify-content: center; margin-top: 20px; }
+.tpd-meta-item { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 170px; }
+.tpd-meta-ic { width: 52px; height: 52px; border-radius: 50%; border: 2px solid rgba(25,39,67,.45);
+  display: grid; place-items: center; color: var(--content-base); }
+.tpd-meta-txt { font-size: 12.5px; line-height: 1.5; color: var(--content-secondary); text-align: center; }
+.tpd-meta-link { display: inline-flex; align-items: center; gap: 4px; text-decoration: underline; }
+.tpd-cta { display: inline-flex; align-items: center; gap: 8px; margin-top: 24px; padding: 12px 28px;
+  border-radius: 999px; font-size: 16px; font-weight: 600; box-shadow: 0 2px 6px rgba(25,39,67,.25); }
+
+/* Detach warning: the tag flip and the impact list */
+.dw-flip { display: flex; align-items: center; gap: 10px; }
+.dw-impact { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px;
+  font-size: 14px; line-height: 1.6; color: var(--content-secondary); }
+.dw-impact b { color: var(--content-base); }
+
+/* ---- Similar-question check (create custom question) ----------------------
+   An inline panel right under the previewed card — it exists only while there
+   are matches, so creating never carries an empty side panel. */
+.cq-suggest.is-inline { width: 100%; margin-top: 12px; padding: var(--spacing-base-tight);
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-lg);
+  box-shadow: 0 4px 6px rgba(25,39,67,.08); }
+.cq-suggest-head { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600;
+  color: var(--content-secondary); }
+.cq-suggest-item { display: grid; grid-template-columns: 1fr auto; column-gap: var(--spacing-base-tight);
+  row-gap: 6px; align-items: center; padding: var(--spacing-base-tight);
+  border: 1px solid var(--border-base); border-radius: var(--radius-md); background: var(--bg-base); }
+.cq-suggest-text { grid-column: 1; font-size: 13.5px; font-weight: 500; line-height: 1.5; color: var(--content-base); }
+.cq-suggest-tags { grid-column: 1; display: flex; flex-wrap: wrap; gap: 6px; }
+.cq-suggest-tags .infotag { padding: 3px 8px; font-size: 11.5px; height: auto; border: none; box-shadow: none; }
+.cq-suggest-use, .cq-suggest-in { grid-column: 2; grid-row: 1 / 3; }
+.cq-suggest-in { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500;
+  color: var(--content-positive-secondary); }
+
+/* ---- Custom answer marks (multiple = checkbox, single = radio) -------------
+   Interactive in the preview only: clicking shows the pick behavior without
+   touching anything real. */
+.cq-mark { flex: none; width: 18px; height: 18px; padding: 0; display: grid; place-items: center;
+  border: 1.5px solid var(--border-action); background: var(--bg-base); cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+.cq-mark.is-check { border-radius: 4px; color: var(--content-on-brand-base); }
+.cq-mark.is-check.is-on { background: var(--bg-brand); border-color: var(--border-brand); }
+.cq-mark.is-radio { border-radius: 50%; }
+.cq-mark.is-radio.is-on { border-color: var(--border-brand); }
+.cq-mark.is-radio.is-on::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--bg-brand); }
+.cq-mark:hover { border-color: var(--border-brand); }
+
+/* The check step: one full-dialog screen that loads, then either offers the
+   choice between your wording and what already exists, or confirms nothing
+   similar was found. */
+.cq-step { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column;
+  gap: var(--spacing-base); padding: var(--spacing-loose) var(--spacing-extra-loose) var(--spacing-extra-loose);
+  background: var(--bg-base); border-radius: var(--radius-xl); }
+.cq-step-center { flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 10px; text-align: center; }
+.cq-step-ok { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg-positive-subtle); color: var(--content-positive-secondary); }
+/* The check pops in once, so "it worked" is read from the movement before the
+   words are read at all. */
+.cq-step-ok.is-pop { width: 64px; height: 64px; animation: cq-pop 420ms cubic-bezier(.2,1.4,.4,1) both; }
+.cq-step-ok.is-pop > svg:not(.cq-step-ring) { animation: cq-pop-in 260ms ease-out 180ms both; }
+@keyframes cq-pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes cq-pop-in { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.cq-step-btns { display: flex; align-items: center; gap: var(--spacing-tight); padding-top: 10px; }
+/* The auto-close as a ring around the check: no second element to read. */
+.cq-step-ok { position: relative; }
+.cq-step-ring { position: absolute; inset: -7px; width: auto; height: auto;
+  transform: rotate(-90deg); overflow: visible; }
+.cq-step-ring circle { fill: none; stroke-width: 5; stroke-linecap: round; }
+.cq-ring-track { stroke: var(--bg-positive-subtle); }
+.cq-ring-run { stroke: var(--content-positive-secondary);
+  stroke-dasharray: 289; stroke-dashoffset: 0; animation: cq-ring linear both; }
+@keyframes cq-ring { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 289; } }
+@media (prefers-reduced-motion: reduce) {
+  .cq-step-ok.is-pop, .cq-step-ok.is-pop > svg:not(.cq-step-ring), .cq-ring-run { animation: none; }
+}
+.cq-step-head { display: flex; flex-direction: column; gap: 4px; }
+.cq-step-title { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.5; color: var(--content-base); }
+.cq-step-sub { margin: 0; font-size: 14px; line-height: 1.6; color: var(--content-secondary); max-width: 620px; }
+/* On the similar-questions step the description explains a trade-off, so it
+   runs the width of the step instead of a centred measure. */
+.cq-step-sub.is-wide { max-width: none; }
+.cq-step-topic { max-width: 340px; }
+.cq-step-opts { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column;
+  gap: var(--spacing-loose); padding-top: 4px; }
+/* Named groups: your question, then what already exists. */
+.cq-opt-sec { display: flex; flex-direction: column; gap: var(--spacing-tight); }
+.cq-opt-sechead { margin: 0; display: flex; align-items: center; gap: var(--spacing-tight);
+  font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-base); }
+/* One option = a radio card laid out like a question row anywhere else in the
+   product: control left, wording, then the tags that say what picking it costs
+   or buys, and the answer type. The card styling stays, because exactly one of
+   these is added. */
+.cq-opt-card { display: flex; align-items: center; gap: var(--spacing-base-tight); width: 100%;
+  padding: var(--spacing-base-tight) var(--spacing-base); border: 1px solid var(--border-base);
+  border-radius: var(--radius-md); background: var(--bg-base); font-family: inherit; text-align: left;
+  cursor: pointer; transition: border-color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard); }
+.cq-opt-card:hover { background: var(--bg-base-hover); }
+.cq-opt-card.is-on { border-color: var(--border-brand); background: var(--bg-brand-subtle); }
+.cq-opt-mark { flex: none; width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--border-action); background: var(--bg-base); display: grid; place-items: center; }
+.cq-opt-card.is-on .cq-opt-mark { border-color: var(--border-brand); }
+.cq-opt-card.is-on .cq-opt-mark::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--bg-brand); }
+.cq-opt-text { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; line-height: 22.4px; color: var(--content-base); }
+.cq-opt-tags { flex: none; display: flex; align-items: center; gap: 6px; }
+.cq-opt-tags .infotag { padding: 3px 8px; font-size: 11.5px; }
+.cq-step-foot { display: flex; align-items: center; gap: var(--spacing-tight); }
+
+/* ---- Select questions: sidebar navigation variant --------------------------
+   Left rail = browse (topics double as jump anchors); the one search on top
+   looks across everything and never scopes to the rail selection. */
+.eq-col { display: flex; flex-direction: column; gap: var(--spacing-loose); flex: 1; min-height: 0; }
+.eq-frame { display: flex; gap: var(--spacing-loose); flex: 1; min-height: 0; }
+/* Rail per Figma 6316:27977: 280px, 24px padding, 48px items with the icon
+   inset at 12px and the label at 40px, the dialog's title at the top. */
+.eq-rail { width: 280px; flex: none; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;
+  padding: 0 var(--spacing-base) 0 0; border-right: 1px solid var(--border-base); box-sizing: border-box; }
+.eq-rail-title { padding: 12px; font-size: 20px; font-weight: 600; line-height: 28px; color: var(--content-base); }
+.eq-rail-item { position: relative; display: flex; align-items: center; min-height: 48px;
+  padding: 12px 12px 12px 40px; border: none; border-radius: var(--radius-md); background: transparent;
+  font-family: inherit; font-size: 14px; font-weight: 500; line-height: 22.4px;
+  color: var(--content-secondary); text-align: left; cursor: pointer; }
+.eq-rail-item > i[data-icon] { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); }
+.eq-rail-item:hover { background: var(--bg-base-hover); }
+.eq-rail-item.is-active { background: var(--bg-brand-subtle-selected); color: var(--content-action-pressed); font-weight: 600; }
+.eq-rail-group { padding: 16px 12px 4px; font-size: 16px; font-weight: 600; line-height: 24px;
+  color: var(--content-base); flex: none; }
+/* The content column names the section you are in — or the live query — and
+   carries that page's own action on the right. */
+.eq-section-row { display: flex; align-items: center; gap: var(--spacing-base-tight); }
+.eq-section-title { margin: 0; font-size: 20px; font-weight: 600; line-height: 28px; color: var(--content-base); }
+
+/* Search: why a row matched. */
+.eq-hl { background: var(--bg-highlight-subtle); color: inherit; border-radius: 3px; padding: 0 1px; }
+/* Inside a tag the highlight can't bring its own colours: a dark tag would end
+   up white-on-yellow. It tints with the tag's own text colour instead. */
+.tag .eq-hl { background: color-mix(in srgb, currentColor 22%, transparent); color: inherit; }
+
+/* Questions that matched through their THEME or TOPIC name — collapsed, since
+   the match is the group they belong to, not their own wording. */
+.eq-ind { border-top: 1px solid var(--border-base); }
+.eq-ind-head { display: flex; align-items: center; gap: var(--spacing-tight); width: 100%;
+  padding: var(--spacing-base-tight) 8px; border: none; background: transparent; font-family: inherit;
+  font-size: 13.5px; color: var(--content-secondary); text-align: left; cursor: pointer; }
+.eq-ind-head:hover { background: var(--bg-base-hover); }
+.eq-ind-txt mark { font-weight: 600; }
+.eq-ind-actions { display: flex; justify-content: flex-end; padding: 0 8px 8px; }
+
+/* Full, centred empty state. */
+.eq-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--spacing-base-tight); padding: var(--spacing-extra-loose); text-align: center; }
+.eq-empty-art { width: 300px; max-width: 70%; height: auto; margin-bottom: var(--spacing-tight); }
+.eq-empty-title { font-size: 18px; font-weight: 600; line-height: 1.5; color: var(--content-base); }
+.eq-empty-body { margin: 0 0 8px; max-width: 440px; font-size: 14px; line-height: 1.6; color: var(--content-secondary); }
+.eq-main { display: flex; flex-direction: column; gap: var(--spacing-loose); flex: 1; min-width: 0; min-height: 0; }
+.eq-main .dialog-body { flex: 1; min-height: 0; }
+
+/* Grouped global-search results — each kind keeps the styling of its own
+   page (question rows, theme/template cards), only grouped under headers. */
+.eq-gres { display: flex; flex-direction: column; }
+.eq-gres + .eq-gres { margin-top: var(--spacing-super-loose); }
+.eq-gres-head { display: flex; align-items: center; gap: 8px; padding: 0 0 12px; font-size: 16px;
+  font-weight: 600; line-height: 24px; color: var(--content-base); }
+/* A matched theme/topic is a real section inside the results, so it keeps the
+   library list's own rhythm rather than inventing one. */
+.eq-res-sec { margin-top: var(--spacing-loose); }
+/* The sidebar variant earns more width than the DS's largest dialog (1080):
+   rail + rows need the room. Flagged as beyond the DS scale on purpose. */
+/* The frame's shape: the rail runs the full height flush to the dialog edge,
+   the content column carries its own 32px padding, the footer spans both. */
+.dialog.eq-dialog { height: min(940px, calc(100vh - 64px)); }
+.dialog.eq-wide { width: min(1280px, calc(100vw - 48px)); padding: 0; gap: 0; }
+.dialog.eq-wide > .eq-frame { flex: 1; min-height: 0; gap: 0; }
+.dialog.eq-wide .eq-rail { padding: var(--spacing-loose); }
+/* 32px around and between, per the frame — and no bottom padding, so the
+   scrolling list runs to the footer's border instead of stopping short. */
+.dialog.eq-wide .eq-main { padding: var(--spacing-extra-loose) var(--spacing-extra-loose) 0;
+  gap: var(--spacing-extra-loose); }
+.dialog.eq-wide > .dialog-footer { padding: var(--spacing-loose) var(--spacing-extra-loose);
+  border-top: 1px solid var(--border-base); }
+/* Sections sit on the same 32px rhythm as the column (the shared rule is 40px;
+   scoped here so the legacy tabbed dialog keeps its own spacing). */
+.dialog.eq-wide .aql-sec + .aql-sec { margin-top: var(--spacing-extra-loose); }
+.eq-tool-div { width: 1px; height: 24px; background: var(--border-base); flex: none; }
+/* "Used in <survey>" — truncates rather than pushing the row's meta around. */
+.cc-art { width: 64px; height: 64px; flex: none; }
+.eq-usedin { flex: none; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+/* One row at full width (as drawn); wraps instead of clipping when the dialog
+   is squeezed, and the search never collapses to an icon. */
+/* One row, always: the close button belongs in the top right corner of the
+   dialog, and a wrapping toolbar would push it down a line. Everything but the
+   search field is fixed-width (icon-only when the dialog is narrow), so the
+   field is the only thing that has to give. */
+.eq-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--spacing-base-tight); }
+.eq-toolbar-search { flex: 1 1 240px; min-width: 120px; }
+/* How many filters are actually narrowing something. Same grey pill the counts
+   elsewhere use, sized to a circle for single digits. */
+/* "Adding to one topic" notice: informative blue, above the list, with the
+   way out on the row itself. */
+.eq-target-note { display: flex; align-items: center; gap: var(--spacing-tight); flex: none;
+  padding: 6px 8px 6px 14px; border-radius: var(--radius-md);
+  background: var(--bg-info-subtle, #e8f0fc); color: var(--content-info); }
+.eq-target-txt { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; color: var(--content-base); }
+.eq-target-note .btn { flex: none; }
+
+.eq-filter-count { flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--radius-full);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg-secondary); color: var(--content-secondary); font-size: 12px; font-weight: 600; }
+/* On the icon-only trigger the count rides the corner instead of sitting in a
+   label that isn't there. */
+.ib .eq-filter-count.is-dot { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px;
+  padding: 0 5px; font-size: 11px; background: var(--bg-brand); color: var(--content-on-brand-base);
+  border: 2px solid var(--bg-base); }
+.eq-toolbar .ib { position: relative; overflow: visible; flex: none; }
+/* Delete, in a menu: the same red the danger buttons use, so the one
+   irreversible item in a list never reads like the others. */
+.menu-item.is-danger .menu-item-title, .menu-item.is-danger .menu-item-icon { color: var(--content-negative); }
+.menu-item.is-danger:hover { background: var(--bg-negative-subtle); }

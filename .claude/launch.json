@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "cyos-phase-3",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "phase-3", "run", "dev"],
+      "port": 5182
+    },
+    {
       "name": "cyos-phase-2",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "phase-2", "run", "dev"],

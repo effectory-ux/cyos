@@ -9,6 +9,7 @@ name: Deploy demos
 #   site-and-research → landing page + site/research/** (static files)
 #   phase-1           → builds phase-1/ and replaces /phase-1/
 #   phase-2           → builds phase-2/ and replaces /phase-2/
+#   phase-3           → builds phase-3/ and replaces /phase-3/
 #   everything        → all of the above
 #
 # Phase 1's ORIGINAL demo link is still the separate
@@ -25,6 +26,7 @@ on:
           - site-and-research
           - phase-1
           - phase-2
+          - phase-3
           - everything
 
 permissions:
@@ -46,7 +48,7 @@ jobs:
           ref: gh-pages
           path: out
       - uses: actions/setup-node@v4
-        if: inputs.target == 'phase-1' || inputs.target == 'phase-2' || inputs.target == 'everything'
+        if: inputs.target == 'phase-1' || inputs.target == 'phase-2' || inputs.target == 'phase-3' || inputs.target == 'everything'
         with:
           node-version: 22
       - name: Update landing page and research docs
@@ -54,7 +56,7 @@ jobs:
         run: |
           # Sync site/ onto the branch root, removing stale static files but
           # never touching the phase build folders.
-          rsync -a --delete --exclude 'phase-1/' --exclude 'phase-2/' --exclude '.git/' --exclude '.nojekyll' src/site/ out/
+          rsync -a --delete --exclude 'phase-1/' --exclude 'phase-2/' --exclude 'phase-3/' --exclude '.git/' --exclude '.nojekyll' src/site/ out/
       - name: Build and replace phase 1
         if: inputs.target == 'phase-1' || inputs.target == 'everything'
         run: |
@@ -69,6 +71,13 @@ jobs:
           npm run build --prefix src/phase-2
           rm -rf out/phase-2
           cp -R src/phase-2/dist out/phase-2
+      - name: Build and replace phase 3
+        if: inputs.target == 'phase-3' || inputs.target == 'everything'
+        run: |
+          npm ci --prefix src/phase-3
+          npm run build --prefix src/phase-3
+          rm -rf out/phase-3
+          cp -R src/phase-3/dist out/phase-3
       - name: Publish
         run: |
           cd out
