@@ -64,6 +64,7 @@ jobs:
           npm run build --prefix src/phase-1
           rm -rf out/phase-1
           cp -R src/phase-1/dist out/phase-1
+          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > out/phase-1/version.json
       - name: Build and replace phase 2
         if: inputs.target == 'phase-2' || inputs.target == 'everything'
         run: |
@@ -71,6 +72,7 @@ jobs:
           npm run build --prefix src/phase-2
           rm -rf out/phase-2
           cp -R src/phase-2/dist out/phase-2
+          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > out/phase-2/version.json
       - name: Build and replace phase 3
         if: inputs.target == 'phase-3' || inputs.target == 'everything'
         run: |
@@ -78,6 +80,7 @@ jobs:
           npm run build --prefix src/phase-3
           rm -rf out/phase-3
           cp -R src/phase-3/dist out/phase-3
+          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > out/phase-3/version.json
       - name: Publish
         run: |
           cd out
