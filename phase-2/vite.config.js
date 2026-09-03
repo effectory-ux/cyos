@@ -1,8 +1,17 @@
-import { defineConfig } from "vite";
+import path from "node:path";
+import { defineConfig, searchForWorkspaceRoot } from "vite";
 import react from "@vitejs/plugin-react";
-import { protoEdits } from "../toolbar/vite-plugin-proto-edits.js";
-import { protoVersions } from "../toolbar/vite-plugin-proto-versions.js";
+import { protoEdits } from "prototype-toolbar/vite-plugin-proto-edits.js";
+import { protoVersions } from "prototype-toolbar/vite-plugin-proto-versions.js";
 import { VERSIONS } from "../prototype-versions.js";
+
+// The prototype toolbar is the npm package `prototype-toolbar` (installed from
+// github:effectory-ux/prototype-toolbar, pinned to a release line — see
+// package.json; `npm update prototype-toolbar` moves to its newest release).
+// To work on the toolbar from inside this app, point PROTO_TOOLBAR_DEV at a
+// local clone: the package is then aliased to that folder (the vite plugins
+// above still come from node_modules; `npm install` after changing those).
+const TOOLBAR_DEV = process.env.PROTO_TOOLBAR_DEV ? path.resolve(process.env.PROTO_TOOLBAR_DEV) : null;
 
 // Dev server on a fixed port so the preview tooling can find it.
 // The Engage DS files (styles/*.css, icons.js, assets/icons/*) live at the
@@ -15,6 +24,10 @@ import { VERSIONS } from "../prototype-versions.js";
 export default defineConfig(({ command }) => ({
   plugins: [react(), protoEdits(), protoVersions(VERSIONS)],
   base: command === "build" ? "./" : "/",
-  server: { port: 5181, strictPort: true },
+  resolve: {
+    dedupe: ["react", "react-dom"], // one React, also for an aliased toolbar clone
+    alias: TOOLBAR_DEV ? [{ find: /^prototype-toolbar\//, replacement: TOOLBAR_DEV + "/" }] : [],
+  },
+  server: { port: 5181, strictPort: true, fs: { allow: [searchForWorkspaceRoot(process.cwd()), ...(TOOLBAR_DEV ? [TOOLBAR_DEV] : [])] } },
   build: { outDir: "dist", emptyOutDir: true },
 }));

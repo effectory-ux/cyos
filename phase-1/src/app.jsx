@@ -12,7 +12,7 @@ import { libraryPool } from "./data/qlib.js";
 // The prototype toolbar lives at the repo root (toolbar/) so every phase —
 // and any other project — can use the same one. It reads this prototype's
 // settings straight from the proto-config module (config={PROTO}).
-import { PrototypeBar, getStartAt } from "../../toolbar/PrototypeBar.jsx";
+import { PrototypeBar, getStartAt } from "prototype-toolbar/PrototypeBar.jsx";
 import { VERSIONS } from "../../prototype-versions.js";
 import * as PROTO from "./data/proto-config.js";
 
