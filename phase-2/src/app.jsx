@@ -443,7 +443,8 @@ export function App() {
     if (fromUrl && fromUrl.screen === "builder") {
       const sv = draftSurvey(); if (sv) { setSurvey(sv); setScreen("builder");
         // App-level dialogs live outside the Builder's own dialog routing.
-        if (fromUrl.dialog === "new-custom-question") setNewCustom(true);
+        if (fromUrl.dialog === "select-questions") setEditing(true);
+        else if (fromUrl.dialog === "new-custom-question") setNewCustom(true);
         else if (fromUrl.dialog === "custom-question" && fromUrl.arg) {
           const q = sv.pool.find(x => x.id === fromUrl.arg); if (q) setEditCustom(q);
         }
