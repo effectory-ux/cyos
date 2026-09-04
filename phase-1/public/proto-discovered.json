@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "savedAt": "2026-09-04T15:30:27.294Z",
+  "editor": "Jamal van Rooijen",
+  "entries": {
+    "/": {
+      "route": "/",
+      "example": "/",
+      "label": "home",
+      "count": 1,
+      "firstSeen": "2026-09-04T15:30:26.290Z",
+      "via": {},
+      "lastSeen": "2026-09-04T15:30:26.290Z"
+    }
+  }
+}
