@@ -4,20 +4,36 @@
     {
       "name": "cyos-phase-3",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "phase-3", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "phase-3",
+        "run",
+        "dev"
+      ],
       "port": 5182
     },
     {
       "name": "cyos-phase-2",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "phase-2", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "phase-2",
+        "run",
+        "dev"
+      ],
       "port": 5181
     },
     {
       "name": "cyos-phase-1",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "phase-1", "run", "dev"],
-      "port": 5180
+      "runtimeArgs": [
+        "--prefix",
+        "phase-1",
+        "run",
+        "dev"
+      ],
+      "port": 5180,
+      "autoPort": false
     }
   ]
 }
