@@ -11,6 +11,9 @@ Rules:
   files. To try an unreleased toolbar here, start a phase with
   `PROTO_TOOLBAR_DEV=~/Claude/prototype-toolbar npm --prefix phase-2 run dev`
   (the vite config aliases the package to that clone).
+- The toolbar shows for any URL carrying `?prototype-toolbar` (appendable at
+  the end of the link, hash route included); links of the older
+  `?<key>-toolbar-active` form are dead since toolbar 2.0.0.
 - CYOS's own settings for the bar live in `prototype-versions.js` (root) and
   each phase's `src/data/proto-config.js` and `src/data/piwik-events.js`.
 - Imports are `prototype-toolbar/PrototypeBar.jsx` and the two vite plugins

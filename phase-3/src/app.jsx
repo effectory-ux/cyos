@@ -13,7 +13,7 @@ import { libraryPool } from "./data/qlib.js";
 // and any other project — can use the same one.
 import { PrototypeBar, getStartAt } from "prototype-toolbar/PrototypeBar.jsx";
 import { VERSIONS } from "../../prototype-versions.js";
-import { PROTO_STORAGE_PREFIX, PROTO_TOOLBAR_KEY, START_POINTS, USE_CASES, VARIANTS } from "./data/proto-config.js";
+import { PROTO_STORAGE_PREFIX, START_POINTS, USE_CASES, VARIANTS } from "./data/proto-config.js";
 import { PIWIK_EVENTS, PIWIK_FUNNELS } from "./data/piwik-events.js";
 import { serialize, writeRoute, parse } from "./data/routes.js";
 import { defaultEdges, EDGE_CASES } from "./data/edgecases.js";
@@ -474,7 +474,7 @@ export function App() {
   return (
     <div className="proto-shell">
       <PrototypeBar useCases={USE_CASES} startPoints={START_POINTS} edgeCases={EDGE_CASES} variants={VARIANTS}
-        storagePrefix={PROTO_STORAGE_PREFIX} toolbarKey={PROTO_TOOLBAR_KEY} versions={VERSIONS}
+        storagePrefix={PROTO_STORAGE_PREFIX} versions={VERSIONS}
         events={PIWIK_EVENTS} funnels={PIWIK_FUNNELS}
         onUseCase={gotoUseCase} edges={edges} onToggleEdge={toggleEdge}
         varState={variantsOn} onToggleVariant={toggleVariant} />

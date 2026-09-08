@@ -3,12 +3,6 @@
 // a setting here and its menu shows up, no extra wiring in the bar.
 export const PROTO_STORAGE_PREFIX = "cyos";
 
-// The key in `?<key>-toolbar-active`, the URL that carries the toolbar to
-// someone else's browser on the deployed prototype. Same key as the other
-// phases so one shared link convention covers the whole prototype family;
-// rotate it here (and in prototype-versions.js) to invalidate handed-out
-// phase-1 toolbar links.
-export const PROTO_TOOLBAR_KEY = "id-backstage";
 
 export const START_POINTS = [
   { key: "surveys", label: "Surveys list" },
