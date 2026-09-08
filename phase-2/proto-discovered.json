@@ -1,0 +1,48 @@
+{
+  "version": 4,
+  "savedAt": "2026-09-08T13:24:27.541Z",
+  "editor": "Jamal van Rooijen",
+  "entries": {
+    "/projects/:n/survey-list": {
+      "route": "/projects/:n/survey-list",
+      "example": "#/projects/31092/survey-list",
+      "label": "survey-list",
+      "count": 3,
+      "firstSeen": "2026-09-08T13:07:17.760Z",
+      "via": {},
+      "lastSeen": "2026-09-08T13:15:01.744Z"
+    },
+    "/surveys/:id/questionnaire": {
+      "route": "/surveys/:id/questionnaire",
+      "example": "#/surveys/s3/questionnaire",
+      "label": "questionnaire",
+      "count": 4,
+      "firstSeen": "2026-09-08T13:15:05.823Z",
+      "via": {
+        "builder": true
+      },
+      "lastSeen": "2026-09-08T13:17:58.800Z"
+    },
+    "/surveys/:id/questionnaire(dialog:question-settings/:arg)": {
+      "route": "/surveys/:id/questionnaire(dialog:question-settings/:arg)",
+      "example": "#/surveys/s3/questionnaire(dialog:question-settings/sos-0-0)",
+      "label": "questionnaire · question-settings",
+      "count": 2,
+      "firstSeen": "2026-09-08T13:15:10.190Z",
+      "via": {
+        "question-settings": true,
+        "question-edited": true
+      },
+      "lastSeen": "2026-09-08T13:15:13.779Z"
+    },
+    "/surveys/:id/questionnaire(dialog:select-questions)": {
+      "route": "/surveys/:id/questionnaire(dialog:select-questions)",
+      "example": "#/surveys/s3/questionnaire(dialog:select-questions)",
+      "label": "questionnaire · select-questions",
+      "count": 1,
+      "firstSeen": "2026-09-08T13:24:26.735Z",
+      "via": {},
+      "lastSeen": "2026-09-08T13:24:26.735Z"
+    }
+  }
+}

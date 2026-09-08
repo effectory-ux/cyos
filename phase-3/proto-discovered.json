@@ -1,0 +1,75 @@
+{
+  "version": 6,
+  "savedAt": "2026-09-04T09:30:45.266Z",
+  "editor": "Jamal van Rooijen",
+  "entries": {
+    "/projects/:n/survey-list": {
+      "route": "/projects/:n/survey-list",
+      "example": "#/projects/31092/survey-list",
+      "label": "survey-list",
+      "count": 2,
+      "firstSeen": "2026-09-04T09:28:45.257Z",
+      "via": {},
+      "lastSeen": "2026-09-04T09:30:35.257Z"
+    },
+    "/projects/:n/survey-list(dialog:choose-template)": {
+      "route": "/projects/:n/survey-list(dialog:choose-template)",
+      "example": "#/projects/31092/survey-list(dialog:choose-template)",
+      "label": "survey-list · choose-template",
+      "count": 2,
+      "firstSeen": "2026-09-04T09:29:27.256Z",
+      "via": {
+        "template-dialog": true,
+        "template-empty": true
+      },
+      "lastSeen": "2026-09-04T09:30:41.271Z"
+    },
+    "/surveys/:id/questionnaire": {
+      "route": "/surveys/:id/questionnaire",
+      "example": "#/surveys/s3/questionnaire",
+      "label": "questionnaire",
+      "count": 1,
+      "firstSeen": "2026-09-04T09:29:29.255Z",
+      "via": {
+        "builder": true
+      },
+      "lastSeen": "2026-09-04T09:29:29.255Z"
+    },
+    "/surveys/:id/questionnaire(dialog:select-questions)": {
+      "route": "/surveys/:id/questionnaire(dialog:select-questions)",
+      "example": "#/surveys/s3/questionnaire(dialog:select-questions)",
+      "label": "questionnaire · select-questions",
+      "count": 1,
+      "firstSeen": "2026-09-04T09:29:31.255Z",
+      "via": {
+        "select-questions": true
+      },
+      "lastSeen": "2026-09-04T09:29:31.255Z"
+    },
+    "/surveys/:id/questionnaire(dialog:question-settings/:arg)": {
+      "route": "/surveys/:id/questionnaire(dialog:question-settings/:arg)",
+      "example": "#/surveys/s3/questionnaire(dialog:question-settings/sos-2-1)",
+      "label": "questionnaire · question-settings",
+      "count": 4,
+      "firstSeen": "2026-09-04T09:29:33.255Z",
+      "via": {
+        "question-settings": true,
+        "question-logic": true,
+        "topic-dialog": true,
+        "translations": true
+      },
+      "lastSeen": "2026-09-04T09:29:39.256Z"
+    },
+    "/surveys/d-demo/questionnaire": {
+      "route": "/surveys/d-demo/questionnaire",
+      "example": "#/surveys/d-demo/questionnaire",
+      "label": "questionnaire",
+      "count": 1,
+      "firstSeen": "2026-09-04T09:30:44.257Z",
+      "via": {
+        "builder-scratch": true
+      },
+      "lastSeen": "2026-09-04T09:30:44.257Z"
+    }
+  }
+}
