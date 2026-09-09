@@ -28,7 +28,14 @@ export function serialize(route) {
 const safeDecode = (v) => { try { return decodeURIComponent(v); } catch (_) { return v; } };
 
 export function parse(hash) {
-  const raw = (hash || "").replace(/^#/, "");
+  // A query on the FRAGMENT is never part of the route. The prototype toolbar's
+  // `?prototype-toolbar` belongs before the `#`, but it is allowed to arrive at
+  // the end of a link and is only moved into the real query once the toolbar
+  // loads — and pasting it onto an already-open route never reloads at all. So
+  // drop anything from the first `?` before matching, or the dialog segment
+  // stops matching and a deep link lands on the wrong screen. Dialog args are
+  // percent-encoded by serialize(), so a raw `?` here is always a query.
+  const raw = (hash || "").replace(/^#/, "").split("?")[0];
   if (!raw) return null;
   const m = raw.match(/^(.*?)(?:\(dialog:([^/)]+)(?:\/([^)]*))?\))?$/);
   if (!m) return null;

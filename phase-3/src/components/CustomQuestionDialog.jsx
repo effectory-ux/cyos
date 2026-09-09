@@ -459,7 +459,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                 </span>
                 {done ? (
                   <>
-                    <div className="cq-step-title" data-piwik="cq.added">Question added</div>
+                    <div className="cq-step-title">Question added</div>
                     <div className="cq-step-sub">{
                       done.reused
                         ? (done.q.bench
@@ -536,7 +536,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                   <button className="btn btn-secondary" onClick={() => { setPhase(null); setChecked(null); }}>
                     <Icon name="arrow-left" size={16} />Back</button>
                   <span className="spacer" />
-                  <button className="btn btn-primary" data-piwik="cq.confirm-add" onClick={addPicked}>Confirm &amp; add</button>
+                  <button className="btn btn-primary" onClick={addPicked}>Confirm &amp; add</button>
                 </div>
               </>
             )}
@@ -555,7 +555,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
               <span className="infotag is-alt">No benchmark</span>
             </div>
           )}
-          <h2 className="dialog-title" id="cq-title" data-t={editing && question ? "q-" + question.id : undefined}>
+          <h2 className="dialog-title" id="cq-title">
             {editing ? (text.trim() || "Custom question") : "New custom question"}</h2>
           <p className="dialog-subtitle">Write your own question and choose how people answer it. Use this for specific questions that are only valid for your context.</p>
         </div>
@@ -618,7 +618,6 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                     )}
                     <AutoTextarea
                       className={"cq-qfield" + (isPrimary && showTextErr ? " is-error" : "")}
-                      data-t={question && isPrimary ? "q-" + question.id : undefined}
                       autoFocus={isPrimary}
                       value={isPrimary ? text : (state.text ?? (text.trim() ? autoTranslation(text, active) : ""))}
                       placeholder={working ? "" : "Write a positive statement here"}
@@ -715,7 +714,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
           {benchNote}
           <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
           <button className={"btn btn-primary" + (phase ? " is-disabled" : "")} disabled={!!phase}
-            data-piwik={editing ? undefined : "cq.check"} onClick={checkThenSubmit}>
+ onClick={checkThenSubmit}>
             {editing ? "Save changes" : "Check question"}</button>
         </div>
       </div>

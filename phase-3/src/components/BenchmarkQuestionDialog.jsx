@@ -225,7 +225,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
             {stagedLogic && <span className="infotag is-logic"><Icon name="eye" size={12} />Conditional</span>}
           </div>
-          <h2 className="dialog-title" id="bmq-title" data-t={"q-" + q.id}>{title}</h2>
+          <h2 className="dialog-title" id="bmq-title">{title}</h2>
           <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
         </div>
 

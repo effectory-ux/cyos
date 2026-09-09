@@ -1,7 +1,7 @@
 import path from "node:path";
 import { defineConfig, searchForWorkspaceRoot } from "vite";
 import react from "@vitejs/plugin-react";
-import { protoEdits } from "prototype-toolbar/vite-plugin-proto-edits.js";
+import { protoScreens } from "prototype-toolbar/vite-plugin-proto-screens.js";
 import { protoVersions } from "prototype-toolbar/vite-plugin-proto-versions.js";
 import { VERSIONS } from "../prototype-versions.js";
 
@@ -22,7 +22,7 @@ const TOOLBAR_DEV = process.env.PROTO_TOOLBAR_DEV ? path.resolve(process.env.PRO
 // runs at the domain root AND under a GitHub Pages project subpath
 // (e.g. /cyos-survey-creation-flow-demo/). Dev keeps the absolute '/' base.
 export default defineConfig(({ command }) => ({
-  plugins: [react(), protoEdits(), protoVersions(VERSIONS)],
+  plugins: [react(), protoScreens(), protoVersions(VERSIONS)],
   base: command === "build" ? "./" : "/",
   resolve: {
     dedupe: ["react", "react-dom"], // one React, also for an aliased toolbar clone
