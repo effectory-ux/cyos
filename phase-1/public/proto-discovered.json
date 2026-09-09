@@ -1,16 +1,92 @@
 {
-  "version": 1,
-  "savedAt": "2026-09-04T15:30:27.294Z",
+  "version": 7,
+  "savedAt": "2026-09-09T11:27:23.549Z",
   "editor": "Jamal van Rooijen",
   "entries": {
+    "/projects/:n/survey-list": {
+      "route": "/projects/:n/survey-list",
+      "example": "#/projects/31092/survey-list",
+      "label": "survey-list",
+      "count": 2,
+      "firstSeen": "2026-09-09T11:04:48.188Z",
+      "via": {
+        "surveys": true
+      },
+      "lastSeen": "2026-09-09T11:05:00.858Z"
+    },
+    "/projects/:n/survey-list(dialog:choose-template)": {
+      "route": "/projects/:n/survey-list(dialog:choose-template)",
+      "example": "#/projects/31092/survey-list(dialog:choose-template)",
+      "label": "survey-list · choose-template",
+      "count": 1,
+      "firstSeen": "2026-09-09T11:05:01.639Z",
+      "via": {
+        "template-dialog": true
+      },
+      "lastSeen": "2026-09-09T11:05:01.639Z"
+    },
+    "/projects/:n/survey-list(dialog:create-draft-survey)": {
+      "route": "/projects/:n/survey-list(dialog:create-draft-survey)",
+      "example": "#/projects/31092/survey-list(dialog:create-draft-survey)",
+      "label": "survey-list · create-draft-survey",
+      "count": 1,
+      "firstSeen": "2026-09-09T11:05:02.861Z",
+      "via": {
+        "name-dialog": true
+      },
+      "lastSeen": "2026-09-09T11:05:02.861Z"
+    },
+    "/surveys/:id/questionnaire": {
+      "route": "/surveys/:id/questionnaire",
+      "example": "#/surveys/uc-sos/questionnaire",
+      "label": "questionnaire",
+      "count": 6,
+      "firstSeen": "2026-09-09T11:05:04.098Z",
+      "via": {
+        "builder": true,
+        "builder-scratch": true
+      },
+      "lastSeen": "2026-09-09T11:27:22.741Z"
+    },
+    "/surveys/:id/questionnaire(dialog:select-questions)": {
+      "route": "/surveys/:id/questionnaire(dialog:select-questions)",
+      "example": "#/surveys/uc-sos/questionnaire(dialog:select-questions)",
+      "label": "questionnaire · select-questions",
+      "count": 1,
+      "firstSeen": "2026-09-09T11:05:06.537Z",
+      "via": {
+        "select-questions": true
+      },
+      "lastSeen": "2026-09-09T11:05:06.537Z"
+    },
+    "/surveys/:id/questionnaire(dialog:theme/:arg)": {
+      "route": "/surveys/:id/questionnaire(dialog:theme/:arg)",
+      "example": "#/surveys/uc-sos/questionnaire(dialog:theme/Engagement)",
+      "label": "questionnaire · theme",
+      "count": 1,
+      "firstSeen": "2026-09-09T11:05:48.077Z",
+      "via": {},
+      "lastSeen": "2026-09-09T11:05:48.077Z"
+    },
+    "/surveys/:id/questionnaire(dialog:rename-survey)": {
+      "route": "/surveys/:id/questionnaire(dialog:rename-survey)",
+      "example": "#/surveys/uc-sos/questionnaire(dialog:rename-survey)",
+      "label": "questionnaire · rename-survey",
+      "count": 1,
+      "firstSeen": "2026-09-09T11:05:49.289Z",
+      "via": {},
+      "lastSeen": "2026-09-09T11:05:49.289Z"
+    },
     "/": {
       "route": "/",
       "example": "/",
       "label": "home",
-      "count": 1,
+      "count": 4,
       "firstSeen": "2026-09-04T15:30:26.290Z",
-      "via": {},
-      "lastSeen": "2026-09-04T15:30:26.290Z"
+      "via": {
+        "template-dialog": true
+      },
+      "lastSeen": "2026-09-09T09:44:10.332Z"
     }
   }
 }

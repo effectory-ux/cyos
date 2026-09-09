@@ -13,6 +13,8 @@ import { libraryPool } from "./data/qlib.js";
 // and any other project — can use the same one. It reads this prototype's
 // settings straight from the proto-config module (config={PROTO}).
 import { PrototypeBar, getStartAt } from "prototype-toolbar/PrototypeBar.jsx";
+import { parse, writeRoute } from "./data/routes.js";
+import { routeKey as foldIds } from "prototype-toolbar/discover.js";
 import { VERSIONS } from "../../prototype-versions.js";
 import * as PROTO from "./data/proto-config.js";
 
@@ -20,6 +22,12 @@ import * as PROTO from "./data/proto-config.js";
 // complete theme soft-locks (asks first), and "Add custom question" lives in
 // the Add-questions toolbar.
 const TWEAKS = { integrity: "lock", customEntry: "toolbar" };
+
+// How routes collapse into screens for the toolbar's Screens list. The default
+// folds platform-shaped ids (s3, q12, 31092); the use-case surveys this
+// prototype mints are `uc-<template>`, so fold those too — otherwise every
+// template opened from the Screens menu becomes its own "screen".
+const routeKey = (raw) => foldIds(String(raw || "").replace(/\/uc-[a-z0-9-]+(?=\/|$|\()/gi, "/:id"));
 
 export function App() {
   const [screen, setScreen] = useState("surveys");
@@ -44,6 +52,14 @@ export function App() {
   // A non-editable survey (Live/Closed) the user clicked — shows the
   // out-of-scope dialog pointing at a separate prototype.
   const [outOfScope, setOutOfScope] = useState(null);
+
+  // Every step of the prototype has a URL (see data/routes.js). `builderDialog`
+  // is what the Builder reports it has open; `openInBuilder` asks it to open one
+  // after a deep link. The hash is read ONCE, before the route-writing effect
+  // below gets a chance to overwrite it.
+  const [builderDialog, setBuilderDialog] = useState(null);
+  const [openInBuilder, setOpenInBuilder] = useState(null);
+  const initialHash = useRef(typeof window !== "undefined" ? window.location.hash : "");
 
   // When changing a template from the builder, keep the same survey id so it
   // updates in place (a fresh id is minted only for a brand-new survey).
@@ -132,7 +148,7 @@ export function App() {
   // point). Resets every layer first, then builds the requested one.
   const gotoUseCase = (key) => {
     setModal(false); setPending(null); setEditing(false); setEditCustom(null);
-    setRemoveConfirm(null); setOutOfScope(null); setChanging(false);
+    setRemoveConfirm(null); setOutOfScope(null); setChanging(false); setOpenInBuilder(null);
     const t = TEMPLATES[0];
     const templateSurvey = () => ({ ...surveyFromTemplate(t.id, null, t.name), id: "uc-" + t.id, name: t.name });
     switch (key) {
@@ -146,12 +162,43 @@ export function App() {
         break;
       }
       case "select-questions": setSurvey(templateSurvey()); setScreen("builder"); setEditTab("questions"); setEditing(true); break;
+      // The theme details dialog is a screen of its own (a theme tag opens it);
+      // the Builder owns it, so ask it to open one — Engagement is in every
+      // template-built survey.
+      case "theme-details": setSurvey(templateSurvey()); setScreen("builder"); setOpenInBuilder({ dialog: "theme", arg: "Engagement" }); break;
       default: setScreen("surveys");
     }
   };
 
-  // Open at the remembered start point (the toolbar's Start at menu).
+  // Open where the LINK says, and only otherwise at the remembered start point
+  // (the toolbar's Start menu). A deep link has to win: someone pasted it to
+  // land on that exact step.
+  const booted = useRef(false);
   useEffect(() => {
+    if (booted.current) return; booted.current = true;
+    const fromUrl = parse(initialHash.current);
+    if (fromUrl && fromUrl.screen === "builder") {
+      gotoUseCase("builder");
+      const d = fromUrl.dialog;
+      if (d === "select-questions") { setEditTab(fromUrl.arg || "questions"); setEditing(true); }
+      else if (d === "custom-question" && fromUrl.arg) {
+        // The survey gotoUseCase just built is not in state yet, so reach for
+        // the question through the same builder the use case uses.
+        setSurvey(sv => { const q = sv && sv.pool.find(x => x.id === fromUrl.arg); if (q) setEditCustom(q); return sv; });
+      }
+      // Everything else on the builder is the Builder's own dialog.
+      else if (d && d !== "keep-theme-complete") setOpenInBuilder({ dialog: d, arg: fromUrl.arg });
+      return;
+    }
+    if (fromUrl && fromUrl.dialog) {
+      const d = fromUrl.dialog;
+      if (d === "choose-template") { gotoUseCase("template-dialog"); return; }
+      if (d === "create-draft-survey") { gotoUseCase("name-dialog"); return; }
+      if (d === "out-of-scope" && fromUrl.arg) {
+        const row = SEED_SURVEYS.find(r => r.id === fromUrl.arg);
+        if (row) { setOutOfScope(row); return; }
+      }
+    }
     const start = getStartAt(PROTO.PROTO_STORAGE_PREFIX, "surveys");
     if (start && start !== "surveys") gotoUseCase(start);
   }, []); // eslint-disable-line
@@ -198,9 +245,25 @@ export function App() {
     };
   });
 
+  // The app-level dialogs, in the order they can be layered; dialog state that
+  // lives inside the Builder is reported up via `builderDialog`.
+  const appDialog = () => {
+    if (modal) return { dialog: "choose-template" };
+    if (pending) return { dialog: "create-draft-survey" };
+    if (editing) return { dialog: "select-questions", arg: editTab === "questions" ? undefined : editTab };
+    if (editCustom) return { dialog: "custom-question", arg: editCustom.id };
+    if (removeConfirm) return { dialog: "keep-theme-complete", arg: removeConfirm.q.id };
+    if (outOfScope) return { dialog: "out-of-scope", arg: outOfScope.id };
+    if (screen === "builder" && builderDialog) return builderDialog;
+    return {};
+  };
+  const route = { screen, surveyId: survey && survey.id, ...appDialog() };
+  useEffect(() => { writeRoute(route); },
+    [screen, survey && survey.id, modal, pending, editing, editTab, editCustom, removeConfirm, outOfScope, builderDialog]); // eslint-disable-line
+
   return (
     <div className="proto-shell">
-      <PrototypeBar config={PROTO} versions={VERSIONS}
+      <PrototypeBar config={PROTO} versions={VERSIONS} routeKey={routeKey}
         onUseCase={gotoUseCase} edges={edges} onToggleEdge={toggleEdge}
         varState={variantsOn} onToggleVariant={toggleVariant} />
       <div className="app">
@@ -212,7 +275,8 @@ export function App() {
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveCustomTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions}
-            onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }} />}
+            onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }}
+            openDialog={openInBuilder} onDialogChange={setBuilderDialog} />}
 
       {modal && <TemplateModal changing={changing} onClose={closeModal} onUse={useTemplate} onScratch={startScratch} />}
       {pending && <NameSurveyDialog suggested={pending.suggested} isTemplate={pending.survey.isTemplate}

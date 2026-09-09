@@ -3,6 +3,11 @@
 // a setting here and its menu shows up, no extra wiring in the bar.
 export const PROTO_STORAGE_PREFIX = "cyos";
 
+// The Figma file this prototype is built from — the toolbar's Figma button
+// opens it. Committed here so everyone opening the bar lands on the same
+// file; the bar only accepts figma.com http(s) links.
+export const FIGMA = "https://www.figma.com/design/B19WubRJGWHDEvi7L02dvW/CYOS-upgrade?node-id=6179-23273&t=NthCqsHh6tmQBYNo-1";
+
 
 export const START_POINTS = [
   { key: "surveys", label: "Surveys list" },
@@ -19,6 +24,7 @@ export const USE_CASES = [
   { key: "builder", label: "Questionnaire", desc: "A draft built from a template" },
   { key: "builder-scratch", label: "Questionnaire: empty", desc: "Nothing added yet" },
   { key: "select-questions", label: "Add questions", desc: "Library, custom, themes, templates" },
+  { key: "theme-details", label: "Theme details", desc: "What a theme covers, opened from a question's theme tag" },
 ];
 
 // Design variants under exploration (the toolbar's Variants menu). Once one

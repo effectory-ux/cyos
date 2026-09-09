@@ -226,7 +226,7 @@ function reconcileLayout(prev, groups) {
   return next;
 }
 
-export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, showTemplateTags = true }) {
+export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onOpenTemplates, showTemplateTags = true, openDialog, onDialogChange }) {
   const { name, isTemplate, selectedIds, pool } = survey;
   const [menuKey, setMenuKey] = useState(null);
   const [rename, setRename] = useState(null);
@@ -251,6 +251,22 @@ export function Builder({ survey, onEditQuestions, onExit, onSaveClose, onRemove
   })();
   const themeMap = {}; themeGroups.forEach(t => { themeMap[t.name] = t; });
   const detailTheme = themeGroups.find(t => t.name === themeDetail) || null;
+
+  // The Builder's own dialogs are part of the URL too: it reports which one is
+  // open, and opens the one a deep link asks for (see data/routes.js).
+  useEffect(() => {
+    if (!onDialogChange) return;
+    if (rename) onDialogChange({ dialog: "rename-survey" });
+    else if (topicWarn) onDialogChange({ dialog: "remove-topic", arg: topicWarn.label });
+    else if (themeDetail) onDialogChange({ dialog: "theme", arg: themeDetail });
+    else onDialogChange(null);
+  }, [rename, topicWarn, themeDetail]); // eslint-disable-line
+  useEffect(() => {
+    if (!openDialog) return;
+    // Only the dialogs worth restoring: a rename or a remove-topic warning is a
+    // confirmation about something the user was mid-way through, not a place.
+    if (openDialog.dialog === "theme" && openDialog.arg) setThemeDetail(openDialog.arg);
+  }, [openDialog]); // eslint-disable-line
   const groups = groupQuestions(chosen, "library");
   // Header meta: a theme is "active" when every one of its questions is selected
   // (a scored theme); a template is "active" when its whole question set is in.
