@@ -1,5 +1,6 @@
 // prototype-versions.js — the CYOS prototype registry: every version of this
-// flow the shared toolbar (toolbar/) can switch between. This file is
+// flow the shared toolbar (the `prototype-toolbar` package) can switch
+// between. This file is
 // HOST-specific by design — the toolbar itself stays generic and receives
 // this list through the PrototypeBar `versions` prop and the protoVersions
 // vite plugin. A project with a single version simply passes nothing.

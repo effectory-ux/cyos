@@ -1,6 +1,7 @@
 // proto-config.js — what THIS prototype puts in the (generic) prototype
 // toolbar: the states worth jumping to, and where the prototype can open.
-// The toolbar component itself lives in src/proto/ and knows nothing of CYOS.
+// The toolbar itself is the `prototype-toolbar` package and knows nothing of
+// CYOS — everything specific to this prototype arrives as props.
 export const PROTO_STORAGE_PREFIX = "cyos";
 
 
