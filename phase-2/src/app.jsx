@@ -9,12 +9,9 @@ import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus, themesOf } from "./components/shared.jsx";
 import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
 import { libraryPool } from "./data/qlib.js";
-// The prototype toolbar lives at the repo root (toolbar/) so every phase —
-// and any other project — can use the same one.
 import { PrototypeBar, getStartAt } from "prototype-toolbar/PrototypeBar.jsx";
 import { VERSIONS } from "../../prototype-versions.js";
 import { PROTO_STORAGE_PREFIX, START_POINTS, USE_CASES, VARIANTS } from "./data/proto-config.js";
-import { PIWIK_EVENTS, PIWIK_FUNNELS } from "./data/piwik-events.js";
 import { serialize, writeRoute, parse } from "./data/routes.js";
 import { defaultEdges, EDGE_CASES } from "./data/edgecases.js";
 import { designById } from "./data/designs.js";
@@ -460,7 +457,6 @@ export function App() {
     <div className="proto-shell">
       <PrototypeBar useCases={USE_CASES} startPoints={START_POINTS} edgeCases={EDGE_CASES} variants={VARIANTS}
         storagePrefix={PROTO_STORAGE_PREFIX} versions={VERSIONS}
-        events={PIWIK_EVENTS} funnels={PIWIK_FUNNELS}
         onUseCase={gotoUseCase} edges={edges} onToggleEdge={toggleEdge}
         varState={variantsOn} onToggleVariant={toggleVariant} />
       <div className="app">

@@ -204,7 +204,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below" />}
             {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
           </div>
-          <h2 className="dialog-title" id="bmq-title" data-t={"q-" + q.id}>{title}</h2>
+          <h2 className="dialog-title" id="bmq-title">{title}</h2>
           <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
         </div>
 

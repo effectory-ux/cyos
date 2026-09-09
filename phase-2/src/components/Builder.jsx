@@ -29,7 +29,7 @@ function RenameDialog({ title, label, value, note, tid, onCancel, onSave }) {
         </div>
         <div>
           <span className="cq-lbl">{label}</span>
-          <input className="tf" autoFocus value={v} placeholder={label} data-t={tid}
+          <input className="tf" autoFocus value={v} placeholder={label}
             onChange={e => setV(e.target.value)} onKeyDown={e => { if (e.key === "Enter") save(); }} />
           {note && <div className="qsp-note" style={{ marginTop: 8 }}><Icon name="info" size={14} />{note}</div>}
         </div>
@@ -141,7 +141,7 @@ function TopNav({ name, onRename, compact, mobile }) {
       padding: "12px 12px 12px 16px", flex: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <span className="tag tag-draft">Draft</span>
-        <h1 data-t="1" style={{ margin: 0, fontWeight: 600, fontSize: 16, lineHeight: "24px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: "0 1 auto", minWidth: 64, maxWidth: 340 }}>{name}</h1>
+        <h1 style={{ margin: 0, fontWeight: 600, fontSize: 16, lineHeight: "24px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: "0 1 auto", minWidth: 64, maxWidth: 340 }}>{name}</h1>
         {/* On a narrow window the name itself is what matters; the action
             keeps its icon and moves its label into the tooltip. */}
         {compact ? (
@@ -227,7 +227,7 @@ function BuilderRow({ q, meta, tr, showDesc, onRemove, onEdit, onSettings, onRes
           <Icon name="drag-drop" size={16} /></button>
       </Tooltip>
       <div className="qrow-main">
-        <div data-t={"q-" + q.id} style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{text}</div>
+        <div style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{text}</div>
         {showDesc && desc && <div className="qrow-desc">{tr(`q:${q.id}:desc`, desc)}</div>}
       </div>
       <div className="qrow-meta">
@@ -823,7 +823,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
               <>
                 <div className="cq-menu-scrim" onMouseDown={() => setBarMenu(null)} />
                 <div className="menu ctxbar-menu is-right" role="menu">
-                  <div className="menu-item" role="menuitem" data-piwik="builder.add-questions" onClick={() => { setBarMenu(null); onEditQuestions(); }}>
+                  <div className="menu-item" role="menuitem" onClick={() => { setBarMenu(null); onEditQuestions(); }}>
                     <span className="menu-item-icon"><Icon name="list-unordered" size={16} /></span>
                     <span className="menu-item-body"><span className="menu-item-title">Add questions</span></span>
                   </div>
@@ -848,8 +848,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             onClick={e => { if (e.target.closest("button")) return; setIntroOpen(true); }}
             onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setIntroOpen(true); } }}>
             <div className="intro-card-body">
-              <div className="intro-card-title" data-t="2">{tr("intro:name", introTitle)}</div>
-              <div className="intro-card-desc" data-t="3">{tr("intro:desc", introDesc)}</div>
+              <div className="intro-card-title">{tr("intro:name", introTitle)}</div>
+              <div className="intro-card-desc">{tr("intro:desc", introDesc)}</div>
             </div>
             <Tooltip label="Edit intro screen" pos="is-left">
               <button className="ib ib-36 ib-tertiary" aria-label="Edit intro screen" onClick={() => setIntroOpen(true)}><Icon name="edit" size={16} /></button>
@@ -894,7 +894,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     onDragStart={startSection(s.key, vi)} onDragEnd={clearDrag} onClick={e => e.preventDefault()}>
                     <Icon name="drag-drop" size={16} /></button>
                 </Tooltip>
-                <h2 className="qsec-title" data-t={"topic-" + s.key}>{tr(`topic:${s.key}:name`, topicName(s.key))}</h2>
+                <h2 className="qsec-title">{tr(`topic:${s.key}:name`, topicName(s.key))}</h2>
                 <div className="spacer" />
                 <span className="qsec-count">{s.items.length} {s.items.length === 1 ? "question" : "questions"}</span>
                 <div className="qsec-menu-wrap">
@@ -905,7 +905,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     <>
                       <div style={{ position: "fixed", inset: 0, zIndex: 1 }} onMouseDown={() => setMenuKey(null)} />
                       <div className="menu" role="menu" style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, width: 280, zIndex: 2 }}>
-                        <div className="menu-item" role="menuitem" data-piwik="builder.add-questions-topic"
+                        <div className="menu-item" role="menuitem"
                           onClick={() => { setMenuKey(null); onEditQuestions && onEditQuestions("questions", { key: s.key, label: topicName(s.key) }); }}>
                           <span className="menu-item-icon"><Icon name="plus" size={16} /></span>
                           <span className="menu-item-body"><span className="menu-item-title">Add questions to this topic</span></span>
@@ -948,7 +948,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     button. Dragging into the section still works — the drop
                     handlers live on the body around it. */}
                 {s.items.length === 0 && (
-                  <button className="qsec-empty is-action" data-piwik="builder.add-questions-topic" onClick={() => onEditQuestions && onEditQuestions("questions", { key: s.key, label: topicName(s.key) })}>
+                  <button className="qsec-empty is-action" onClick={() => onEditQuestions && onEditQuestions("questions", { key: s.key, label: topicName(s.key) })}>
                     <Icon name="plus" size={16} />Add questions to this topic
                   </button>
                 )}
@@ -999,9 +999,9 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           <Icon name="chevron-left" size={16} />{mobile ? "Back" : "Previous step"}</button>
         <div className="spacer" />
         {!mobile && <span className="text-medium text-subdued">Last saved: just now</span>}
-        <button className="btn btn-secondary" data-piwik="builder.save-close" onClick={onSaveClose}>{mobile ? "Save" : <>Save &amp; close</>}</button>
+        <button className="btn btn-secondary" onClick={onSaveClose}>{mobile ? "Save" : <>Save &amp; close</>}</button>
         <button className={"btn btn-primary" + (chosen.length === 0 ? " is-disabled" : "")} disabled={chosen.length === 0}
-          data-piwik="builder.next" onClick={() => {}}>{mobile ? "Next" : "Next step"}<Icon name="arrow-right" size={16} /></button>
+ onClick={() => {}}>{mobile ? "Next" : "Next step"}<Icon name="arrow-right" size={16} /></button>
         {!mobile && <button className="btn btn-secondary is-disabled" disabled><Icon name="send" size={16} />Plan survey</button>}
       </div>
 
