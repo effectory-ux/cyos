@@ -2,7 +2,7 @@
 
 Every phase gets the shared prototype toolbar as the npm package
 `prototype-toolbar`, installed from github.com/effectory-ux/prototype-toolbar
-and pinned to a release line (`#semver:^1.0.0` in each phase's package.json).
+and pinned to a release line (`#semver:^2.0.0` in each phase's package.json).
 Rules:
 
 - **Don't edit anything under `node_modules/prototype-toolbar`.** Change the
@@ -11,9 +11,17 @@ Rules:
   files. To try an unreleased toolbar here, start a phase with
   `PROTO_TOOLBAR_DEV=~/Claude/prototype-toolbar npm --prefix phase-2 run dev`
   (the vite config aliases the package to that clone).
-- The toolbar shows for any URL carrying `?prototype-toolbar` (appendable at
-  the end of the link, hash route included); links of the older
-  `?<key>-toolbar-active` form are dead since toolbar 2.0.0.
+- The toolbar shows for any URL carrying `?prototype-toolbar`. It is a query
+  parameter, so in CYOS it goes **after the page, before the `#`** —
+  `…/phase-2/?prototype-toolbar#/surveys/s3/questionnaire`. Sloppier forms
+  (at the very end, after the hash route) are tidied into that one on
+  arrival, but only on a real page load: pasting the flag onto a route you
+  already have open just changes the fragment, so reload once. Links of the
+  older `?<key>-toolbar-active` form are dead since toolbar 2.0.0.
+- The flag and the `(dialog:…)` route are independent: the flag lives in the
+  query, the route in the hash, and `parse()` in `src/data/routes.js` drops
+  anything from the first `?` so a stray flag can never eat the dialog
+  segment. Keep both halves intact when touching either.
 - CYOS's own settings for the bar live in `prototype-versions.js` (root) and
   each phase's `src/data/proto-config.js` and `src/data/piwik-events.js`.
 - Imports are `prototype-toolbar/PrototypeBar.jsx` and the two vite plugins
