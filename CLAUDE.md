@@ -2,7 +2,11 @@
 
 Every phase gets the shared prototype toolbar as the npm package
 `prototype-toolbar`, installed from github.com/effectory-ux/prototype-toolbar
-and pinned to a release line (`#semver:^2.0.0` in each phase's package.json).
+and pinned to a release line in each phase's package.json. Phase 2 is on
+`#semver:^3.0.0`; phase 1 and phase 3 are still on `^2.0.0`, so they keep the
+Events and Edit buttons until someone moves them across (a major does not
+arrive via `npm update` — it needs `npm install …#semver:^3.0.0` plus the
+plugin rename below and dropping any `events`/`funnels` props).
 Rules:
 
 - **Don't edit anything under `node_modules/prototype-toolbar`.** Change the
@@ -23,9 +27,14 @@ Rules:
   anything from the first `?` so a stray flag can never eat the dialog
   segment. Keep both halves intact when touching either.
 - CYOS's own settings for the bar live in `prototype-versions.js` (root) and
-  each phase's `src/data/proto-config.js` and `src/data/piwik-events.js`.
+  each phase's `src/data/proto-config.js`.
 - Imports are `prototype-toolbar/PrototypeBar.jsx` and the two vite plugins
-  `prototype-toolbar/vite-plugin-proto-edits.js` / `…-proto-versions.js`.
+  `prototype-toolbar/vite-plugin-proto-screens.js` / `…-proto-versions.js`.
+- **Toolbar 3.0.0 dropped the Piwik event layer and inline text editing.**
+  Both need dedicated time before they come back, so don't reintroduce
+  `data-piwik` markers, `data-t` ids, a `piwik-events.js` registry or a
+  `proto-edits.json`. The old spec is in git if it is ever picked up again.
+  The bar is Screens, Edge cases, Variants, Figma and Share.
 
 ### Keep the toolbar's knowledge of this prototype current
 
