@@ -1,0 +1,191 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Poppins', system-ui, sans-serif; color: #192743; }
+    a { color: #0a9d99; } a:hover { color: #0c827f; }
+  </style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; flex-direction: column; background: {{pageBg}}; overflow: hidden">
+
+  <!-- Top nav: Draft tag, survey name, steps -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 12px 16px; background: #ffffff">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <span style="padding: 4px 8px; border-radius: 4px; background: #e1e4e8; color: rgba(25,39,67,0.8); font-size: 12px; font-weight: 600; line-height: 16px">Draft</span>
+      <h1 style="margin: 0; font-size: 16px; font-weight: 600; line-height: 24px">Smart Organization Scan</h1>
+      <div style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; color: rgba(25,39,67,0.8); font-size: 14px; font-weight: 500">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M13.5 3.5l3 3L7 16H4v-3l9.5-9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        Edit name
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px 8px 8px; border-radius: 12px; background: #d2f8f6">
+        <div style="display: flex; align-items: center; height: 28px">
+          <span style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ffffff; background: #0a9d99; color: #ffffff; display: grid; place-items: center; font-size: 13px; font-weight: 600; margin-right: -5px; position: relative; z-index: 2; box-sizing: border-box">1</span>
+          <span style="background: #d2f8f6; border: 2px solid #ffffff; border-radius: 6px; padding: 6px; display: flex"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="4" y="2.5" width="12" height="15" rx="2" stroke="#192743" stroke-width="1.6"/><path d="M7.5 7h5M7.5 10h5M7.5 13h3" stroke="#192743" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+        </div>
+        <span style="font-size: 14px; font-weight: 600; line-height: 22.4px">Questionnaire</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px 8px 8px; border-radius: 12px">
+        <div style="display: flex; align-items: center; height: 28px">
+          <span style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ffffff; background: #e1e4e8; color: rgba(25,39,67,0.8); display: grid; place-items: center; font-size: 13px; font-weight: 600; margin-right: -5px; position: relative; z-index: 2; box-sizing: border-box">2</span>
+          <span style="background: #e1e4e8; border: 2px solid #ffffff; border-radius: 6px; padding: 6px; display: flex"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="7" r="3" stroke="#192743" stroke-width="1.6"/><path d="M2.5 17c.6-3 2.4-4.5 4.5-4.5S10.9 14 11.5 17M13 7.5a2.5 2.5 0 100-5M14 12.6c1.9.4 3.1 1.8 3.5 4.4" stroke="#192743" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+        </div>
+        <span style="font-size: 14px; font-weight: 600; line-height: 22.4px; color: rgba(25,39,67,0.8)">Participants</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px 8px 8px; border-radius: 12px">
+        <div style="display: flex; align-items: center; height: 28px">
+          <span style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ffffff; background: #e1e4e8; color: rgba(25,39,67,0.8); display: grid; place-items: center; font-size: 13px; font-weight: 600; margin-right: -5px; position: relative; z-index: 2; box-sizing: border-box">3</span>
+          <span style="background: #e1e4e8; border: 2px solid #ffffff; border-radius: 6px; padding: 6px; display: flex"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="13" rx="2" stroke="#192743" stroke-width="1.6"/><path d="M3 8h14M7 2.5v3M13 2.5v3" stroke="#192743" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+        </div>
+        <span style="font-size: 14px; font-weight: 600; line-height: 22.4px; color: rgba(25,39,67,0.8)">Schedule</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px 8px 8px; border-radius: 12px">
+        <div style="display: flex; align-items: center; height: 28px">
+          <span style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ffffff; background: #278747; color: #ffffff; display: grid; place-items: center; margin-right: -5px; position: relative; z-index: 2; box-sizing: border-box"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span style="background: #e1e4e8; border: 2px solid #ffffff; border-radius: 6px; padding: 6px; display: flex"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M12 3l5 5-9 9H3v-5l9-9z" stroke="#192743" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+        </div>
+        <span style="font-size: 14px; font-weight: 600; line-height: 22.4px; color: rgba(25,39,67,0.8)">Layout &amp; e-mails</span>
+      </div>
+      <span style="width: 1px; height: 24px; background: #e1e4e8"></span>
+      <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/></svg></span>
+    </div>
+  </div>
+
+  <!-- Context bar: status left, Display / Design / Add right -->
+  <div style="padding: 16px; background: {{barBg}}; border-top: 1px solid #ffffff; border-bottom: 1px solid #ffffff">
+    <div style="max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: 8px">
+      <div style="display: flex; flex-direction: column; min-width: 0">
+        <span style="font-size: 14px; font-weight: 600; line-height: 22.4px">34 questions selected</span>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.6; color: rgba(25,39,67,0.8)">
+          <span>7 active themes</span>
+          <span style="width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.55"></span>
+          <span>11 minutes</span>
+        </div>
+      </div>
+      <div style="flex: 1"></div>
+      <div style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid #3174db; border-radius: 6px; background: #ffffff; box-shadow: 0 1px 2px rgba(25,39,67,0.04); font-size: 14px; font-weight: 500">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M11 2L4 12h5l-1 6 8-11h-5l1-5z" stroke="#3174db" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        Suggestions (2)
+      </div>
+      <div style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid #bcc1cd; border-radius: 6px; background: #ffffff; box-shadow: 0 1px 2px rgba(25,39,67,0.04); font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.8)">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M2 7h16M7 7v11" stroke="currentColor" stroke-width="1.6"/></svg>
+        Display
+      </div>
+      <div style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid #bcc1cd; border-radius: 6px; background: #ffffff; box-shadow: 0 1px 2px rgba(25,39,67,0.04); font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.8)">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 2a8 8 0 100 16c1.2 0 2-.9 2-2 0-.6-.3-1-.6-1.4-.3-.4-.6-.8-.6-1.4 0-1.1.9-2 2-2h1.4c2 0 3.8-1.4 3.8-3.4C18 4.5 14.4 2 10 2z" stroke="currentColor" stroke-width="1.5"/><circle cx="6.2" cy="8.2" r="1" fill="currentColor"/><circle cx="9.5" cy="5.8" r="1" fill="currentColor"/><circle cx="13.2" cy="7.4" r="1" fill="currentColor"/></svg>
+        Design
+      </div>
+      <div style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid #0c827f; border-radius: 6px; background: #0a9d99; box-shadow: 0 1px 2px rgba(25,39,67,0.04); font-size: 14px; font-weight: 500; color: #ffffff">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Add
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div style="flex: 1; overflow: hidden; padding: 32px 0 0">
+    <div style="max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px">
+
+      <!-- Intro screen card -->
+      <div style="display: flex; align-items: center; gap: 12px; padding: 24px; background: #ffffff; border: 1px solid rgba(25,39,67,0.15); border-radius: 12px; box-shadow: 0 2px 4px rgba(25,39,67,0.04)">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0">
+          <div style="font-size: 20px; font-weight: 600; line-height: 28px">Smart Organization Scan</div>
+          <div style="font-size: 14px; font-weight: 400; line-height: 20px; color: rgba(25,39,67,0.65)">Add a short welcome for participants</div>
+        </div>
+        <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M13.5 3.5l3 3L7 16H4v-3l9.5-9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+      </div>
+
+      <!-- Topic: Job satisfaction -->
+      <div style="display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e1e4e8; border-radius: 12px; box-shadow: 0 2px 4px rgba(25,39,67,0.04); overflow: hidden">
+        <div style="display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 12px; border-radius: 11px 11px 0 0">
+          <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.5)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="5" r="1.3" fill="currentColor"/><circle cx="13" cy="5" r="1.3" fill="currentColor"/><circle cx="7" cy="10" r="1.3" fill="currentColor"/><circle cx="13" cy="10" r="1.3" fill="currentColor"/><circle cx="7" cy="15" r="1.3" fill="currentColor"/><circle cx="13" cy="15" r="1.3" fill="currentColor"/></svg></span>
+          <h2 style="margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; flex: 1">Job satisfaction</h2>
+          <span style="font-size: 14px; font-weight: 500; white-space: nowrap">1 question</span>
+          <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/></svg></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid #e1e4e8">
+          <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.5)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="5" r="1.3" fill="currentColor"/><circle cx="13" cy="5" r="1.3" fill="currentColor"/><circle cx="7" cy="10" r="1.3" fill="currentColor"/><circle cx="13" cy="10" r="1.3" fill="currentColor"/><circle cx="7" cy="15" r="1.3" fill="currentColor"/><circle cx="13" cy="15" r="1.3" fill="currentColor"/></svg></span>
+          <div style="flex: 1; font-size: 14px; font-weight: 500; line-height: 22.4px">Day to day, I find my work enjoyable</div>
+          <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ffffff; background: #278747; color: #ffffff; font-size: 12px; font-weight: 600; line-height: 16px">Engagement</span>
+          <span style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ffffff; background: #b6f2f1; display: grid; place-items: center"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="4" cy="10" r="1.6" fill="#166764"/><circle cx="10" cy="10" r="1.6" fill="#166764"/><circle cx="16" cy="10" r="1.6" fill="#166764"/></svg></span>
+          <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/></svg></span>
+        </div>
+      </div>
+
+      <!-- Topic: Tools & resources -->
+      <div style="display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e1e4e8; border-radius: 12px; box-shadow: 0 2px 4px rgba(25,39,67,0.04); overflow: hidden">
+        <div style="display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 12px">
+          <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.5)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="5" r="1.3" fill="currentColor"/><circle cx="13" cy="5" r="1.3" fill="currentColor"/><circle cx="7" cy="10" r="1.3" fill="currentColor"/><circle cx="13" cy="10" r="1.3" fill="currentColor"/><circle cx="7" cy="15" r="1.3" fill="currentColor"/><circle cx="13" cy="15" r="1.3" fill="currentColor"/></svg></span>
+          <h2 style="margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; flex: 1">Tools &amp; resources</h2>
+          <span style="font-size: 14px; font-weight: 500; white-space: nowrap">2 questions</span>
+          <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/></svg></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid #e1e4e8">
+          <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.5)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="5" r="1.3" fill="currentColor"/><circle cx="13" cy="5" r="1.3" fill="currentColor"/><circle cx="7" cy="10" r="1.3" fill="currentColor"/><circle cx="13" cy="10" r="1.3" fill="currentColor"/><circle cx="7" cy="15" r="1.3" fill="currentColor"/><circle cx="13" cy="15" r="1.3" fill="currentColor"/></svg></span>
+          <div style="flex: 1; font-size: 14px; font-weight: 500; line-height: 22.4px">I'm kitted out with the tools and systems my job calls for</div>
+          <span style="display: inline-flex; align-items: center; gap: 4px; max-width: 130px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ffffff; background: #278747; color: #ffffff; font-size: 12px; font-weight: 600; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Systems &amp; structu…</span>
+          <span style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ffffff; background: #e1e4e8; display: grid; place-items: center"><svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M10 2v16M3 6l14 8M17 6L3 14" stroke="#192743" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+          <span style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ffffff; background: #b6f2f1; display: grid; place-items: center"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="4" cy="10" r="1.6" fill="#166764"/><circle cx="10" cy="10" r="1.6" fill="#166764"/><circle cx="16" cy="10" r="1.6" fill="#166764"/></svg></span>
+          <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/></svg></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid #e1e4e8">
+          <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.5)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="5" r="1.3" fill="currentColor"/><circle cx="13" cy="5" r="1.3" fill="currentColor"/><circle cx="7" cy="10" r="1.3" fill="currentColor"/><circle cx="13" cy="10" r="1.3" fill="currentColor"/><circle cx="7" cy="15" r="1.3" fill="currentColor"/><circle cx="13" cy="15" r="1.3" fill="currentColor"/></svg></span>
+          <div style="flex: 1; font-size: 14px; font-weight: 500; line-height: 22.4px">The information I rely on is easy to track down</div>
+          <span style="display: inline-flex; align-items: center; gap: 4px; max-width: 130px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ffffff; background: #278747; color: #ffffff; font-size: 12px; font-weight: 600; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Systems &amp; structu…</span>
+          <span style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ffffff; background: #e1e4e8; display: grid; place-items: center"><svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M10 2v16M3 6l14 8M17 6L3 14" stroke="#192743" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+          <span style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ffffff; background: #b6f2f1; display: grid; place-items: center"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="4" cy="10" r="1.6" fill="#166764"/><circle cx="10" cy="10" r="1.6" fill="#166764"/><circle cx="16" cy="10" r="1.6" fill="#166764"/></svg></span>
+          <span style="width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; color: rgba(25,39,67,0.8)"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/></svg></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: #ffffff; border-top: 1px solid #e1e4e8; box-shadow: 0 -4px 12px rgba(25,39,67,0.04)">
+    <div style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid #bcc1cd; border-radius: 6px; background: #ffffff; font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.8)">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Previous step
+    </div>
+    <div style="flex: 1"></div>
+    <span style="font-size: 12px; line-height: 19.2px; color: rgba(25,39,67,0.8)">Last saved: just now</span>
+    <div style="display: inline-flex; align-items: center; height: 36px; padding: 0 12px; border: 1px solid #bcc1cd; border-radius: 6px; background: #ffffff; font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.8)">Save &amp; close</div>
+    <div style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid #0c827f; border-radius: 6px; background: #0a9d99; font-size: 14px; font-weight: 500; color: #ffffff">
+      Next step
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M8 4l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <span style="width: 1px; height: 36px; background: #e6e9ee"></span>
+    <div style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 6px; background: rgba(25,39,67,0.1); font-size: 14px; font-weight: 500; color: rgba(25,39,67,0.3)">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M17 3L3 9.5l5 2 1.5 5.5L17 3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      Plan survey
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"design":{"editor":"enum","default":"neutral","options":["neutral","effectory","sky"],"section":"Survey design"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // The page tints with the survey design, like the prototype: a light
+    // shade of the design color, with the context bar as a wash over it.
+    const looks = {
+      neutral:   { pageBg: '#f8f8f9', barBg: 'rgba(25,39,67,0.05)' },
+      effectory: { pageBg: '#fef3d4', barBg: 'rgba(255,255,255,0.30)' },
+      sky:       { pageBg: '#d1ecf9', barBg: 'rgba(255,255,255,0.30)' },
+    };
+    const look = looks[this.props.design ?? 'neutral'] || looks.neutral;
+    return { pageBg: look.pageBg, barBg: look.barBg };
+  }
+}
+</script>
+</body>
+</html>

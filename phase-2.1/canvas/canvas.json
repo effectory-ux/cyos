@@ -1,0 +1,14 @@
+{
+  "artboards": [
+    { "file": "SurveysList.dc.html", "x": 0, "y": 0, "w": 1440, "h": 900, "title": "Surveys list" },
+    { "file": "Main.dc.html", "x": 1540, "y": 0, "w": 1440, "h": 900, "title": "Questionnaire builder" },
+    { "file": "Templates.dc.html", "x": 0, "y": 1040, "w": 1240, "h": 900, "title": "Choose a template" },
+    { "file": "QuestionDialog.dc.html", "x": 1340, "y": 1040, "w": 1240, "h": 900, "title": "Benchmarked question" },
+    { "file": "CustomQuestion.dc.html", "x": 2680, "y": 1040, "w": 1240, "h": 940, "title": "Custom question + check" },
+    { "file": "IntroScreen.dc.html", "x": 0, "y": 2080, "w": 1240, "h": 900, "title": "Intro screen" }
+  ],
+  "annotations": [
+    { "id": "sync-note", "x": 1540, "y": -170, "w": 320, "text": "Edits here don't flow into the React prototype by themselves.\nWhen you've changed something, tell Claude — it reads this canvas and folds the changes into the prototype code." }
+  ],
+  "launch": { "view": "canvas" }
+}

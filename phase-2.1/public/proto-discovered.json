@@ -1,0 +1,120 @@
+{
+  "version": 12,
+  "savedAt": "2026-09-24T13:54:44.684Z",
+  "editor": "Jente Insing",
+  "entries": {
+    "/projects/:n/survey-list": {
+      "route": "/projects/:n/survey-list",
+      "example": "#/projects/31092/survey-list",
+      "label": "survey-list",
+      "count": 6,
+      "firstSeen": "2026-09-08T13:07:17.760Z",
+      "via": {},
+      "lastSeen": "2026-09-24T09:29:20.328Z"
+    },
+    "/surveys/:id/questionnaire": {
+      "route": "/surveys/:id/questionnaire",
+      "example": "#/surveys/s3/questionnaire",
+      "label": "questionnaire",
+      "count": 103,
+      "firstSeen": "2026-09-08T13:15:05.823Z",
+      "via": {
+        "builder": true
+      },
+      "lastSeen": "2026-09-24T13:54:43.878Z"
+    },
+    "/surveys/:id/questionnaire(dialog:question-settings/:arg)": {
+      "route": "/surveys/:id/questionnaire(dialog:question-settings/:arg)",
+      "example": "#/surveys/s3/questionnaire(dialog:question-settings/sos-0-0)",
+      "label": "questionnaire · question-settings",
+      "count": 2,
+      "firstSeen": "2026-09-08T13:15:10.190Z",
+      "via": {
+        "question-settings": true,
+        "question-edited": true
+      },
+      "lastSeen": "2026-09-08T13:15:13.779Z"
+    },
+    "/surveys/:id/questionnaire(dialog:select-questions)": {
+      "route": "/surveys/:id/questionnaire(dialog:select-questions)",
+      "example": "#/surveys/s3/questionnaire(dialog:select-questions)",
+      "label": "questionnaire · select-questions",
+      "count": 56,
+      "firstSeen": "2026-09-08T13:24:26.735Z",
+      "via": {},
+      "lastSeen": "2026-09-24T13:54:40.151Z"
+    },
+    "/projects/:n/survey-list(dialog:choose-template)": {
+      "route": "/projects/:n/survey-list(dialog:choose-template)",
+      "example": "#/projects/31092/survey-list(dialog:choose-template)",
+      "label": "survey-list · choose-template",
+      "count": 1,
+      "firstSeen": "2026-09-24T08:48:32.204Z",
+      "via": {},
+      "lastSeen": "2026-09-24T08:48:32.204Z"
+    },
+    "/projects/:n/survey-list(dialog:create-draft-survey)": {
+      "route": "/projects/:n/survey-list(dialog:create-draft-survey)",
+      "example": "#/projects/31092/survey-list(dialog:create-draft-survey)",
+      "label": "survey-list · create-draft-survey",
+      "count": 1,
+      "firstSeen": "2026-09-24T08:48:34.988Z",
+      "via": {},
+      "lastSeen": "2026-09-24T08:48:34.988Z"
+    },
+    "/surveys/:id/questionnaire(dialog:topic/:arg)": {
+      "route": "/surveys/:id/questionnaire(dialog:topic/:arg)",
+      "example": "#/surveys/d1790239716025/questionnaire(dialog:topic/Job%20satisfaction)",
+      "label": "questionnaire · topic",
+      "count": 1,
+      "firstSeen": "2026-09-24T09:19:22.144Z",
+      "via": {},
+      "lastSeen": "2026-09-24T09:19:22.144Z"
+    },
+    "/surveys/:id/questionnaire(dialog:intro-screen)": {
+      "route": "/surveys/:id/questionnaire(dialog:intro-screen)",
+      "example": "#/surveys/d1790239716025/questionnaire(dialog:intro-screen)",
+      "label": "questionnaire · intro-screen",
+      "count": 1,
+      "firstSeen": "2026-09-24T09:20:54.010Z",
+      "via": {},
+      "lastSeen": "2026-09-24T09:20:54.010Z"
+    },
+    "/projects/:n/survey-list(dialog:out-of-scope/:arg)": {
+      "route": "/projects/:n/survey-list(dialog:out-of-scope/:arg)",
+      "example": "#/projects/31092/survey-list(dialog:out-of-scope/s5)",
+      "label": "survey-list · out-of-scope",
+      "count": 1,
+      "firstSeen": "2026-09-24T09:29:10.767Z",
+      "via": {},
+      "lastSeen": "2026-09-24T09:29:10.767Z"
+    },
+    "/surveys/:id/questionnaire(dialog:add-topic)": {
+      "route": "/surveys/:id/questionnaire(dialog:add-topic)",
+      "example": "#/surveys/s3/questionnaire(dialog:add-topic)",
+      "label": "questionnaire · add-topic",
+      "count": 5,
+      "firstSeen": "2026-09-24T09:30:02.926Z",
+      "via": {},
+      "lastSeen": "2026-09-24T13:24:54.937Z"
+    },
+    "/surveys/:id/questionnaire(dialog:new-custom-question)": {
+      "route": "/surveys/:id/questionnaire(dialog:new-custom-question)",
+      "example": "#/surveys/s3/questionnaire(dialog:new-custom-question)",
+      "label": "questionnaire · new-custom-question",
+      "count": 1,
+      "firstSeen": "2026-09-24T10:16:04.001Z",
+      "via": {},
+      "lastSeen": "2026-09-24T10:16:04.001Z"
+    },
+    "/surveys/:id/questionnaire(dialog:theme/:arg)": {
+      "route": "/surveys/:id/questionnaire(dialog:theme/:arg)",
+      "example": "#/surveys/s3/questionnaire(dialog:theme/Engagement)",
+      "label": "questionnaire · theme",
+      "count": 1,
+      "firstSeen": "2026-09-24T13:54:43.373Z",
+      "via": {},
+      "lastSeen": "2026-09-24T13:54:43.373Z"
+    }
+  }
+}
