@@ -1052,7 +1052,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             then the questionnaire. You always land on the questionnaire. */}
         <div className={"bld-body" + (page === "welcome" ? " is-welcome" : "")}>
         <nav className="bld-pages" aria-label="Survey pages">
-          <div className="bld-pages-title">Survey pages</div>
+          <h2 className="bld-pages-title text-l5">Survey pages</h2>
           <button type="button" className={"bld-page" + (page === "welcome" ? " is-active" : "")} aria-current={page === "welcome" ? "page" : undefined}
             onClick={() => setPage("welcome")}>
             <span className="bld-page-thumb"><span className="bld-page-thumb-in">{welcomeScreen(true)}</span></span>

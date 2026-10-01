@@ -1823,7 +1823,7 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .bld-body { display: flex; align-items: flex-start; gap: var(--spacing-loose); padding-left: var(--spacing-loose); }
 .bld-body > .qpage { flex: 1; min-width: 0; }
 .bld-pages { position: sticky; top: 96px; flex: none; width: 200px; padding-top: 32px; display: flex; flex-direction: column; gap: var(--spacing-base); }
-.bld-pages-title { font-size: 14px; font-weight: 600; color: var(--content-base); }
+.bld-pages-title { margin: 0; }
 .bld-page { display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
 .bld-page-thumb { display: block; width: 100%; aspect-ratio: 16 / 10; box-sizing: border-box; padding: 3px; border-radius: 12px;
   background: var(--bg-base); border: 1px solid var(--border-base); box-shadow: var(--sh-card);
@@ -1849,7 +1849,10 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
 .bld-thumb-row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--border-base);
   font-size: 14px; color: var(--content-base); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bld-thumb-ic { flex: none; width: 22px; height: 22px; border-radius: 6px; background: var(--bg-brand-subtle, #d9f2f1); }
-.ctxbar.has-pages .ctxbar-inner { transform: translateX(calc((200px + var(--spacing-loose) + var(--spacing-loose)) / 2)); }
+/* Shifted with left, not transform: a transform would make this bar the
+   containing block of the menus' fixed scrims, so outside clicks below the
+   bar would no longer close them. */
+.ctxbar.has-pages .ctxbar-inner { position: relative; left: calc((200px + var(--spacing-loose) + var(--spacing-loose)) / 2); }
 
 /* The welcome page: the participant screen, big, on the survey's design
    (neutral without one), with the fixed info and a disabled start button —
@@ -1877,7 +1880,7 @@ input[type="checkbox"].cb.cb-locked:checked { background-color: var(--bg-disable
   .bld-page.is-active { border-color: var(--border-brand); background: var(--bg-brand-subtle-selected, var(--bg-base)); }
   .bld-page-thumb { display: none; }
   .bld-page-lbl { flex-direction: row; gap: 6px; white-space: nowrap; }
-  .ctxbar.has-pages .ctxbar-inner { transform: none; }
+  .ctxbar.has-pages .ctxbar-inner { left: 0; }
 }
 @media (max-width: 760px) { .bld-pages { padding: var(--spacing-base) var(--spacing-base) 0; } .welcome-meta { gap: 16px; } .welcome-screen:not(.is-mini) { min-height: 360px; padding: var(--spacing-loose) var(--spacing-base); } }
 
