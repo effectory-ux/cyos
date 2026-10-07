@@ -13,6 +13,7 @@ page at **https://effectory-ux.github.io/cyos/**:
 | Phase 1 — base survey creation flow | [`phase-1/`](phase-1/) | https://effectory-ux.github.io/cyos/phase-1/ | 5180 |
 | Phase 2 — survey-scoped customization | [`phase-2/`](phase-2/) | https://effectory-ux.github.io/cyos/phase-2/ | 5181 |
 | Phase 2.1 — iteration on phase 2 | [`phase-2.1/`](phase-2.1/) | https://effectory-ux.github.io/cyos/phase-2.1/ | 5183 |
+| Phase 2.2 — iteration on phase 2.1 | [`phase-2.2/`](phase-2.2/) | https://effectory-ux.github.io/cyos/phase-2.2/ | 5184 |
 
 Phase 1's original demo link, https://n33g3k.github.io/cyos-survey-creation-flow-demo/,
 still works — it's now a static redirect (served from the personal
@@ -40,6 +41,7 @@ the site stays byte-identical:
 gh workflow run "Deploy demos" -f target=site-and-research   # landing + research docs only
 gh workflow run "Deploy demos" -f target=phase-2             # phase-2 demo only
 gh workflow run "Deploy demos" -f target=phase-2.1           # phase-2.1 demo only
+gh workflow run "Deploy demos" -f target=phase-2.2           # phase-2.2 demo only
 gh workflow run "Deploy demos" -f target=phase-1             # phase-1 demo only
 gh workflow run "Deploy demos" -f target=everything
 ```

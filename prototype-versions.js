@@ -19,5 +19,6 @@ export const VERSIONS = [
   { key: "phase-1", label: "Phase 1", desc: "Survey creation flow", port: 5180, path: "phase-1", url: LIVE + "phase-1/" },
   { key: "phase-2", label: "Phase 2", desc: "Survey-scoped customization", port: 5181, path: "phase-2", url: LIVE + "phase-2/" },
   { key: "phase-2.1", label: "Phase 2.1", desc: "Iteration on phase 2", port: 5183, path: "phase-2.1", url: LIVE + "phase-2.1/" },
+  { key: "phase-2.2", label: "Phase 2.2", desc: "Iteration on phase 2.1", port: 5184, path: "phase-2.2", url: LIVE + "phase-2.2/" },
   { key: "phase-3", label: "Phase 3", desc: "Question logic on top of phase 2", port: 5182, path: "phase-3", url: LIVE + "phase-3/" },
 ];

@@ -13,6 +13,17 @@
       "port": 5183
     },
     {
+      "name": "cyos-phase-2.2",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "phase-2.2",
+        "run",
+        "dev"
+      ],
+      "port": 5184
+    },
+    {
       "name": "cyos-phase-3",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
