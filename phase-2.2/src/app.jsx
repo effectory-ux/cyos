@@ -97,7 +97,7 @@ export function App() {
   //   topicMeta:    { [topicKey]: { name?, desc?, descHidden? } } — overrides for
   //                 library topics; name/desc for custom topics.
   //   customTopics: [topicKey] — user-created topics (key "ct-…"; may be empty).
-  //   keptTopics:   [topicKey] — library topics a move left empty: they stay on
+  //   keptTopics:   [topicKey] — library topics left empty: they stay on
   //                 the page until removed (see keepEmptied).
   //   qMeta:        { [qId]: { desc?, descHidden?, topic? } } — survey-scoped
   //                 extras on STANDARD questions (custom questions carry their
@@ -108,9 +108,10 @@ export function App() {
   //                 whose English text changed since: kept, but to check.
   const normalize = (sv) => ({ topicMeta: {}, customTopics: [], keptTopics: [], qMeta: {}, i18nEdits: {}, i18nStale: {}, intro: {}, ...sv });
 
-  // A topic only goes when you remove it. One that a move leaves empty (a
-  // drag, Move to, or a move from Add questions) stays on the page, empty and
-  // ready to fill, with its name and description — it doesn't quietly vanish.
+  // A topic only goes when you remove it. One that a move or a removal leaves
+  // empty (a drag, Move to, a move from Add questions, removing its last
+  // question) stays on the page, empty and ready to fill, with its name and
+  // description — it doesn't quietly vanish.
   // Custom topics stay anyway; library ones are remembered in keptTopics until
   // they have questions again.
   const topicsInUse = (s) => {
@@ -374,7 +375,7 @@ export function App() {
   // deselected; custom questions are deleted from the pool entirely).
   const removeFromSurvey = (q) => {
     if (q.required) return; // org-required questions can't be removed
-    setSurvey(s => ({
+    setSurvey(s => keepEmptied(s, {
       ...s,
       selectedIds: s.selectedIds.filter(id => id !== q.id),
       pool: q.custom ? s.pool.filter(p => p.id !== q.id) : s.pool,

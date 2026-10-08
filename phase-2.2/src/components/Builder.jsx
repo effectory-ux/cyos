@@ -572,8 +572,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // dialog keeps grouping by the canonical library topic. Empty custom topics
   // still render as sections so they can be filled by drag or move-to.
   const groups = groupQuestions(chosen.map(q => effTopic(q) !== q.topic ? { ...q, topic: effTopic(q) } : q), "library");
-  // So do library topics a move left empty (keptTopics): a topic goes when
-  // you remove it, not when its last question moves elsewhere.
+  // So do library topics left empty (keptTopics): a topic goes when you
+  // remove it, not when its last question moves elsewhere or is removed.
   [...customTopics, ...keptTopics].forEach(k => { if (!groups.find(g => g.key === k)) groups.push({ key: k, label: k, kind: "topic", items: [] }); });
   // A theme is "active" when every one of its questions is selected — that is
   // what earns a composite score in the results.
@@ -1116,7 +1116,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
 
   // Visible sections, in order — used for up/down bounds & neighbours. Custom
   // topics stay visible while empty (so they can be filled), and so do library
-  // topics a move emptied; a library topic whose last question is removed goes.
+  // topics a move or a removal emptied: a topic goes only when it is removed.
   const keptTopicSet = new Set(keptTopics);
   const visibleSections = layout.filter(s => s.items.length || customTopicSet.has(s.key) || keptTopicSet.has(s.key));
   // A topic being dragged: the order the topics show in meanwhile (the
@@ -1797,7 +1797,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             onSaveTranslation && onSaveTranslation(code, `intro:${part}`, text));
           setIntroOpen(false);
         }} />}
-      {detailTheme && <ThemeDetailsDialog theme={detailTheme} sel={sel}
+      {detailTheme && <ThemeDetailsDialog theme={detailTheme} sel={sel} whereOf={(q) => topicName(effTopic(q))}
         onToggle={(id) => onToggleQuestion && onToggleQuestion(id)}
         onToggleAll={(on) => onSetManyQuestions && onSetManyQuestions(detailTheme.questions.map(x => x.id), on)}
         onClose={() => setThemeDetail(null)} />}

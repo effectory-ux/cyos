@@ -483,10 +483,22 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
   const toFix = check.fails + (match ? 1 : 0);
   // (inTopic keeps Add disabled whatever else is fixed — see the tooltip.)
   const blocked = !editing && (inTopic || (checkBlocks && toFix > 0));
+  // Create is always there to press, as in the topic dialog: pressing it
+  // while something is in the way says what, under the question — and opens
+  // the question check, where it's fixed.
+  const blockedMsg = !blocked ? null : inTopic ? "This question is already in this topic"
+    : match && !check.fails ? "Choose between yours and the existing question first"
+    : `Fix ${toFix === 1 ? "the point" : `the ${toFix} points`} in the question check first`;
   const [adding, setAdding] = useState(false);
   const addQuestion = async () => {
     setAttempted(true);
-    if (textErr || topicErr || optsErr || adding || blocked) return;
+    if (textErr || topicErr || optsErr || adding) return;
+    if (blocked) {
+      if (!isPrimary) selectLanguage(PRIMARY_LANGUAGE.code);
+      setCheckOpen(true);
+      requestAnimationFrame(() => field() && field().focus());
+      return;
+    }
     if (editing) { submit(); return; }
     // Typed and added within the debounce: look once more before it goes in.
     if (checkBlocks && simPending) {
@@ -543,6 +555,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
 
   const textErr = text.trim().length <= 2;
   const showTextErr = attempted && textErr;
+  const showBlocked = attempted && !!blockedMsg && !textErr;
   const topicErr = !topic;
   const cleanOpts = opts.map(o => o.trim()).filter(Boolean);
   // Multiple and single choice share the whole options setup; only the marks
@@ -986,7 +999,7 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                       onFocus={() => isPrimary && setCheckOpen(true)}
                       onBlur={e => { if (!inCheck(e.relatedTarget)) setCheckOpen(false); }}>
                       <AutoTextarea
-                        className={"cq-qfield" + (isPrimary && showTextErr ? " is-error" : "")}
+                        className={"cq-qfield" + (isPrimary && (showTextErr || showBlocked) ? " is-error" : "")}
                         value={shownText} readOnly={working}
                         placeholder={working ? "" : "Write a positive statement here"}
                         aria-describedby={isPrimary && checkOpen ? "cq-check" : undefined}
@@ -1006,6 +1019,9 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
                     </div>
                     {isPrimary && showTextErr && (
                       <div className="tf-err"><Icon name="alert-circle" size={14} />Write a question of at least a few words</div>
+                    )}
+                    {isPrimary && showBlocked && (
+                      <div className="tf-err"><Icon name="alert-circle" size={14} />{blockedMsg}</div>
                     )}
                     {/* Descriptions are per language: a translation translates
                         the primary one, or — where the primary has none — can
@@ -1093,14 +1109,8 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
           <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
           {/* One step: the similarity check already ran while writing, and the
               translations are right here — so the question just goes in. */}
-          {blocked ? (
-            <Tooltip label={inTopic ? "This question is already in this topic" : match && !check.fails ? "Choose between yours and the existing question first" : `Fix ${toFix === 1 ? "the point" : `the ${toFix} points`} in the question check first`} pos="is-above">
-              <button className="btn btn-primary is-disabled" aria-disabled="true" onClick={addQuestion}>Create question</button>
-            </Tooltip>
-          ) : (
-            <button className={"btn btn-primary" + (adding ? " is-disabled" : "")} onClick={addQuestion} aria-busy={adding || undefined}>
-              {editing ? "Save changes" : "Create question"}</button>
-          )}
+          <button className={"btn btn-primary" + (adding ? " is-disabled" : "")} onClick={addQuestion} aria-busy={adding || undefined}>
+            {editing ? "Save changes" : "Create question"}</button>
         </div>
       </div>
 
