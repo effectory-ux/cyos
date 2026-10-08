@@ -16,7 +16,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 import { QTypeIcon, Tooltip, useMediaQuery, MiniSelect } from "./shared.jsx";
-import { useAnchorMenu, AnchorMenu, MenuItem } from "./AnchorMenu.jsx";
+import { useAnchorMenu, AnchorConfirm, CONFIRM_GAP } from "./AnchorMenu.jsx";
 import { QTYPES, TOPICS } from "../data/data.js";
 import { similarQuestions } from "../data/similar.js";
 import { semanticSimilar, warmUpSemantic } from "../data/semantic.js";
@@ -115,7 +115,7 @@ function QuestionCheck({ id, check, match, where, target, inTopic, kept, pending
   const [picked, setPicked] = useState(null);
   // The match's menu when it's already in the questionnaire — the question
   // library's own (see below).
-  const menu = useAnchorMenu(190);
+  const menu = useAnchorMenu(130, "right", CONFIRM_GAP);
   useEffect(() => menu.close(), [match && match.id]); // eslint-disable-line
   const rows = [...check.rules];
   if (showLibrary) rows.push(!check.ready
@@ -139,12 +139,11 @@ function QuestionCheck({ id, check, match, where, target, inTopic, kept, pending
   // nothing, so there's no button for it — only the question whether yours
   // adds something. (The exact same question there is \`inTopic\`, blocked.)
   const nearHere = !inTopic && !!where && !!target && where.keys.includes(target.value);
-  const pick = (fn) => () => { menu.close(); fn(); };
   const useButton = !where
     ? <button className="btn btn-secondary" onClick={onUseMatch}>Use this suggestion</button>
     : canGo
-    ? <button ref={menu.btn} className="btn btn-secondary" aria-haspopup="menu" aria-expanded={!!menu.at}
-        onClick={menu.toggle}>Use this suggestion<Icon name="chevron-down-small" size={16} /></button>
+    ? <button ref={menu.btn} className={"btn btn-secondary" + (menu.at ? " is-pressed" : "")} aria-haspopup="dialog" aria-expanded={!!menu.at}
+        onClick={menu.toggle}>Use this suggestion</button>
     : <Tooltip label={target ? `Already in “${target.label}”` : "Already in your questionnaire — choose a topic above to add it to"} pos="is-above" float>
         <button className="btn btn-secondary is-disabled" aria-disabled="true">Use this suggestion</button>
       </Tooltip>;
@@ -167,13 +166,9 @@ function QuestionCheck({ id, check, match, where, target, inTopic, kept, pending
           <button className="btn btn-tertiary" onClick={onKeepMine}>Keep mine anyway</button>
         </>}
       </div>
-      {menu.at && (
-        // The question library's menu for a question that's already in.
-        <AnchorMenu at={menu.at} width={320}>
-          <div className="menu-header">This question is already in the {where.keys.length > 1 ? "topics" : "topic"} {where.label}</div>
-          <MenuItem icon="arrow-right" title={`Move to “${target.label}”`} onPick={pick(onMoveMatch)} />
-        </AnchorMenu>
-      )}
+      {/* The same confirm the question library shows for a question that's in. */}
+      {menu.at && <AnchorConfirm at={menu.at} anchor={menu.btn} onClose={menu.close}
+        text={`This question is already in your questionnaire, under ${where.label}`} actions={[{ label: `Move to “${target.label}”`, primary: true, onPick: onMoveMatch }]} />}
     </div>
   );
   return (
@@ -338,27 +333,6 @@ function ManualConflictDialog({ langs, onKeep, onOverwrite }) {
 // itself. The confirmation offers a choice, so it has to outlast reading it.
 const CHECK_MS = 1400;
 const DONE_MS = 6000;
-
-// After creating: the languages you didn't visit are translated in the
-// background, and this says they're done and where to check. Dismisses
-// itself; the close button is always there.
-export function TranslatingNotice({ langs, onClose }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 8000);
-    return () => clearTimeout(t);
-  }, []); // eslint-disable-line
-  const labels = langs.map(l => l.label);
-  const names = labels.length < 2 ? labels[0] : labels.slice(0, -1).join(", ") + " and " + labels.at(-1);
-  return (
-    <div className="sysnotif-stack">
-      <div className="sysnotif" role="status" aria-live="polite">
-        <div className="sysnotif-title">Your question is translated</div>
-        <div className="sysnotif-desc">{`${names} ${langs.length === 1 ? "was" : "were"} translated automatically. Check ${langs.length === 1 ? "it" : "them"} with Preview language.`}</div>
-        <button className="sysnotif-close" aria-label="Dismiss" onClick={onClose}><Icon name="cross" size={16} /></button>
-      </div>
-    </div>
-  );
-}
 
 export function CustomQuestionDialog({ question, topics, design, pool = [], selectedIds = [], alwaysSimilar = false, checkBlocks = true, qMeta = {}, translations = {}, defaultTopic, focusTitle = false, onUseSuggestion, onMoveSuggestion, onCancel, onAdd, onAddAnother, onOpenCreated, onSubmit, onDelete }) {
   const editing = !!question;
@@ -685,9 +659,8 @@ export function CustomQuestionDialog({ question, topics, design, pool = [], sele
     setAttempted(true);
     if (textErr || topicErr || optsErr) return;
     // A new question's languages that weren't visited are translated in the
-    // background once it's created — the caller says so.
-    const untranslated = editing ? [] : OTHER_LANGUAGES.filter(l => !tr[l.code] || tr[l.code].status === "pending");
-    submitFn(buildQ(), { untranslated });
+    // background once it's created.
+    submitFn(buildQ());
   };
   // The primary action while creating: "Check question" runs the similarity
   // check behind a short full-dialog loader. Matches -> the check step (pick

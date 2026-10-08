@@ -2,7 +2,7 @@
 // library (a ticked question that is in already → Move, Select all's choices,
 // where a new topic goes) and in the custom question check (a possible
 // duplicate that's already in).
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 
@@ -12,15 +12,17 @@ import { Icon } from "./Icon.jsx";
 // scrolls, and closes on a click anywhere else.
 // `align` "left" lines the menu up with the button's left edge (a row's
 // checkbox, at the start of the row); by default it lines up on the right.
-export function useAnchorMenu(height, align = "right") {
+// `gap` is the room between button and menu (more for one with a pointer);
+// `at.side` says whether it opened below or above the button.
+export function useAnchorMenu(height, align = "right", gap = 4) {
   const btn = useRef(null);
   const [at, setAt] = useState(null);
   const place = () => {
     const r = btn.current.getBoundingClientRect();
     const x = align === "left" ? { left: Math.round(r.left) } : { right: Math.round(window.innerWidth - r.right) };
-    return r.bottom + 4 + height > window.innerHeight - 96
-      ? { bottom: Math.round(window.innerHeight - r.top + 4), ...x }
-      : { top: Math.round(r.bottom + 4), ...x };
+    return r.bottom + gap + height > window.innerHeight - 96
+      ? { bottom: Math.round(window.innerHeight - r.top + gap), side: "above", ...x }
+      : { top: Math.round(r.bottom + gap), side: "below", ...x };
   };
   useEffect(() => {
     if (!at) return;
@@ -69,4 +71,68 @@ export function MenuItem({ icon, title, sub, onPick, disabled }) {
       </span>
     </div>
   );
+}
+
+// A short question with its action(s) under it, anchored to the control that
+// asked — for a yes/no step ("Already in “X”" → Move here) where a menu with a
+// header and one item is a detour. Built from DS parts only: the .menu
+// surface and DS buttons, laid out in one row. It is a small non-modal
+// dialog: the primary action takes focus, Escape closes it and gives focus
+// back to the control, a press elsewhere closes it (see useAnchorMenu).
+// A pointer on its edge points at the control's middle — the DS spotlight's
+// 8px arrow, in the menu's white and border. Open it with useAnchorMenu(…,
+// CONFIRM_GAP). Under a small control (a checkbox) the pointer would sit in
+// the rounded corner, so the whole confirm sits a little further over —
+// placed there before it is painted (left/right, not a transform, which the
+// entrance animation would override and then let jump), and it grows out of
+// its pointer.
+//   actions: [{ label, primary?, onPick }], in order — the primary one first,
+//   on the left; the others are secondary.
+//   dismiss: optional label of a last button that only closes (nothing
+//   changes); usually there is none — a press elsewhere or Escape does that.
+//   A label too long for the confirm (a long topic name) ends in "…".
+export const CONFIRM_GAP = 12;
+export function AnchorConfirm({ at, anchor, text, actions, dismiss, onClose }) {
+  const ref = useRef(null);
+  const [arrow, setArrow] = useState({ x: null, shift: 0 });
+  const [ready, setReady] = useState(false); // measured: only then is it shown
+  useLayoutEffect(() => {
+    if (!ref.current || !anchor || !anchor.current) return;
+    // From the placement, not the menu's own rect: that one is mid-way through
+    // the DS menu's entrance (scaled) when this runs.
+    const a = anchor.current.getBoundingClientRect(), w = ref.current.offsetWidth;
+    const left = at.left != null ? at.left : window.innerWidth - at.right - w;
+    const want = a.left + a.width / 2 - left, edge = 20;
+    const shift = want < edge ? Math.round(want - edge) : want > w - edge ? Math.round(want - (w - edge)) : 0;
+    setArrow({ x: Math.round(want - shift), shift });
+    setReady(true);
+  }, [at && at.top, at && at.bottom, at && at.left, at && at.right]); // eslint-disable-line
+  // Focus goes to the primary action once it is placed and shown — a frame
+  // later, outside the click that opened it (focus moved during that click
+  // doesn't stick).
+  useEffect(() => {
+    if (!ready) return;
+    const id = requestAnimationFrame(() => {
+      const b = ref.current && ref.current.querySelector(".btn-primary");
+      if (b) b.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [ready]);
+  const close = () => { onClose(); if (anchor && anchor.current) anchor.current.focus({ preventScroll: true }); };
+  return createPortal(
+    <div ref={ref} className={"menu aql-anchor-menu aql-confirm is-" + (at.side || "below") + (ready ? " is-ready" : "")} role="dialog" aria-label={text}
+      onMouseDown={e => { e.stopPropagation(); if (e.target.tagName !== "BUTTON") e.preventDefault(); }}
+      onKeyDown={e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } }}
+      style={{ position: "fixed", top: at.top, bottom: at.bottom, zIndex: 1200,
+        left: at.left != null ? at.left + arrow.shift : undefined, right: at.right != null ? at.right - arrow.shift : undefined,
+        "--arrow-x": arrow.x == null ? "50%" : arrow.x + "px" }}>
+      <span className="aql-confirm-text">{text}</span>
+      <div className="aql-confirm-actions">
+        {actions.map(a => (
+          <button key={a.label} type="button" className={"btn " + (a.primary ? "btn-primary" : "btn-secondary")}
+            onClick={(e) => { e.stopPropagation(); onClose(); a.onPick(); }}><span className="aql-confirm-label">{a.label}</span></button>
+        ))}
+        {dismiss && <button type="button" className="btn btn-secondary" onClick={(e) => { e.stopPropagation(); close(); }}>{dismiss}</button>}
+      </div>
+    </div>, document.body);
 }

@@ -4,7 +4,7 @@ import { Sidebar, SurveysPage, OutOfScopeDialog } from "./components/Shell.jsx";
 import { Builder } from "./components/Builder.jsx";
 import { TemplateModal } from "./components/TemplateModal.jsx";
 import { EditQuestionsDialog, ThemeConfirm, AddedNotice } from "./components/EditQuestionsDialog.jsx";
-import { CustomQuestionDialog, TranslatingNotice } from "./components/CustomQuestionDialog.jsx";
+import { CustomQuestionDialog } from "./components/CustomQuestionDialog.jsx";
 import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus, themesOf } from "./components/shared.jsx";
 import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
@@ -47,7 +47,6 @@ export function App() {
   const [variantsOn, setVariantsOn] = useState({ dialogGrouped: false, checkWarnsOnly: false });
   const toggleVariant = (key) => setVariantsOn(v => ({ ...v, [key]: !v[key] }));
   const [newCustom, setNewCustom] = useState(false); // create-from-builder ("Add" menu)
-  const [trNotice, setTrNotice] = useState(null); // background translation of a just-created question
   const [addNotice, setAddNotice] = useState(null); // what the last Add from the library put in
   // A survey-in-progress awaiting its name. Set after a template is chosen or
   // "Start from scratch" is pressed; cleared once the name dialog is confirmed
@@ -98,6 +97,8 @@ export function App() {
   //   topicMeta:    { [topicKey]: { name?, desc?, descHidden? } } — overrides for
   //                 library topics; name/desc for custom topics.
   //   customTopics: [topicKey] — user-created topics (key "ct-…"; may be empty).
+  //   keptTopics:   [topicKey] — library topics a move left empty: they stay on
+  //                 the page until removed (see keepEmptied).
   //   qMeta:        { [qId]: { desc?, descHidden?, topic? } } — survey-scoped
   //                 extras on STANDARD questions (custom questions carry their
   //                 own desc/topic on the pool object).
@@ -105,7 +106,24 @@ export function App() {
   //                 user-authored strings; absence = automatic translation.
   //   i18nStale:    { [lang]: { [stringKey]: true } } — reviewed translations
   //                 whose English text changed since: kept, but to check.
-  const normalize = (sv) => ({ topicMeta: {}, customTopics: [], qMeta: {}, i18nEdits: {}, i18nStale: {}, intro: {}, ...sv });
+  const normalize = (sv) => ({ topicMeta: {}, customTopics: [], keptTopics: [], qMeta: {}, i18nEdits: {}, i18nStale: {}, intro: {}, ...sv });
+
+  // A topic only goes when you remove it. One that a move leaves empty (a
+  // drag, Move to, or a move from Add questions) stays on the page, empty and
+  // ready to fill, with its name and description — it doesn't quietly vanish.
+  // Custom topics stay anyway; library ones are remembered in keptTopics until
+  // they have questions again.
+  const topicsInUse = (s) => {
+    const sel = new Set(s.selectedIds);
+    return new Set(s.pool.filter(q => sel.has(q.id)).map(q => ((s.qMeta || {})[q.id] || {}).topic || q.topic).filter(Boolean));
+  };
+  const keepEmptied = (prev, next) => {
+    const before = topicsInUse(prev), after = topicsInUse(next);
+    const custom = new Set(next.customTopics || []);
+    const kept = new Set((prev.keptTopics || []).filter(k => !after.has(k)));
+    before.forEach(k => { if (!after.has(k) && !custom.has(k)) kept.add(k); });
+    return { ...next, keptTopics: [...kept] };
+  };
 
   // When changing a template from the builder, keep the same survey id so it
   // updates in place (a fresh id is minted only for a brand-new survey).
@@ -177,7 +195,7 @@ export function App() {
     // Custom questions created in the library bring their translations along.
     // The notification comes with the questions, not before them.
     afterClose(() => {
-      setSurvey(s => ({ ...absorbI18n(s, pool), selectedIds: ids, pool: pool.map(stripI18n) }));
+      setSurvey(s => keepEmptied(s, { ...absorbI18n(s, pool), selectedIds: ids, pool: pool.map(stripI18n) }));
       if (summary && summary.count) setAddNotice({ key: Date.now(), summary });
     });
   };
@@ -293,12 +311,12 @@ export function App() {
   // get a survey-scoped override in qMeta (the library topic stays canonical).
   const moveQuestionTopic = (id, topicKey) => setSurvey(s => {
     const q = s.pool.find(p => p.id === id);
-    if (q && q.custom) return { ...s, pool: s.pool.map(p => p.id === id ? { ...p, topic: topicKey } : p) };
+    if (q && q.custom) return keepEmptied(s, { ...s, pool: s.pool.map(p => p.id === id ? { ...p, topic: topicKey } : p) });
     const cur = { ...((s.qMeta || {})[id] || {}) };
     if (q && topicKey === q.topic) delete cur.topic; else cur.topic = topicKey;
     const qm = { ...(s.qMeta || {}) };
     if (Object.keys(cur).length) qm[id] = cur; else delete qm[id];
-    return { ...s, qMeta: qm };
+    return keepEmptied(s, { ...s, qMeta: qm });
   });
   // Topic choices for the custom-question dialog: every topic visible in this
   // survey (by its survey-scoped display name), including empty custom topics.
@@ -308,7 +326,7 @@ export function App() {
     const eff = (q) => ((survey.qMeta || {})[q.id] || {}).topic || q.topic;
     const keys = [];
     survey.pool.forEach(q => { if (sel.has(q.id)) { const t = eff(q); if (t && !keys.includes(t)) keys.push(t); } });
-    (survey.customTopics || []).forEach(k => { if (!keys.includes(k)) keys.push(k); });
+    [...(survey.customTopics || []), ...(survey.keptTopics || [])].forEach(k => { if (!keys.includes(k)) keys.push(k); });
     return keys.map(k => ({ value: k, label: ((survey.topicMeta || {})[k] || {}).name || k }));
   };
   // "Write your own wording": the standard question leaves the questionnaire
@@ -381,13 +399,11 @@ export function App() {
     setSurvey(s => ({ ...absorbI18n(s, [nq]), pool: [...s.pool, stripI18n(nq)], selectedIds: [...s.selectedIds, nq.id] }));
   // Closing adds it the way "Add questions" does: dialog first, question half a
   // second later, so it arrives in the builder as a visible change.
-  const addCustomDirect = (nq, { untranslated = [] } = {}) => {
+  // The languages nobody visited in the dialog translate in the background,
+  // without a notification: the languages' own status already says it.
+  const addCustomDirect = (nq) => {
     setNewCustom(false);
-    afterClose(() => {
-      addCustomKeepOpen(nq);
-      // The languages nobody visited in the dialog translate in the background.
-      if (untranslated.length) setTrNotice({ key: nq.id, langs: untranslated });
-    });
+    afterClose(() => addCustomKeepOpen(nq));
   };
   // The similar-question check found a match: select the existing question
   // instead of creating a duplicate.
@@ -439,6 +455,7 @@ export function App() {
       pool: s.pool.filter(p => !(p.custom && idset.has(p.id))),
       qMeta: qm,
       customTopics: (s.customTopics || []).filter(k => k !== key),
+      keptTopics: (s.keptTopics || []).filter(k => k !== key),
       topicMeta: tm, // removing a topic also clears its survey-scoped overrides
     };
   });
@@ -571,6 +588,7 @@ export function App() {
           qMeta={survey.qMeta} onUpdateQMeta={updateQMeta} onMoveTopic={moveQuestionTopic} translationsFor={questionI18n}
           initialTab={editTab} nav={variantsOn.dialogGrouped ? "group" : "sidebar"}
           addToTopic={editTarget} topicOptions={surveyTopicOptions()}
+          onCommitCustom={addCustomKeepOpen} onCommitCustomEdit={saveCustomEdit}
           onClose={() => { setEditing(false); setEditTarget(null); }}
           onSave={(ids, pool, summary) => { saveQuestions(ids, pool, summary); setEditTarget(null); }} />
       )}
@@ -590,7 +608,6 @@ export function App() {
         onSubmit={(q) => { saveCustomEdit(q); setFocusTitle(false); }}
         onDelete={(q) => { removeFromSurvey(q); setEditCustom(null); setFocusTitle(false); }} />}
       {outOfScope && <OutOfScopeDialog row={outOfScope} onClose={() => setOutOfScope(null)} />}
-      {trNotice && <TranslatingNotice key={trNotice.key} langs={trNotice.langs} onClose={() => setTrNotice(null)} />}
       {addNotice && <AddedNotice key={addNotice.key} summary={addNotice.summary} onClose={() => setAddNotice(null)} />}
     </div>
   );

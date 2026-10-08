@@ -531,6 +531,10 @@ button.sel-btn.cq-sel { font-size: 14px; }
    Add button instead of stopping flush against them; group headers get the
    same inset so everything keeps one left and right edge. */
 .aql-sec > .aql-row { padding-left: 12px; padding-right: 12px; }
+/* The same inset where rows sit straight under a heading: search results and
+   a theme's questions in its details dialog. */
+.eq-gres > .aql-row, .eq-gres > .eq-gres-head,
+.dialog-body > .aql-row, .dialog-body > .aql-sechead { padding-left: 12px; padding-right: 12px; }
 .aql-req-inline { display: inline-flex; vertical-align: -3px; margin-left: 6px; }
 .aql-desc { display: block; margin-top: 2px; font-size: 13px; font-weight: 400; line-height: 20px; color: var(--content-secondary); }
 .aql-sec > .aql-sechead { padding-left: 12px; padding-right: 12px; }
@@ -561,13 +565,55 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .aql-add-fill.is-added i[data-icon], .aql-add-fill.is-in i[data-icon] { color: var(--content-positive); }
 .btn-tertiary.aql-add.is-added { color: var(--content-positive); }
 .btn-tertiary.aql-add { min-width: 0; }
-/* A question's checkbox: the DS box, inside a button that is the control. */
+/* The short confirm beside a control (AnchorConfirm): the DS .menu surface and
+   DS buttons — the sentence on top, the buttons under it on the right, so it
+   stays narrow. Layout only, no styles of its own. */
+.menu.aql-confirm { display: flex; flex-direction: column; gap: var(--spacing-base-tight); width: 340px;
+  padding: var(--spacing-base); }
+.aql-confirm-text { font-size: 14px; line-height: 20px; color: var(--content-base); }
+/* A long topic name in "Move to “…”" sends the next button to a new line,
+   and past the confirm's width the label ends in an ellipsis. */
+.aql-confirm-actions { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: var(--spacing-tight); }
+.aql-confirm-actions .btn { max-width: 100%; min-width: 0; }
+.aql-confirm-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Its entrance: the DS menu's own (menu-in), growing out of the pointer
+   rather than the top centre, and starting once it is placed (is-ready —
+   still before the first paint), so it never shows on the way to its spot. */
+.menu.aql-confirm { animation: none; }
+.menu.aql-confirm.is-ready { animation: confirm-in var(--motion-base) var(--ease-out); }
+.aql-confirm.is-below { transform-origin: var(--arrow-x) top; }
+.aql-confirm.is-above { transform-origin: var(--arrow-x) bottom; --confirm-from: 8px; }
+@keyframes confirm-in { from { opacity: 0; transform: translateY(var(--confirm-from, -8px)) scale(0.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .menu.aql-confirm.is-ready { animation: none; } }
+/* Its pointer: the DS spotlight arrow (an 8px border triangle), in the menu's
+   white over a 9px one in its border colour, centred on the control. */
+.menu.aql-confirm { overflow: visible; }
+.aql-confirm::before, .aql-confirm::after { content: ""; position: absolute; left: var(--arrow-x); transform: translateX(-50%);
+  border: 9px solid transparent; pointer-events: none; }
+.aql-confirm::after { border-width: 8px; }
+.aql-confirm.is-below::before { bottom: 100%; border-bottom-color: var(--border-base); }
+.aql-confirm.is-below::after { bottom: 100%; border-bottom-color: var(--bg-base); }
+.aql-confirm.is-above::before { top: 100%; border-top-color: var(--border-base); }
+.aql-confirm.is-above::after { top: 100%; border-top-color: var(--bg-base); }
+/* A question's checkbox: the DS box, inside a button that is the control.
+   Its hover is the DS one only — the box's border (or teal, when ticked)
+   darkens — and comes with the row's hover: the whole row is the control. */
 .aql-check { flex: none; display: inline-flex; padding: 0; border: 0; background: none; border-radius: 4px; cursor: pointer; }
 .aql-check .cb { pointer-events: none; }
 .aql-check:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; }
 .aql-check.is-disabled { cursor: not-allowed; }
 .aql-row:hover .aql-check:not(.is-disabled) .cb:not(:checked) { border-color: var(--border-action-hover); }
 .aql-row:hover .aql-check:not(.is-disabled) .cb:checked { background-color: var(--bg-brand-hover); border-color: var(--border-brand-hover); }
+/* Pressed — while pressed, and while the confirm it opened is up: the DS
+   pressed tokens of an action control (.sel-btn, .btn-secondary; teal as
+   .btn-primary when ticked). The DS checkbox itself has no pressed state. */
+.aql-row .aql-check:not(.is-disabled):active .cb:not(:checked),
+.aql-row .aql-check:not(.is-disabled)[aria-expanded="true"] .cb:not(:checked) { background-color: var(--bg-base-pressed); border-color: var(--border-action-pressed); }
+.aql-row .aql-check:not(.is-disabled):active .cb:checked,
+.aql-row .aql-check:not(.is-disabled)[aria-expanded="true"] .cb:checked { background-color: var(--bg-brand-pressed); border-color: var(--border-brand-pressed); }
+/* Its row keeps the hover state meanwhile, so it stays clear which question
+   the confirm is about. */
+.aql-row:has(> .aql-check[aria-expanded="true"]), .aql-row:has(> .tt-demo > .aql-check[aria-expanded="true"]) { background: var(--bg-base-hover); }
 .aql-where { display: block; font-size: 12px; font-weight: 400; line-height: 16px; color: var(--content-secondary); margin-top: 2px; }
 /* Theme + custom tags (Figma 154:4080). Theme tag tracks how much of the theme
    is in the questionnaire: neutral (grey) → in-progress (light turquoise + ring)

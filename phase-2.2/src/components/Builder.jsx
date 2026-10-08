@@ -462,7 +462,7 @@ const EMPTY_DRAG_IMG = typeof Image !== "undefined"
 const entranceSeen = new Set();
 
 export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onAddQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, onConfirmTranslation, edges = {}, openDialog, onDialogChange }) {
-  const { name, design: designId, selectedIds, pool, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {}, i18nStale = {}, intro = {} } = survey;
+  const { name, design: designId, selectedIds, pool, topicMeta = {}, customTopics = [], keptTopics = [], qMeta = {}, i18nEdits = {}, i18nStale = {}, intro = {} } = survey;
   // Below this the questionnaire page tightens: step labels go, the page
   // padding and the gaps between cards shrink, "Edit name" becomes an icon.
   const compact = useMediaQuery("(max-width: 1100px)");
@@ -572,7 +572,9 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // dialog keeps grouping by the canonical library topic. Empty custom topics
   // still render as sections so they can be filled by drag or move-to.
   const groups = groupQuestions(chosen.map(q => effTopic(q) !== q.topic ? { ...q, topic: effTopic(q) } : q), "library");
-  customTopics.forEach(k => { if (!groups.find(g => g.key === k)) groups.push({ key: k, label: k, kind: "topic", items: [] }); });
+  // So do library topics a move left empty (keptTopics): a topic goes when
+  // you remove it, not when its last question moves elsewhere.
+  [...customTopics, ...keptTopics].forEach(k => { if (!groups.find(g => g.key === k)) groups.push({ key: k, label: k, kind: "topic", items: [] }); });
   // A theme is "active" when every one of its questions is selected — that is
   // what earns a composite score in the results.
   const activeThemes = themeGroups.filter(t => t.total > 0 && t.kept >= t.total).length;
@@ -601,7 +603,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // questions dialog always works from the library order, never this one.
   const [layout, setLayout] = useState(() => groups.map(g => ({ key: g.key, label: g.label, items: g.items })));
   const sig = selectedIds.join(",") + "|" + pool.map(p => p.id + ":" + (p.topic || "") + ":" + (p.text || "") + ":" + (p.required ? "1" : "0")).join(",")
-    + "|" + customTopics.join(",") + "|" + Object.entries(qMeta).map(([id, m]) => id + ">" + (m.topic || "")).join(",");
+    + "|" + customTopics.join(",") + "|" + keptTopics.join(",") + "|" + Object.entries(qMeta).map(([id, m]) => id + ">" + (m.topic || "")).join(",");
   // A topic created from a gap in the list, waiting for its section to exist.
   const placeTopic = useRef(null);
   // A question dropped into another topic, waiting to arrive there so it can
@@ -1113,9 +1115,10 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   };
 
   // Visible sections, in order — used for up/down bounds & neighbours. Custom
-  // topics stay visible while empty (so they can be filled); library topics
-  // disappear when their last question goes.
-  const visibleSections = layout.filter(s => s.items.length || customTopicSet.has(s.key));
+  // topics stay visible while empty (so they can be filled), and so do library
+  // topics a move emptied; a library topic whose last question is removed goes.
+  const keptTopicSet = new Set(keptTopics);
+  const visibleSections = layout.filter(s => s.items.length || customTopicSet.has(s.key) || keptTopicSet.has(s.key));
   // A topic being dragged: the order the topics show in meanwhile (the
   // lifted one at its slot), as flex order on the list.
   const sorting = !!drag && drag.kind === "sec";

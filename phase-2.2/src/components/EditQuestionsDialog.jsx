@@ -9,7 +9,7 @@ import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 import { themeStatus, themesOf, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag, RequiredMarker, useMediaQuery, Highlight } from "./shared.jsx";
 import { CustomQuestionDialog } from "./CustomQuestionDialog.jsx";
-import { useAnchorMenu, AnchorMenu, MenuItem } from "./AnchorMenu.jsx";
+import { useAnchorMenu, AnchorMenu, AnchorConfirm, CONFIRM_GAP, MenuItem } from "./AnchorMenu.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
 import { THEMES, POOL, TEMPLATES, BADGE_COLORS, ORG_CUSTOM } from "../data/data.js";
 import { templatePoolQuestions, TEMPLATE_META } from "../data/qlib.js";
@@ -81,30 +81,29 @@ function CheckBtn({ on, disabled, tip, btnRef, label, onClick, ...aria }) {
 // question is never in twice). Where there is nothing to do — it sits in that
 // topic already, the same wording does, or the dialog has no topic to move it
 // to — the box is greyed out and its tooltip says where the question is.
+// Every box has a tooltip of a few words: what a click does, or why it can't.
 function QCheck({ q, on, onClick }) {
   const ctx = useContext(AddCtx);
   const menu = useAnchorMenu(320, "left");
+  const confirm = useAnchorMenu(130, "left", CONFIRM_GAP);
   const label = q.text;
+  const addTip = ctx.target ? `Add to ${qt(ctx.target.label)}` : "Add to questionnaire";
   if (ctx.initial.has(q.id)) {
     const chosen = ctx.dups.has(q.id) || ctx.moves.has(q.id);
     const dests = ctx.moveTargets(q.id);
     if (!chosen && !dests.length) {
       return <CheckBtn disabled label={label}
-        tip={<span className="tt-title">{ctx.target ? "Already in this topic" : `Already in ${ctx.where(q.id)}`}</span>} />;
+        tip={ctx.target ? "Already in this topic" : `Already in ${ctx.where(q.id)}`} />;
     }
     return (
       <>
-        <CheckBtn btnRef={menu.btn} on={chosen} label={label}
-          tip={chosen ? null : <><span className="tt-title">Already in {ctx.where(q.id)}</span>Select it to move it to {qt(ctx.target.label)}</>}
-          aria-haspopup={chosen ? undefined : "menu"} aria-expanded={chosen ? undefined : !!menu.at}
-          onClick={() => (chosen ? ctx.undo(q) : menu.toggle())} />
-        {menu.at && (
-          <AnchorMenu at={menu.at} width={320}>
-            <div className="menu-header">This question is {ctx.inWhere(q.id)}</div>
-            <MenuItem icon="arrow-right" title={`Move to ${qt(dests[0].label)}`}
-              onPick={() => { menu.close(); ctx.move(q, dests[0].value); }} />
-          </AnchorMenu>
-        )}
+        <CheckBtn btnRef={confirm.btn} on={chosen} label={label}
+          tip={confirm.at ? null : chosen ? "Don't move" : `Move to ${qt(dests[0].label)}`}
+          aria-haspopup={chosen ? undefined : "dialog"} aria-expanded={chosen ? undefined : !!confirm.at}
+          onClick={() => (chosen ? ctx.undo(q) : confirm.toggle())} />
+        {confirm.at && <AnchorConfirm at={confirm.at} anchor={confirm.btn} onClose={confirm.close}
+          text={`This question is already in your questionnaire, under ${ctx.where(q.id)}`}
+          actions={[{ label: `Move to ${qt(dests[0].label)}`, primary: true, onPick: () => ctx.move(q, dests[0].value) }]} />}
       </>
     );
   }
@@ -112,11 +111,12 @@ function QCheck({ q, on, onClick }) {
   // asks one question twice, so there is nothing to pick.
   const blocked = !on ? ctx.blocked(q.id) : null;
   if (blocked) return <CheckBtn disabled label={label}
-    tip={<><span className="tt-title">Already in {qt(ctx.topicLabel(blocked))}</span>The same question is already in that topic</>} />;
+    tip={`${qt(ctx.topicLabel(blocked))} already has this question`} />;
   const ask = !on ? ctx.unrouted([q.id]) : [];
   return (
     <>
       <CheckBtn btnRef={menu.btn} on={on} label={label}
+        tip={menu.at ? null : on ? "Don't add" : addTip}
         aria-haspopup={ask.length ? "menu" : undefined} aria-expanded={ask.length ? !!menu.at : undefined}
         onClick={ask.length ? menu.toggle : onClick} />
       {menu.at && <RouteMenu at={menu.at} q={q} topics={ask} onPick={(to) => { menu.close(); ctx.route(ask, to); onClick(); }} />}
@@ -156,7 +156,7 @@ const clickCheck = (e) => { const b = e.currentTarget.querySelector(".aql-check"
 // what this dialog ticked in the group.
 function GroupSelect({ ids, allOn, total, card, onToggle }) {
   const ctx = useContext(AddCtx);
-  const menu = useAnchorMenu(240);
+  const menu = useAnchorMenu(130, "right", CONFIRM_GAP);
   const route = useAnchorMenu(320);
   const n = ids.length;
   const missingIds = ids.filter(id => !ctx.sel.has(id) && !ctx.blocked(id));
@@ -185,7 +185,6 @@ function GroupSelect({ ids, allOn, total, card, onToggle }) {
     if (movable.length === 0) return ask.length ? route.toggle() : addMissing();
     menu.toggle();
   };
-  const pick = (act) => () => { menu.close(); act(); };
   // Everything is in the questionnaire already: nothing a click could do.
   const disabled = done && !staged.length;
   const clears = done && staged.length > 0;
@@ -193,10 +192,10 @@ function GroupSelect({ ids, allOn, total, card, onToggle }) {
   const btnRef = (el) => { menu.btn.current = el; route.btn.current = el; };
   return (
     <>
-      <Tooltip label={disabled ? <span className="tt-title">All questions are in</span> : null}>
+      <Tooltip label={disabled ? <span className="tt-title">These questions are all in your questionnaire already</span> : null}>
         <button ref={btnRef} type="button" aria-disabled={disabled || undefined}
-          className={(card ? "btn " + (clears ? "btn-primary" : "btn-secondary") : "btn btn-tertiary aql-selectall") + (disabled ? " is-disabled" : "")}
-          aria-haspopup={hasMenu ? "menu" : undefined} aria-expanded={hasMenu ? !!(menu.at || route.at) : undefined}
+          className={(card ? "btn " + (clears ? "btn-primary" : "btn-secondary") : "btn btn-tertiary aql-selectall") + (disabled ? " is-disabled" : "") + (menu.at || route.at ? " is-pressed" : "")}
+          aria-haspopup={hasMenu ? (movable.length ? "dialog" : "menu") : undefined} aria-expanded={hasMenu ? !!(menu.at || route.at) : undefined}
           onClick={(e) => { e.stopPropagation(); if (!disabled) click(); }}>
           {card
             ? (clears ? <><Icon name="check" size={16} />Selected</> : disabled ? <><Icon name="check" size={16} />Added</> : "Select")
@@ -204,19 +203,19 @@ function GroupSelect({ ids, allOn, total, card, onToggle }) {
         </button>
       </Tooltip>
       {route.at && <RouteMenu at={route.at} topics={ask} onPick={(to) => { route.close(); ctx.route(ask, to); addMissing(); }} />}
-      {menu.at && (
-        <AnchorMenu at={menu.at} width={320}>
-          <div className="menu-header">{existing.length} of {nq(n)} already in your questionnaire</div>
-          {missing > 0 && <MenuItem icon="plus" title="Select only the new ones"
-            sub={`Selects ${missing}. The other ${existing.length} stay where they are`} onPick={pick(addMissing)} />}
-          {movable.length > 0 && <MenuItem icon="arrow-right" title={missing > 0 ? "Move the others here too"
-              : movable.length === existing.length ? "Move them all here" : `Move the other ${movable.length} here`}
-            sub={missing > 0 ? `Selects ${missing} and moves ${movable.length} to ${qt(ctx.target.label)}`
-              : movable.length === existing.length ? `Moves ${movable.length} to ${qt(ctx.target.label)}`
-              : `${existing.length - movable.length} ${existing.length - movable.length === 1 ? "is" : "are"} already in ${qt(ctx.target.label)}`}
-            onPick={pick(() => { addMissing(); movable.forEach(id => ctx.move({ id }, ctx.target.key)); })} />}
-        </AnchorMenu>
-      )}
+      {/* Same words as one question's confirm, with the count a group needs.
+          The new ones are picked either way; the choice is only about the
+          ones that are in already. */}
+      {menu.at && <AnchorConfirm at={menu.at} anchor={menu.btn} onClose={menu.close}
+        text={`${existing.length === n ? (n === 1 ? "This question is" : `All ${n} questions are`)
+          : `${existing.length} of these questions ${existing.length === 1 ? "is" : "are"}`} already in your questionnaire, under ${ctx.whereMany(existing)}`}
+        // "Don't move" picks just the new ones and leaves the rest where they
+        // are — a real choice, so it's a button. Not moving at all is a press
+        // elsewhere (or Escape), as for one question.
+        actions={[
+          { label: `Move to ${qt(ctx.target.label)}`, primary: true, onPick: () => { addMissing(); movable.forEach(id => ctx.move({ id }, ctx.target.key)); } },
+          ...(missing > 0 ? [{ label: existing.length === 1 ? "Don't move it" : "Don't move them", onPick: addMissing }] : []),
+        ]} />}
     </>
   );
 }
@@ -550,8 +549,8 @@ function AddedToast({ topic, onClose }) {
   return (
     <div className="sysnotif-stack">
       <div className="sysnotif" role="status">
-        <div className="sysnotif-title">Custom question created</div>
-        <div className="sysnotif-desc">Selected for “{topic}”. Add it to put it in your questionnaire</div>
+        <div className="sysnotif-title">Custom question added</div>
+        <div className="sysnotif-desc">It's in “{topic}” now</div>
         <button className="sysnotif-close" aria-label="Dismiss" onClick={onClose}><Icon name="cross" size={16} /></button>
       </div>
     </div>
@@ -926,7 +925,7 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
 // "sidebar" — Miro/Qualtrics-style: a left rail to browse (with the topics as
 //             jump anchors) and ONE search on top that looks across questions,
 //             themes and templates, results grouped by where they came from.
-export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", qMeta = {}, addToTopic = null, topicOptions = [], onUpdateQMeta, onMoveTopic, translationsFor, onClose, onSave }) {
+export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", qMeta = {}, addToTopic = null, topicOptions = [], onUpdateQMeta, onMoveTopic, translationsFor, onCommitCustom, onCommitCustomEdit, onClose, onSave }) {
   const compact = useMediaQuery(EQ_COMPACT);
   const [pool, setPool] = useState(initialPool);
   const [sel, setSel] = useState(() => new Set(initialSelected));
@@ -1106,13 +1105,17 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     const add = qs.filter(qq => !have.has(qq.id));
     return add.length ? [...p, ...add] : p;
   });
+  // Opened from a topic's "Add questions", a template's questions go into that
+  // topic like everything else added there (markAdded), and skip a wording the
+  // topic already has — the line at the top promises exactly that.
   const setTemplate = (t, on) => {
-    const ids = t.questions.map(qq => qq.id);
-    if (on) mergeIntoPool(t.questions);
+    const ids = t.questions.map(qq => qq.id).filter(id => !on || !blocked(id));
+    if (on) { mergeIntoPool(t.questions); markAdded(ids.filter(id => !initial.has(id))); }
     setSel(s => { const n = new Set(s); ids.forEach(id => on ? n.add(id) : (initial.has(id) || n.delete(id))); return n; });
   };
   const toggleTemplateQuestion = (t, id) => {
     if (initial.has(id)) return;
+    if (!sel.has(id)) { if (blocked(id)) return; markAdded([id]); }
     mergeIntoPool(t.questions.filter(qq => qq.id === id));
     setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
@@ -1122,6 +1125,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // be in this survey's pool yet (its settings are reachable from its row), so
   // saving it there brings it in — you edited it to use it.
   const saveCustomEdit = (nq) => {
+    // One that is in the questionnaire is saved there right away, as its
+    // dialog says — Cancel here doesn't take an edit back.
+    if (initial.has(nq.id) && onCommitCustomEdit) onCommitCustomEdit(nq);
     setPool(p => (p.some(x => x.id === nq.id) ? p.map(x => x.id === nq.id ? nq : x) : [...p, nq]));
     setSel(s2 => (s2.has(nq.id) ? s2 : new Set([...s2, nq.id])));
     setEditCustomQ(null);
@@ -1239,12 +1245,16 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   };
   // Adding without closing the create dialog: it confirms the question there
   // and offers writing another one, so it decides when it goes away.
+  // A question written here goes into the questionnaire at once — its dialog
+  // says "Question added", and Cancel on this one mustn't throw it away. From
+  // then on it counts as one that was in already.
   const addCustomKeepOpen = (nq) => {
+    if (onCommitCustom) { onCommitCustom(nq); initial.add(nq.id); }
     setPool(p => [...p, nq]); setSel(s => new Set([...s, nq.id]));
     // Make the new question visible where it landed: clear search/filter,
     // switch to the Questions tab, scroll to the row, and toast.
     setQ(""); setShow("all"); setTab("custom");
-    setJustAdded(nq.id); setToast({ topic: nq.topic });
+    setJustAdded(nq.id); setToast({ topic: topicLabel(nq.topic) });
     timers.current.forEach(clearTimeout);
     timers.current = [
       setTimeout(() => setJustAdded(null), 2600),
@@ -1278,9 +1288,12 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const topicLabel = (k) => (topicOptions.find(o => o.value === k) || {}).label || k || "No topic";
   const whereKeys = (id) => [...new Set(pool.filter(x => initial.has(x.id) && (x.id === id || x.dupOf === id)).map(topicOf))];
   const joinNames = (names) => names.length < 2 ? (names[0] || "") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
-  const where = (id) => joinNames(whereKeys(id).map(k => qt(topicLabel(k))));
-  // "This question is already in the topic X" (or "the topics X and Y").
-  const inWhere = (id) => `already in the ${whereKeys(id).length > 1 ? "topics" : "topic"} ${where(id)}`;
+  // Where questions sit, by name ("“A” and “B”"); past three names, a count.
+  const whereMany = (ids) => {
+    const keys = [...new Set(ids.flatMap(whereKeys))];
+    return keys.length > 3 ? `${keys.length} other topics` : joinNames(keys.map(k => qt(topicLabel(k))));
+  };
+  const where = (id) => whereMany([id]);
   // Where a second copy lands: the target topic (never the original's).
   const dupTo = () => target && target.label;
   // Topics from the library that aren't in the questionnaire yet, among
@@ -1329,7 +1342,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const addCtx = { initial, sel, qMeta, dups, moves, where, target, topicLabel, moveTargets,
     unselect: (id) => setSel(s0 => { const n = new Set(s0); n.delete(id); return n; }),
     move: (qq, key) => setMoves(m => new Map(m).set(qq.id, key)),
-    inWhere, dupTo, existingTopics, routedTo, blocked, hasText, unrouted, route, routes, joinNames,
+    whereMany, dupTo, existingTopics, routedTo, blocked, hasText, unrouted, route, routes, joinNames,
     dup: (qq) => setDups(d => new Set(d).add(qq.id)),
     undo: (qq) => { setDups(d => drop(d, qq.id)); setMoves(m => { const n = new Map(m); n.delete(qq.id); return n; }); } };
   // Per-section collapse (Questions tab): a chevron per header, plus a
@@ -1400,7 +1413,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
 
   return (
     <AddCtx.Provider value={addCtx}>
-    <div className="overlay is-fullbleed" onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
+    {/* A press beside it closes it only while nothing is picked: a stray
+        click mustn't cost a selection. Cancel and the cross still drop it. */}
+    <div className="overlay is-fullbleed" onMouseDown={e => { if (e.target === e.currentTarget && !hasChanges) close(); }}>
       {/* Height lives in CSS (.eq-dialog): on a small screen this dialog IS
           the screen, and an inline height would win over that rule. */}
       <div className={"dialog dialog-l dialog-worksurface eq-dialog" + (nav === "sidebar" ? " eq-wide" : "")} role="dialog" aria-modal="true" aria-labelledby="eq-title"
