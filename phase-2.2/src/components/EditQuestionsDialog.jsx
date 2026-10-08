@@ -1492,11 +1492,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 <button className="ib ib-36 ib-tertiary" aria-label="Close" onClick={close}><Icon name="cross" size={16} /></button>
               </Tooltip>
             </div>
-            {target && (
-              <span className="eq-target-line" role="status">
-                Adding to <b>{target.label}</b>
-              </span>
-            )}
+            <span className="eq-target-line" role="status">
+              {target ? <>Adding to <b>{target.label}</b> in your questionnaire</> : "Adding each question to its own topic in your questionnaire"}
+            </span>
             <div className="dialog-body scroll-y">
               {/* Themes and templates are sets: they read best as cards — what
                   the set is for, how much of it is in, and one Add — with their
@@ -1695,14 +1693,17 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           </div>
         )}
 
-        {/* The one thing that changes in "add to this topic" mode: a quiet
-            banner naming where selections go, with its own way out. */}
-        {target && (
-          <div className="eq-target-note" role="status">
-            <Icon name="info" size={16} />
-            <span className="eq-target-txt">Questions you add go to <b>{target.label}</b></span>
-          </div>
-        )}
+        {/* Where what you add goes, said up front either way: the topic you
+            came from (its "Add questions"), or — from the bar's Add
+            questions — each question's own topic. */}
+        <div className="eq-target-note" role="status">
+          <Icon name="info" size={16} />
+          {/* "in your questionnaire": the list below has topic headings of
+              its own, so the name alone could read as one of those. */}
+          <span className="eq-target-txt">{target
+            ? <>Questions you add go to <b>{target.label}</b> in your questionnaire</>
+            : "Questions you add go to their own topic in your questionnaire"}</span>
+        </div>
 
         <div className="dialog-body scroll-y">
           {gRes ? (

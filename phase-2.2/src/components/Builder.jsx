@@ -9,7 +9,7 @@ import { TopicDialog } from "./TopicDialog.jsx";
 import { TranslationsDialog } from "./TranslationsDialog.jsx";
 import { THEMES, CUSTOM_GROUP } from "../data/data.js";
 import { DESIGNS, designById, designWash, introBackground } from "../data/designs.js";
-import { LANGUAGES, PRIMARY_LANGUAGE, flagSrc, autoTranslation } from "../data/i18n.js";
+import { autoTranslation } from "../data/i18n.js";
 
 // Small rename dialog — used for the survey name and for a topic's
 // questionnaire-specific label. `note` adds one quiet scope line under the field.
@@ -503,7 +503,10 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     document.addEventListener("mousedown", h, true);
     return () => document.removeEventListener("mousedown", h, true);
   }, [barMenu]);
-  const [viewLang, setViewLang] = useState("en");
+  // The questionnaire shows in the primary language. (The Preview language
+  // menu that switched this is gone; tr() below still reads translations if
+  // it ever comes back.)
+  const viewLang = "en";
   // The survey's design (a survey property, picked in the bar). In the builder
   // it tints the page behind the cards — the cards themselves stay white.
   const design = designById(designId);
@@ -1378,50 +1381,10 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
 
           <div className="spacer" />
 
-          {/* Display and Design are SETTINGS menus: picking an option keeps
-              them open (compare languages or designs in quick succession);
-              they close on outside click or the button itself. The Add menu
-              stays an action menu — its items navigate, so it closes. */}
-          <div className="ctxbar-menu-wrap">
-            <button className={"btn btn-secondary" + (barMenu === "display" ? " is-pressed" : "")}
-              title={compact ? "Preview language" : undefined} aria-label="Preview language"
-              aria-haspopup="menu" aria-expanded={barMenu === "display"}
-              onClick={() => setBarMenu(m => m === "display" ? null : "display")}>
-              <Icon name="globe" size={16} /><span className="ctxbar-btn-lbl">Preview language</span><Icon name="chevron-down-small" size={16} />
-            </button>
-            {barMenu === "display" && (
-              <>
-                <div className="menu ctxbar-menu" role="menu">
-                  {/* This menu is the one place in the step that changes
-                      NOTHING about the survey, so it says so before the
-                      options. */}
-                  <div className="menu-header">Preview language</div>
-                  <p className="ctxbar-menu-note">See how your questions read in each survey language</p>
-                  <div className="menu-divider" />
-                  {LANGUAGES.map(l => (
-                    <div key={l.code} className={"menu-item" + (viewLang === l.code ? " is-selected" : "")} role="menuitemradio"
-                      aria-checked={viewLang === l.code} onClick={() => setViewLang(l.code)}>
-                      <span className="lang-flag menu-item-icon"><img src={flagSrc(l.flag)} alt="" /></span>
-                      <span className="menu-item-body">
-                        <span className="menu-item-title">{l.label}</span>
-                        {l.code === PRIMARY_LANGUAGE.code ? (
-                          /* Same line as "Translation", in info blue, with the
-                             tooltip the project's language settings use. */
-                          <span className="menu-item-sub">
-                            <Tooltip label="The Primary language will be used for the questionnaire and mailings when a participant’s preferred language is unknown">
-                              <span className="lang-primary-sub">Primary<Icon name="alert-circle" size={12} /></span>
-                            </Tooltip>
-                          </span>
-                        ) : <span className="menu-item-sub">Translation</span>}
-                      </span>
-                      {viewLang === l.code && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
+          {/* Design is a SETTINGS menu: picking an option keeps it open
+              (compare designs in quick succession); it closes on outside
+              click or the button itself. The Add menu stays an action menu —
+              its items navigate, so it closes. */}
           <div className="ctxbar-menu-wrap">
             <button className={"btn btn-secondary" + (barMenu === "design" ? " is-pressed" : "")}
               title={compact ? "Design" : undefined} aria-label="Design"
