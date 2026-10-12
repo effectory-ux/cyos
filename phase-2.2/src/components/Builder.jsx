@@ -1566,7 +1566,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                         </div>
                         <div className="menu-item" role="menuitem" onClick={() => { setMenuKey(null); setTopicDialog({ key: s.key }); }}>
                           <span className="menu-item-icon"><Icon name="edit" size={16} /></span>
-                          <span className="menu-item-body"><span className="menu-item-title">Edit topic</span><span className="menu-item-sub">Name and description — this survey only</span></span>
+                          <span className="menu-item-body"><span className="menu-item-title">Edit topic</span></span>
                         </div>
                         {!customTopicSet.has(s.key) && topicMeta[s.key] && topicMeta[s.key].name && (
                           <div className="menu-item" role="menuitem" onClick={() => { setMenuKey(null); onUpdateTopicMeta && onUpdateTopicMeta(s.key, { name: undefined }); }}>
