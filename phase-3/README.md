@@ -4,7 +4,7 @@ Phase 3 of the CYOS survey-creation flow, **forked from `phase-2/`** and built o
 top of it. Built on the **Effectory Engage Design System v1.17.0** (tokens,
 components, icons — copied verbatim from the design-system skill).
 
-**Live demo:** https://effectory-ux.github.io/cyos/phase-3/ (deployed together with
+**Live demo:** https://ux.effectory.com/prototypes/cyos/demo/phase-3/ (deployed together with
 the other phases by manually running the repo's **Deploy demos** workflow).
 
 ## Staying in sync with phase 2

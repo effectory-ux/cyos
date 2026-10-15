@@ -1,21 +1,22 @@
 name: Deploy demos
 
-# Publishes to this repo's Pages site (https://effectory-ux.github.io/cyos/),
-# served from the gh-pages branch. MANUAL TRIGGER ONLY, and scoped: the target
-# input decides which slice of the site is updated — everything else on the
-# branch stays byte-identical, so publishing a research doc never touches the
-# phase demos and vice versa.
+# Publishes to ux.effectory.com/prototypes/cyos/ (Azure Static Web Apps), which
+# serves the main branch as-is, without a build step. The built site therefore
+# lives in demo/ on main, and the root index.html forwards to it.
+# MANUAL TRIGGER ONLY, and scoped: the target input decides which slice of
+# demo/ is updated. Everything else in demo/ stays byte-identical, so
+# publishing a research doc never touches the phase demos and vice versa.
 #
-#   site-and-research → landing page + site/research/** (static files)
-#   phase-1           → builds phase-1/ and replaces /phase-1/
-#   phase-2           → builds phase-2/ and replaces /phase-2/
-#   phase-2.1         → builds phase-2.1/ and replaces /phase-2.1/
-#   phase-2.2         → builds phase-2.2/ and replaces /phase-2.2/
-#   phase-3           → builds phase-3/ and replaces /phase-3/
+#   site-and-research → landing page + research docs (site/ → demo/)
+#   phase-1           → builds phase-1/ and replaces demo/phase-1/
+#   phase-2           → builds phase-2/ and replaces demo/phase-2/
+#   phase-2.1         → builds phase-2.1/ and replaces demo/phase-2.1/
+#   phase-2.2         → builds phase-2.2/ and replaces demo/phase-2.2/
+#   phase-3           → builds phase-3/ and replaces demo/phase-3/
 #   everything        → all of the above
 #
-# Phase 1's ORIGINAL demo link is still the separate
-# cyos-survey-creation-flow-demo repo, updated only via phase-1/deploy-demo.sh.
+# Never edit demo/ by hand. A phase built locally goes the same way: copy its
+# dist/ to demo/<phase>/ and commit that to main.
 
 on:
   workflow_dispatch:
@@ -37,7 +38,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: gh-pages
+  group: deploy-demos
   cancel-in-progress: false
 
 jobs:
@@ -46,11 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: src
-      - uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          path: out
+          ref: main
       - uses: actions/setup-node@v4
         if: inputs.target == 'phase-1' || inputs.target == 'phase-2' || inputs.target == 'phase-2.1' || inputs.target == 'phase-2.2' || inputs.target == 'phase-3' || inputs.target == 'everything'
         with:
@@ -58,56 +55,60 @@ jobs:
       - name: Update landing page and research docs
         if: inputs.target == 'site-and-research' || inputs.target == 'everything'
         run: |
-          # Sync site/ onto the branch root, removing stale static files but
-          # never touching the phase build folders.
-          rsync -a --delete --exclude 'phase-1/' --exclude 'phase-2/' --exclude 'phase-2.1/' --exclude 'phase-2.2/' --exclude 'phase-3/' --exclude '.git/' --exclude '.nojekyll' src/site/ out/
+          # Sync site/ into demo/, removing stale static files but never
+          # touching the phase build folders.
+          mkdir -p demo
+          rsync -a --delete --exclude 'phase-1/' --exclude 'phase-2/' --exclude 'phase-2.1/' --exclude 'phase-2.2/' --exclude 'phase-3/' site/ demo/
       - name: Build and replace phase 1
         if: inputs.target == 'phase-1' || inputs.target == 'everything'
         run: |
-          npm ci --prefix src/phase-1
-          npm run build --prefix src/phase-1
-          rm -rf out/phase-1
-          cp -R src/phase-1/dist out/phase-1
-          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > out/phase-1/version.json
+          npm ci --prefix phase-1
+          npm run build --prefix phase-1
+          rm -rf demo/phase-1
+          mkdir -p demo
+          cp -R phase-1/dist demo/phase-1
+          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > demo/phase-1/version.json
       - name: Build and replace phase 2
         if: inputs.target == 'phase-2' || inputs.target == 'everything'
         run: |
-          npm ci --prefix src/phase-2
-          npm run build --prefix src/phase-2
-          rm -rf out/phase-2
-          cp -R src/phase-2/dist out/phase-2
-          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > out/phase-2/version.json
+          npm ci --prefix phase-2
+          npm run build --prefix phase-2
+          rm -rf demo/phase-2
+          mkdir -p demo
+          cp -R phase-2/dist demo/phase-2
+          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > demo/phase-2/version.json
       - name: Build and replace phase 2.1
         if: inputs.target == 'phase-2.1' || inputs.target == 'everything'
         run: |
-          npm ci --prefix src/phase-2.1
-          npm run build --prefix src/phase-2.1
-          rm -rf out/phase-2.1
-          cp -R src/phase-2.1/dist out/phase-2.1
-          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > out/phase-2.1/version.json
+          npm ci --prefix phase-2.1
+          npm run build --prefix phase-2.1
+          rm -rf demo/phase-2.1
+          mkdir -p demo
+          cp -R phase-2.1/dist demo/phase-2.1
+          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > demo/phase-2.1/version.json
       - name: Build and replace phase 2.2
         if: inputs.target == 'phase-2.2' || inputs.target == 'everything'
         run: |
-          npm ci --prefix src/phase-2.2
-          npm run build --prefix src/phase-2.2
-          rm -rf out/phase-2.2
-          cp -R src/phase-2.2/dist out/phase-2.2
-          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > out/phase-2.2/version.json
+          npm ci --prefix phase-2.2
+          npm run build --prefix phase-2.2
+          rm -rf demo/phase-2.2
+          mkdir -p demo
+          cp -R phase-2.2/dist demo/phase-2.2
+          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > demo/phase-2.2/version.json
       - name: Build and replace phase 3
         if: inputs.target == 'phase-3' || inputs.target == 'everything'
         run: |
-          npm ci --prefix src/phase-3
-          npm run build --prefix src/phase-3
-          rm -rf out/phase-3
-          cp -R src/phase-3/dist out/phase-3
-          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > out/phase-3/version.json
+          npm ci --prefix phase-3
+          npm run build --prefix phase-3
+          rm -rf demo/phase-3
+          mkdir -p demo
+          cp -R phase-3/dist demo/phase-3
+          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > demo/phase-3/version.json
       - name: Publish
         run: |
-          cd out
-          touch .nojekyll
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add -A demo
           git diff --cached --quiet && { echo "Nothing changed — nothing published."; exit 0; }
           git commit -m "Publish ${{ inputs.target }} ($GITHUB_SHA)"
-          git push origin gh-pages
+          git push origin HEAD:main || { git pull --rebase origin main && git push origin HEAD:main; }
