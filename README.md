@@ -46,6 +46,16 @@ gh workflow run "Deploy demos" -f target=phase-1             # phase-1 demo only
 gh workflow run "Deploy demos" -f target=everything
 ```
 
+### ux.effectory.com
+
+https://ux.effectory.com/prototypes/cyos/ serves `main` as-is, without a build
+step. The built site therefore also lives in [`demo/`](demo/) on `main`: a copy
+of `gh-pages`, and the root `index.html` forwards to it. After a Deploy demos
+run, copy `gh-pages` into `demo/` again, or ux.effectory.com shows the old build.
+Never edit `demo/` by hand.
+
+Requires sign-in with your Microsoft account. Access: Effectory staff.
+
 Research docs are static pages in `site/research/<slug>/index.html`, linked
 from the landing page. Phase 1's original demo link is not built separately —
 the personal `cyos-survey-creation-flow-demo` repo serves only a static
