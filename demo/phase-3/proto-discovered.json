@@ -1,16 +1,18 @@
 {
-  "version": 6,
-  "savedAt": "2026-09-04T09:30:45.266Z",
+  "version": 8,
+  "savedAt": "2026-09-09T11:54:20.089Z",
   "editor": "Jamal van Rooijen",
   "entries": {
     "/projects/:n/survey-list": {
       "route": "/projects/:n/survey-list",
       "example": "#/projects/31092/survey-list",
       "label": "survey-list",
-      "count": 2,
+      "count": 5,
       "firstSeen": "2026-09-04T09:28:45.257Z",
-      "via": {},
-      "lastSeen": "2026-09-04T09:30:35.257Z"
+      "via": {
+        "surveys": true
+      },
+      "lastSeen": "2026-09-09T11:54:19.082Z"
     },
     "/projects/:n/survey-list(dialog:choose-template)": {
       "route": "/projects/:n/survey-list(dialog:choose-template)",
@@ -28,12 +30,13 @@
       "route": "/surveys/:id/questionnaire",
       "example": "#/surveys/s3/questionnaire",
       "label": "questionnaire",
-      "count": 1,
+      "count": 8,
       "firstSeen": "2026-09-04T09:29:29.255Z",
       "via": {
-        "builder": true
+        "builder": true,
+        "surveys": true
       },
-      "lastSeen": "2026-09-04T09:29:29.255Z"
+      "lastSeen": "2026-09-09T11:54:15.083Z"
     },
     "/surveys/:id/questionnaire(dialog:select-questions)": {
       "route": "/surveys/:id/questionnaire(dialog:select-questions)",
