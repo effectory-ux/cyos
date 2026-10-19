@@ -15,6 +15,7 @@ Microsoft sign-in; access: Effectory staff), with a landing page at
 | Phase 2 — survey-scoped customization | [`phase-2/`](phase-2/) | https://ux.effectory.com/prototypes/cyos/demo/phase-2/ | 5181 |
 | Phase 2.1 — iteration on phase 2 | [`phase-2.1/`](phase-2.1/) | https://ux.effectory.com/prototypes/cyos/demo/phase-2.1/ | 5183 |
 | Phase 2.2 — iteration on phase 2.1 | [`phase-2.2/`](phase-2.2/) | https://ux.effectory.com/prototypes/cyos/demo/phase-2.2/ | 5184 |
+| Phase 2.3 — iteration on phase 2.2 | [`phase-2.3/`](phase-2.3/) | https://ux.effectory.com/prototypes/cyos/demo/phase-2.3/ | 5185 |
 | Phase 3 | [`phase-3/`](phase-3/) | https://ux.effectory.com/prototypes/cyos/demo/phase-3/ | |
 
 Phase 1's original demo link, https://n33g3k.github.io/cyos-survey-creation-flow-demo/,
@@ -45,6 +46,7 @@ gh workflow run "Deploy demos" -f target=site-and-research   # landing + researc
 gh workflow run "Deploy demos" -f target=phase-2             # phase-2 demo only
 gh workflow run "Deploy demos" -f target=phase-2.1           # phase-2.1 demo only
 gh workflow run "Deploy demos" -f target=phase-2.2           # phase-2.2 demo only
+gh workflow run "Deploy demos" -f target=phase-2.3           # phase-2.3 demo only
 gh workflow run "Deploy demos" -f target=phase-1             # phase-1 demo only
 gh workflow run "Deploy demos" -f target=phase-3             # phase-3 demo only
 gh workflow run "Deploy demos" -f target=everything

@@ -12,6 +12,7 @@ name: Deploy demos
 #   phase-2           → builds phase-2/ and replaces demo/phase-2/
 #   phase-2.1         → builds phase-2.1/ and replaces demo/phase-2.1/
 #   phase-2.2         → builds phase-2.2/ and replaces demo/phase-2.2/
+#   phase-2.3         → builds phase-2.3/ and replaces demo/phase-2.3/
 #   phase-3           → builds phase-3/ and replaces demo/phase-3/
 #   everything        → all of the above
 #
@@ -31,6 +32,7 @@ on:
           - phase-2
           - phase-2.1
           - phase-2.2
+          - phase-2.3
           - phase-3
           - everything
 
@@ -49,7 +51,7 @@ jobs:
         with:
           ref: main
       - uses: actions/setup-node@v4
-        if: inputs.target == 'phase-1' || inputs.target == 'phase-2' || inputs.target == 'phase-2.1' || inputs.target == 'phase-2.2' || inputs.target == 'phase-3' || inputs.target == 'everything'
+        if: inputs.target == 'phase-1' || inputs.target == 'phase-2' || inputs.target == 'phase-2.1' || inputs.target == 'phase-2.2' || inputs.target == 'phase-2.3' || inputs.target == 'phase-3' || inputs.target == 'everything'
         with:
           node-version: 22
       - name: Update landing page and research docs
@@ -58,7 +60,7 @@ jobs:
           # Sync site/ into demo/, removing stale static files but never
           # touching the phase build folders.
           mkdir -p demo
-          rsync -a --delete --exclude 'phase-1/' --exclude 'phase-2/' --exclude 'phase-2.1/' --exclude 'phase-2.2/' --exclude 'phase-3/' site/ demo/
+          rsync -a --delete --exclude 'phase-1/' --exclude 'phase-2/' --exclude 'phase-2.1/' --exclude 'phase-2.2/' --exclude 'phase-2.3/' --exclude 'phase-3/' site/ demo/
       - name: Build and replace phase 1
         if: inputs.target == 'phase-1' || inputs.target == 'everything'
         run: |
@@ -95,6 +97,15 @@ jobs:
           mkdir -p demo
           cp -R phase-2.2/dist demo/phase-2.2
           printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > demo/phase-2.2/version.json
+      - name: Build and replace phase 2.3
+        if: inputs.target == 'phase-2.3' || inputs.target == 'everything'
+        run: |
+          npm ci --prefix phase-2.3
+          npm run build --prefix phase-2.3
+          rm -rf demo/phase-2.3
+          mkdir -p demo
+          cp -R phase-2.3/dist demo/phase-2.3
+          printf '{"commit":"%s","builtAt":"%s"}' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > demo/phase-2.3/version.json
       - name: Build and replace phase 3
         if: inputs.target == 'phase-3' || inputs.target == 'everything'
         run: |
