@@ -2276,3 +2276,44 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .intro-card.is-text-dark :is(.welcome-title, .welcome-desc) { color: var(--content-base); text-shadow: none; }
 
 
+
+/* ---- Question logic (conditional visibility) ------------------------------
+   The dialog carries a one-line summary row with the other settings; editing
+   happens in a dialog takeover (.lgc-*) so stacked conditions get full room.
+   Amber = "some participants skip this", matching the builder row tag. */
+.bmq-logicrow { flex: none; display: flex; align-items: center; gap: 12px; margin-top: var(--spacing-base);
+  padding: 10px 12px; border: 1px solid var(--border-base); border-radius: var(--radius-lg); background: var(--bg-base); }
+.bmq-logicrow-ic { flex: none; width: 32px; height: 32px; border-radius: var(--radius-base);
+  display: grid; place-items: center; background: var(--bg-warning-subtle); color: var(--content-warning); }
+.bmq-logicrow-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.bmq-logicrow-title { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-primary); }
+.bmq-logicrow-sub { font-size: 12px; line-height: 18px; color: var(--content-secondary); }
+.bmq-logicrow-sub.is-ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bmq-logicrow > .btn { flex: none; }
+.infotag.is-logic { background: var(--bg-warning-subtle); color: var(--content-warning); }
+.tag-logic { display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-base); max-width: 140px;
+  padding: 2px 8px; font-size: 12px; font-weight: 500; line-height: 18px;
+  background: var(--bg-warning-subtle); color: var(--content-warning); }
+
+.lgc-back { display: inline-flex; align-items: center; gap: 6px; border: none; background: none; padding: 0 0 8px;
+  font: inherit; font-size: 14px; font-weight: 500; color: var(--content-brand-base); cursor: pointer; }
+.lgc-back:hover { text-decoration: underline; }
+.lgc-lead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lgc-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--spacing-base);
+  padding: var(--spacing-base) 2px; }
+.lgc-card { border: 1px solid var(--border-base); border-radius: var(--radius-lg); padding: 12px 16px 14px;
+  display: flex; flex-direction: column; gap: 10px; background: var(--bg-base); }
+.lgc-card.is-invalid { border-color: var(--border-negative); }
+.lgc-card-head { display: flex; align-items: center; gap: 8px; }
+.lgc-kind { display: inline-flex; align-items: center; gap: 6px; flex: 1; font-size: 12px; font-weight: 600;
+  color: var(--content-secondary); }
+.lgc-lbl { font-size: 12px; font-weight: 500; color: var(--content-secondary); }
+.lgc-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 16px; }
+.lgc-opt { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: var(--radius-base);
+  font-size: 14px; line-height: 22.4px; color: var(--content-primary); cursor: pointer; }
+.lgc-opt:hover { background: var(--bg-secondary); }
+.lgc-opt.is-on { background: var(--bg-brand-subtle-selected); }
+.lgc-hint { font-size: 12px; line-height: 18px; color: var(--content-secondary); }
+.lgc-err { font-size: 12px; line-height: 18px; color: var(--content-negative); }
+.lgc-empty { font-size: 13px; line-height: 20px; color: var(--content-secondary); padding: 8px 2px; }
+.lgc-add { display: flex; gap: 12px; flex-wrap: wrap; }
