@@ -236,9 +236,8 @@ function LogicEditor({ logic, onChange, earlier, title, onDone, onRemoveAll }) {
           <LogicCondition key={i} c={c} earlier={earlier} showErrors={showErrors}
             onChange={(next) => setCondition(i, next)} onRemove={() => removeCondition(i)} />
         ))}
-        {conditions.length === 0 && (
-          <div className="lgc-empty">No conditions yet — everyone still gets this question.</div>
-        )}
+        {/* Arriving with nothing set, the field promised options — so the add
+            choices lead, no empty-state prose in between. */}
         <div className="lgc-add">
           <button type="button" className={"btn btn-secondary" + (earlier.length ? "" : " is-disabled")}
             disabled={!earlier.length}
@@ -252,7 +251,7 @@ function LogicEditor({ logic, onChange, earlier, title, onDone, onRemoveAll }) {
         </div>
       </div>
       <div className="dialog-footer">
-        <button className="btn btn-secondary" onClick={onRemoveAll}>Remove logic</button>
+        {conditions.length > 0 && <button className="btn btn-secondary" onClick={onRemoveAll}>Remove logic</button>}
         <div className="spacer" />
         <button className="btn btn-primary" onClick={done}>Done</button>
       </div>
@@ -373,38 +372,33 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               <Icon name="chevron-down" size={16} />
             </div>
           </div>
-        </div>
-
-        {/* Logic sits with the other settings, as a one-line summary — the
-            editing surface is the takeover above, so any number of conditions
-            never crowds the preview. */}
-        <div className="bmq-logicrow">
-          <span className="bmq-logicrow-ic"><Icon name="eye" size={16} /></span>
-          {q.required ? (
-            <span className="bmq-logicrow-text">
-              <span className="bmq-logicrow-title">Everyone gets this question</span>
-              <span className="bmq-logicrow-sub">It's required, so logic can't hide it.</span>
-            </span>
-          ) : hasLogic ? (
-            <>
-              <span className="bmq-logicrow-text">
-                <span className="bmq-logicrow-title">{`Shows conditionally · ${logic.conditions.length} ${logic.conditions.length === 1 ? "condition" : "conditions"}`}</span>
-                <span className="bmq-logicrow-sub is-ellip" title={logicLine}>{logicLine}</span>
-              </span>
-              <button type="button" className="btn btn-secondary" onClick={() => setLogicOpen(true)}>Edit logic</button>
-            </>
-          ) : (
-            <>
-              <span className="bmq-logicrow-text">
-                <span className="bmq-logicrow-title">Show this question conditionally</span>
-                <span className="bmq-logicrow-sub">Everyone gets it now. Show it only after a chosen answer, or only to some employees.</span>
-              </span>
-              <button type="button" className="btn btn-secondary"
-                onClick={() => { setLogic(l => l || { match: "all", conditions: [] }); setLogicOpen(true); }}>
-                Add logic
-              </button>
-            </>
-          )}
+          {/* Logic is a setting with a value, not a feature: "Everyone" for
+              most questions, a condition count for the masked ones. The field
+              is a DOOR (chevron right) — it opens the logic takeover, never a
+              dropdown. Required questions are locked: everyone gets them. */}
+          <div className="bmq-field">
+            <span className="bmq-lbl">Who gets it</span>
+            {q.required ? (
+              <div className="bmq-type-disabled" aria-disabled="true" title="It's required, so everyone gets this question">
+                <Icon name="asterisk" size={14} />
+                <span>Everyone</span>
+                <span className="spacer" />
+                <Icon name="chevron-right" size={16} />
+              </div>
+            ) : (
+              <Tooltip label={hasLogic ? logicLine : "Show this question only after a chosen answer, or only to some employees"} wrapClass="bmq-who-tt">
+                <button type="button" className={"sel-btn bmq-who" + (hasLogic ? " is-some" : "")} aria-haspopup="dialog"
+                  onClick={() => { setLogic(l => l || { match: "all", conditions: [] }); setLogicOpen(true); }}>
+                  {hasLogic && <span className="bmq-who-ic"><Icon name="eye" size={16} /></span>}
+                  <span className="sel-btn-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {hasLogic ? `Some · ${logic.conditions.length} ${logic.conditions.length === 1 ? "condition" : "conditions"}` : "Everyone"}
+                  </span>
+                  <span className="spacer" />
+                  <Icon name="chevron-right" size={16} />
+                </button>
+              </Tooltip>
+            )}
+          </div>
         </div>
 
         {/* Above the stage, not inside it: the preview scrolls, and a language

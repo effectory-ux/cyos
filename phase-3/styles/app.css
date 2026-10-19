@@ -2281,15 +2281,15 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
    The dialog carries a one-line summary row with the other settings; editing
    happens in a dialog takeover (.lgc-*) so stacked conditions get full room.
    Amber = "some participants skip this", matching the builder row tag. */
-.bmq-logicrow { flex: none; display: flex; align-items: center; gap: 12px; margin-top: var(--spacing-base);
-  padding: 10px 12px; border: 1px solid var(--border-base); border-radius: var(--radius-lg); background: var(--bg-base); }
-.bmq-logicrow-ic { flex: none; width: 32px; height: 32px; border-radius: var(--radius-base);
-  display: grid; place-items: center; background: var(--bg-warning-subtle); color: var(--content-warning); }
-.bmq-logicrow-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-.bmq-logicrow-title { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-primary); }
-.bmq-logicrow-sub { font-size: 12px; line-height: 18px; color: var(--content-secondary); }
-.bmq-logicrow-sub.is-ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bmq-logicrow > .btn { flex: none; }
+/* The "Who gets it" field: a door to the logic takeover. Set state shows the
+   amber eye + a condition count; the summary sentence rides in its tooltip.
+   The selects row may wrap so the third field never crushes the others. */
+.bmq-selects { flex-wrap: wrap; }
+.bmq-selects .bmq-field { flex: 1 1 0; min-width: 200px; }
+.bmq-who-tt { display: block; }
+.bmq-who { width: 100%; }
+.bmq-who-ic { display: flex; flex: none; color: var(--content-warning); }
+.bmq-who.is-some .sel-btn-name { font-weight: 500; }
 .infotag.is-logic { background: var(--bg-warning-subtle); color: var(--content-warning); }
 .tag-logic { display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-base); max-width: 140px;
   padding: 2px 8px; font-size: 12px; font-weight: 500; line-height: 18px;
@@ -2315,5 +2315,4 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .lgc-opt.is-on { background: var(--bg-brand-subtle-selected); }
 .lgc-hint { font-size: 12px; line-height: 18px; color: var(--content-secondary); }
 .lgc-err { font-size: 12px; line-height: 18px; color: var(--content-negative); }
-.lgc-empty { font-size: 13px; line-height: 20px; color: var(--content-secondary); padding: 8px 2px; }
 .lgc-add { display: flex; gap: 12px; flex-wrap: wrap; }
