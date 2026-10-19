@@ -1,6 +1,6 @@
 {
-  "version": 831,
-  "savedAt": "2026-10-19T14:26:20.955Z",
+  "version": 844,
+  "savedAt": "2026-10-19T14:42:06.351Z",
   "editor": "Jamal van Rooijen",
   "entries": {
     "/projects/:n/survey-list": {
@@ -18,7 +18,7 @@
       "route": "/surveys/:id/questionnaire",
       "example": "#/surveys/s3/questionnaire",
       "label": "questionnaire",
-      "count": 551,
+      "count": 555,
       "firstSeen": "2026-09-04T09:29:29.255Z",
       "via": {
         "builder": true,
@@ -26,13 +26,13 @@
         "empty-topics": true,
         "surveys": true
       },
-      "lastSeen": "2026-10-19T14:26:20.148Z"
+      "lastSeen": "2026-10-19T14:42:05.543Z"
     },
     "/surveys/:id/questionnaire(dialog:question-settings/:arg)": {
       "route": "/surveys/:id/questionnaire(dialog:question-settings/:arg)",
-      "example": "#/surveys/s3/questionnaire(dialog:question-settings/sos-2-1)",
+      "example": "#/surveys/s3/questionnaire(dialog:question-settings/sos-5-0)",
       "label": "questionnaire · question-settings",
-      "count": 89,
+      "count": 96,
       "firstSeen": "2026-09-04T09:29:33.255Z",
       "via": {
         "question-settings": true,
@@ -41,7 +41,7 @@
         "topic-dialog": true,
         "translations": true
       },
-      "lastSeen": "2026-10-19T14:25:59.771Z"
+      "lastSeen": "2026-10-19T14:42:04.287Z"
     },
     "/surveys/:id/questionnaire(dialog:select-questions)": {
       "route": "/surveys/:id/questionnaire(dialog:select-questions)",
@@ -188,6 +188,17 @@
         "topic-move": true
       },
       "lastSeen": "2026-10-15T13:04:42.394Z"
+    },
+    "/surveys/:id/questionnaire(dialog:question-logic/:arg)": {
+      "route": "/surveys/:id/questionnaire(dialog:question-logic/:arg)",
+      "example": "#/surveys/s3/questionnaire(dialog:question-logic/sos-2-1)",
+      "label": "questionnaire · question-logic",
+      "count": 1,
+      "firstSeen": "2026-10-19T14:41:19.530Z",
+      "via": {
+        "question-logic": true
+      },
+      "lastSeen": "2026-10-19T14:41:19.530Z"
     }
   }
 }

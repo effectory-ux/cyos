@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, Tooltip, RequiredMarker, themeQuestions, useMediaQuery } from "./shared.jsx";
 import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
-import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
+import { BenchmarkQuestionDialog, QuestionLogicDialog } from "./BenchmarkQuestionDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
 import { TranslationsDialog } from "./TranslationsDialog.jsx";
 import { THEMES, CUSTOM_GROUP, answerOptionsOf } from "../data/data.js";
@@ -401,7 +401,7 @@ const EMPTY_DRAG_IMG = typeof Image !== "undefined"
 // the topics only make their entrance the first time.
 const entranceSeen = new Set();
 
-export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onAddQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, onConfirmTranslation, edges = {}, openDialog, onDialogChange, addAtBottom = false, pagesRail = false, introTextColor = false, introTextBox = false, whiteTopics = false, focusQuestion }) {
+export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onAddQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, onConfirmTranslation, edges = {}, openDialog, onDialogChange, addAtBottom = false, pagesRail = false, introTextColor = false, introTextBox = false, whiteTopics = false, logicInPlace = false, focusQuestion }) {
   const { name, design: designId, selectedIds, pool, topicMeta = {}, customTopics = [], keptTopics = [], qMeta = {}, i18nEdits = {}, i18nStale = {}, intro = {} } = survey;
   // Below this the questionnaire page tightens: step labels go, the page
   // padding and the gaps between cards shrink, "Edit name" becomes an icon.
@@ -421,6 +421,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // { creating: true } or { key } — the topic dialog currently open.
   const [topicDialog, setTopicDialog] = useState(null);
   const [settingsQId, setSettingsQId] = useState(null); // standard question whose dialog is open
+  const [logicQId, setLogicQId] = useState(null); // question the standalone logic dialog opened on
   const [translationsOpen, setTranslationsOpen] = useState(false);
   const [introOpen, setIntroOpen] = useState(false);   // participant intro screen
   // Which survey page is shown: the questionnaire (always where you land) or
@@ -463,23 +464,28 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // asked for by a deep link or the prototype toolbar.
   useEffect(() => {
     if (!onDialogChange) return;
-    if (settingsQId) onDialogChange({ dialog: "question-settings", arg: settingsQId });
+    if (logicQId) onDialogChange({ dialog: "question-logic", arg: logicQId });
+    else if (settingsQId) onDialogChange({ dialog: "question-settings", arg: settingsQId });
     else if (topicDialog) onDialogChange(topicDialog.creating ? { dialog: "add-topic" } : { dialog: "topic", arg: topicDialog.key });
     else if (translationsOpen) onDialogChange({ dialog: "translations" });
     else if (themeDetail) onDialogChange({ dialog: "theme", arg: themeDetail });
     else if (introOpen) onDialogChange({ dialog: "intro-screen" });
 
     else onDialogChange(null);
-  }, [settingsQId, topicDialog, translationsOpen, themeDetail, introOpen]); // eslint-disable-line
+  }, [logicQId, settingsQId, topicDialog, translationsOpen, themeDetail, introOpen]); // eslint-disable-line
   // A request from outside (the toolbar's Screens, a link) replaces whatever
   // dialog the builder has open — jumping from one to another never stacks.
   const firstOpen = useRef(true);
   useEffect(() => {
-    if (!firstOpen.current) { setSettingsQId(null); setTopicDialog(null); setTranslationsOpen(false); setThemeDetail(null); setIntroOpen(false); }
+    if (!firstOpen.current) { setSettingsQId(null); setLogicQId(null); setTopicDialog(null); setTranslationsOpen(false); setThemeDetail(null); setIntroOpen(false); }
     firstOpen.current = false;
     if (!openDialog) return;
     const { dialog, arg } = openDialog;
     if (dialog === "question-settings" && arg) setSettingsQId(arg);
+    // The standalone logic dialog opens over the question's own dialog; the
+    // in-place variant has no dialog of its own, so the settings dialog is
+    // the honest restore there.
+    else if (dialog === "question-logic" && arg) { setSettingsQId(arg); if (!logicInPlace) setLogicQId(arg); }
     else if (dialog === "topic" && arg) setTopicDialog({ key: arg });
     else if (dialog === "add-topic") setTopicDialog({ creating: true });
     // Next step pressed with an empty topic (the toolbar's screen for it).
@@ -1772,6 +1778,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]} design={design}
             allQuestions={flatOrder}
             logicByQuestion={Object.fromEntries(flatOrder.map(x => [x.id, (qMeta[x.id] || {}).logic || null]))}
+            logicInPlace={logicInPlace} onOpenLogic={setLogicQId}
             onOpenTheme={setThemeDetail}
             allVariants={edges.altWordings}
             topicOptions={visibleSections.map(x => ({ value: x.key, label: topicName(x.key) }))}
@@ -1788,6 +1795,16 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             }} />
         ) : null;
       })()}
+      {/* The standalone logic dialog (the default surface) sits over whatever
+          opened it and commits itself — its Save applies, Cancel discards. */}
+      {logicQId && (
+        <QuestionLogicDialog questions={flatOrder} initialId={logicQId}
+          logicByQuestion={Object.fromEntries(flatOrder.map(x => [x.id, (qMeta[x.id] || {}).logic || null]))}
+          zIndex={settingsQId ? 80 : undefined}
+          onApply={(patches) => Object.entries(patches).forEach(([id, lg]) =>
+            onUpdateQMeta && onUpdateQMeta(id, { logic: lg || undefined }))}
+          onClose={() => setLogicQId(null)} />
+      )}
       {translationsOpen && <TranslationsDialog pool={pool} selectedIds={selectedIds}
         topicMeta={topicMeta} customTopics={customTopics} qMeta={qMeta} i18nEdits={i18nEdits} i18nStale={i18nStale}
         onSave={onSaveTranslation} onConfirm={onConfirmTranslation} onClose={() => setTranslationsOpen(false)} />}

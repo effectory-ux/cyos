@@ -40,6 +40,8 @@ export const USE_CASES = [
 // Design variants under exploration (the toolbar's Variants menu). Once one
 // wins, it becomes the default and leaves this list.
 export const VARIANTS = [
+  { key: "logicInPlace", label: "Question logic inside the question dialog",
+    desc: "Off (default) = Who gets it opens its own Question logic dialog: every question on a rail, set logic for several in one visit, with its own Save. On = the question dialog flips in place to just this question's logic, saved with the question." },
   { key: "addAtBottom", label: "Add questions at the bottom of each topic",
     desc: "Off (default) = an Add questions button in each topic's header. On = the previous design: an Add questions row as each topic's last row." },
   { key: "pagesRail", label: "Survey pages panel",
