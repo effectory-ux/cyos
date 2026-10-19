@@ -48,7 +48,7 @@ export const TEMPLATE_PREVIEWS = {
       { text: "Being part of this organisation makes me proud", type: "scale5", theme: "Engagement" },
       { text: "This place feels like somewhere I belong", type: "scale5", theme: "Engagement" },
       { text: "The organisation makes me feel my work matters", type: "scale5", theme: "Employer quality" },
-      { text: "The way things are done here is a good fit for me", type: "scale5", theme: "Adaptive leadership" },
+      { text: "The way things are done here is a good fit for me", type: "scale5", theme: null },
       { text: "Staff here are dealt with in an even-handed way", type: "scale5", theme: "Direction setting" },
       { text: "Strong results tend to pay off here", type: "scale5", theme: "Systems & structure" },
       { text: "Good work of mine gets noticed", type: "scale5", theme: "Employee enablement" },
@@ -57,7 +57,7 @@ export const TEMPLATE_PREVIEWS = {
       { text: "Staff ideas actually feed improvements here", type: "scale5", theme: "Employer quality" },
     ]},
     { topic: "Learning & growth", questions: [
-      { text: "There are plenty of ways to grow on offer here", type: "scale5", theme: "Systems & structure" },
+      { text: "There are plenty of ways to grow on offer here", type: "scale5", theme: null },
       { text: "Over the last quarter I've acted on finding a new job, or intend to shortly", type: "multiple", theme: null, options: ["No", "Yes, internally", "Yes, externally"] },
       { text: "Staying on here for another year or two appeals to me", type: "scale5", theme: null },
     ]},
@@ -98,7 +98,7 @@ export const TEMPLATE_PREVIEWS = {
       { text: "Trust runs through our team", type: "scale5", theme: "Respectful conduct" },
       { text: "In team meetings, everyone gets a fair turn to speak", type: "scale5", theme: "Respectful conduct" },
       { text: "Our team has an easy-going atmosphere", type: "scale5", theme: "Respectful conduct" },
-      { text: "We take a real interest in each other as people", type: "scale5", theme: "Respectful conduct" },
+      { text: "We take a real interest in each other as people", type: "scale5", theme: "Positive team experience" },
     ]},
     { topic: "Mutual growth", questions: [
       { text: "How would you rate your team's energy level?", type: "scale5", theme: null },
@@ -126,23 +126,23 @@ export const TEMPLATE_PREVIEWS = {
   sfm: [
     { topic: "Performance drivers", questions: [
       { text: "Where the organisation says it's going inspires me", type: "scale5", theme: "Direction setting", themes: ["Direction setting", "High-performance climate"] },
-      { text: "I'm behind where the organisation is heading", type: "scale5", theme: "Direction setting", themes: ["Direction setting", "High-performance climate"] },
-      { text: "Staff here are dealt with in an even-handed way", type: "scale5", theme: "Direction setting", themes: ["Direction setting", "High-performance climate"] },
-      { text: "My team knows how it can help the wider organisation succeed", type: "scale5", theme: "Adaptive leadership", themes: ["Adaptive leadership", "High-performance climate"] },
-      { text: "My team is a constant source of good improvement ideas", type: "scale5", theme: "Adaptive leadership", themes: ["Adaptive leadership", "High-performance climate"] },
+      { text: "I'm behind where the organisation is heading", type: "scale5", theme: "Direction setting" },
+      { text: "Staff here are dealt with in an even-handed way", type: "scale5", theme: "Direction setting" },
+      { text: "My team knows how it can help the wider organisation succeed", type: "scale5", theme: "Adaptive leadership" },
+      { text: "My team is a regular source of good improvement ideas", type: "scale5", theme: "Adaptive leadership" },
       { text: "My manager steers us through change capably", type: "scale5", theme: "Adaptive leadership", themes: ["Adaptive leadership", "High-performance climate"] },
-      { text: "I trust my manager's judgement", type: "scale5", theme: "Adaptive leadership", themes: ["Adaptive leadership", "High-performance climate"] },
-      { text: "The way things are done here is a good fit for me", type: "scale5", theme: "Adaptive leadership", themes: ["Adaptive leadership", "High-performance climate"] },
-      { text: "It's clear to me what I'm meant to deliver", type: "scale5", theme: "Employee enablement", themes: ["Employee enablement", "High-performance climate"] },
-      { text: "What I'm asked to do plays to what I'm good at", type: "scale5", theme: "Employee enablement", themes: ["Employee enablement", "High-performance climate"] },
+      { text: "I trust my manager's judgement", type: "scale5", theme: "Adaptive leadership" },
+      { text: "The way things are done here is a good fit for me", type: "scale5", theme: null },
+      { text: "It's clear to me what I'm meant to deliver", type: "scale5", theme: "Employee enablement" },
+      { text: "What I'm asked to do plays to what I'm good at", type: "scale5", theme: "Employee enablement" },
       { text: "Helpful feedback on my performance comes my way often", type: "scale5", theme: "Employee enablement", themes: ["Employee enablement", "High-performance climate"] },
       { text: "Good work of mine gets noticed", type: "scale5", theme: "Employee enablement", themes: ["Employee enablement", "High-performance climate"] },
       { text: "Strong results tend to pay off here", type: "scale5", theme: "Systems & structure", themes: ["Systems & structure", "High-performance climate"] },
-      { text: "Across the organisation, work is structured in a well-organised way", type: "scale5", theme: "Systems & structure", themes: ["Systems & structure", "High-performance climate"] },
-      { text: "I'm kitted out with the tools and systems my job calls for", type: "scale5", theme: "Systems & structure", themes: ["Systems & structure", "High-performance climate"] },
-      { text: "Teamwork within my group works well", type: "scale5", theme: "Systems & structure", themes: ["Systems & structure", "High-performance climate"] },
-      { text: "There are plenty of ways to grow on offer here", type: "scale5", theme: "Systems & structure", themes: ["Systems & structure", "High-performance climate"] },
-      { text: "The information I rely on is easy to track down", type: "scale5", theme: "Systems & structure", themes: ["Systems & structure", "High-performance climate"] },
+      { text: "Across the organisation, work is structured in a well-organised way", type: "scale5", theme: "Systems & structure" },
+      { text: "I'm kitted out with the tools and systems my job calls for", type: "scale5", theme: "Systems & structure" },
+      { text: "Teamwork within my group works well", type: "scale5", theme: "Systems & structure" },
+      { text: "There are plenty of ways to grow on offer here", type: "scale5", theme: null },
+      { text: "The information I rely on is easy to track down", type: "scale5", theme: "Systems & structure" },
       { text: "Day to day, I find my work enjoyable", type: "scale5", theme: "Engagement" },
       { text: "My work leaves me energised", type: "scale5", theme: "Engagement" },
       { text: "This place feels like somewhere I belong", type: "scale5", theme: "Engagement" },
@@ -199,8 +199,8 @@ export const TEMPLATE_PREVIEWS = {
       { text: "We're kept posted on how the DEI strategy and goals are progressing", type: "scale5", theme: null },
     ]},
     { topic: "Belonging", questions: [
-      { text: "I can be genuine with everyone I work alongside", type: "scale5", theme: "Practice" },
-      { text: "The people right around me take me as I am", type: "scale5", theme: "Practice" },
+      { text: "I can be genuine with everyone I work alongside", type: "scale5", theme: null },
+      { text: "The people right around me take me as I am", type: "scale5", theme: "Inclusion" },
       { text: "My teammates make my contribution feel it counts", type: "scale5", theme: null },
       { text: "I sense my manager appreciates what I bring", type: "scale5", theme: null },
       { text: "Do you feel you have to keep parts of who you are under wraps at work?", type: "multiple", theme: null, options: ["Yes", "No"] },
@@ -219,7 +219,7 @@ export const TEMPLATE_PREVIEWS = {
       { text: "My manager keeps me posted on what matters", type: "scale5", theme: null },
     ]},
     { topic: "Fairness", questions: [
-      { text: "Around me, people get equal respect whatever their background or personal characteristics", type: "scale5", theme: "Practice" },
+      { text: "Around me, people get equal respect whatever their background or personal characteristics", type: "scale5", theme: "Inclusion" },
       { text: "Doing well here earns recognition and reward", type: "scale5", theme: "Policy" },
       { text: "I get a fair deal here", type: "scale5", theme: null },
       { text: "It's clear how hiring decisions are made here", type: "scale5", theme: null },
@@ -280,17 +280,65 @@ export const TEMPLATE_META = Object.fromEntries(Object.entries(TEMPLATE_PREVIEWS
   return [k, { count, minutes: Math.max(3, Math.round(count * 0.5)) }];
 }));
 
-// A single template's own question set as pool-shaped objects. Ids follow the
-// same scheme as surveyFromTemplate (`${templateId}-${groupIndex}-${qIndex}`),
-// so a Templates-tab card and a survey built from that template share ids — a
-// template reads as "active" when all of these ids are selected.
-export function templatePoolQuestions(templateId) {
-  const groups = TEMPLATE_PREVIEWS[templateId] || [];
+// The library holds every question ONCE, under one topic. Templates are made
+// of library questions: the same wording in two templates is the same
+// question (one id), not two. Here the prototype's content is folded into that
+// shape: every wording gets one canonical question — from the Smart
+// Organization Scan first, then the base library, then the other templates —
+// and a template points at those questions. Its own grouping ("tmplTopic")
+// is kept for the template's preview and for a survey started from it, where
+// a question that sits under another library topic is filed there
+// (surveyFromTemplate: qMeta topic).
+const normText = (t) => (t || "").trim().toLowerCase();
+const rawTemplate = (templateId) => {
   const out = [];
-  groups.forEach((g, gi) => g.questions.forEach((q, qi) => {
+  (TEMPLATE_PREVIEWS[templateId] || []).forEach((g, gi) => g.questions.forEach((q, qi) => {
     out.push({ id: `${templateId}-${gi}-${qi}`, topic: g.topic, theme: q.theme || null, themes: q.themes || null,
-      type: q.type, bench: true, custom: false, tmplId: templateId, text: q.text, options: q.options });
+      type: q.type, bench: true, custom: false, text: q.text, options: q.options });
   }));
+  return out;
+};
+let CANON = null;
+const canon = () => {
+  if (CANON) return CANON;
+  const map = new Map();
+  const add = (q) => {
+    const k = normText(q.text);
+    const have = map.get(k);
+    if (!have) { map.set(k, { ...q }); return; }
+    if (q.required) have.required = true; // org-required on any copy: required
+  };
+  const others = Object.keys(TEMPLATE_PREVIEWS).filter(t => t !== "sos");
+  rawTemplate("sos").forEach(add);
+  libraryPool().forEach(add);
+  others.forEach(t => rawTemplate(t).forEach(add));
+  CANON = map;
+  return map;
+};
+
+// A template's questions as the library's (canonical) questions, each once,
+// with the template's own topic for them in `tmplTopic`. Shared ids mean a
+// Templates-tab card and a survey built from that template agree — a template
+// reads as "active" when all of these ids are selected.
+export function templatePoolQuestions(templateId) {
+  const map = canon(), seen = new Set(), out = [];
+  rawTemplate(templateId).forEach(r => {
+    const q = map.get(normText(r.text));
+    if (!q || seen.has(q.id)) return;
+    seen.add(q.id);
+    out.push({ ...q, tmplTopic: r.topic });
+  });
+  return out;
+}
+
+// The whole library: every question once. `firstId` puts one template's
+// questions first — the one a survey was made from — so its topics lead.
+export function fullLibrary(firstId) {
+  const map = canon();
+  const out = [], seen = new Set();
+  const push = (q) => { if (seen.has(q.id)) return; seen.add(q.id); const { tmplTopic: _t, ...rest } = q; out.push(rest); };
+  if (firstId) templatePoolQuestions(firstId).forEach(push);
+  map.forEach(push);
   return out;
 }
 

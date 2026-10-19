@@ -16,7 +16,7 @@ Microsoft sign-in; access: Effectory staff), with a landing page at
 | Phase 2.1 — iteration on phase 2 | [`phase-2.1/`](phase-2.1/) | https://ux.effectory.com/prototypes/cyos/demo/phase-2.1/ | 5183 |
 | Phase 2.2 — iteration on phase 2.1 | [`phase-2.2/`](phase-2.2/) | https://ux.effectory.com/prototypes/cyos/demo/phase-2.2/ | 5184 |
 | Phase 2.3 — iteration on phase 2.2 | [`phase-2.3/`](phase-2.3/) | https://ux.effectory.com/prototypes/cyos/demo/phase-2.3/ | 5185 |
-| Phase 3 | [`phase-3/`](phase-3/) | https://ux.effectory.com/prototypes/cyos/demo/phase-3/ | |
+| Phase 3 — next version, restarted from phase 2.3 | [`phase-3/`](phase-3/) | https://ux.effectory.com/prototypes/cyos/demo/phase-3/ | 5182 |
 
 Phase 1's original demo link, https://n33g3k.github.io/cyos-survey-creation-flow-demo/,
 is a static redirect in the personal `cyos-survey-creation-flow-demo` repo. It

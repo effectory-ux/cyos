@@ -322,7 +322,11 @@ export function SurveysPage({ rows, onCreate, onDeleteDraft, onOpen }) {
                 <div key={r.id} className="srow" role="button" tabIndex={0}
                   aria-label={`Open ${r.name}${EDITABLE.has(r.status) ? "" : " (opens a separate prototype)"}`}
                   onClick={() => onOpen(r)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(r); } }}>
+                  onKeyDown={(e) => {
+                    // Only the row itself: Enter on its More options button opens that menu, not the survey.
+                    if (e.target !== e.currentTarget) return;
+                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(r); }
+                  }}>
                   <div className="srow-info">
                     <div className="srow-name">{r.name}</div>
                     <div className="srow-proj"><Icon name="folder" size={12} /><span>{r.proj}</span></div>

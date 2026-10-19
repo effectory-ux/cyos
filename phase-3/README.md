@@ -1,27 +1,36 @@
 # CYOS — Phase 3
 
-Phase 3 of the CYOS survey-creation flow, **forked from `phase-2/`** and built on
-top of it. Built on the **Effectory Engage Design System v1.17.0** (tokens,
-components, icons — copied verbatim from the design-system skill).
+Phase 3 of the CYOS survey-creation flow, **restarted 2026-10-19 from
+`phase-2.3/`** as its baseline (the earlier phase 3 — question logic on the
+original phase 2 — lives in git history up to that date). Built on the
+**Effectory Engage Design System v1.17.0** (tokens, components, icons — copied
+verbatim from the design-system skill).
 
-**Live demo:** https://ux.effectory.com/prototypes/cyos/demo/phase-3/ (deployed together with
-the other phases by manually running the repo's **Deploy demos** workflow).
+**Live demo:** https://ux.effectory.com/prototypes/cyos/demo/phase-3/ (deployed
+together with the other phases by manually running the repo's **Deploy demos**
+workflow).
 
-## Staying in sync with phase 2
+## Staying in sync with phase 2.3
 
-Phase 2 still receives updates, and phase 3 should absorb them. The fork point
-is recorded in `.phase2-sync-base` (a commit SHA on `main`). To pull phase-2
-changes made since then into phase-3, run from the repo root:
+Phase 2.3 keeps evolving, and phase 3 should absorb its updates without ever
+touching `phase-2.3/` itself. The fork point is recorded in
+`.phase23-sync-base` (a commit SHA on `main`). To replay phase-2.3 commits
+made since then onto phase-3, run from the repo root:
 
 ```sh
-phase-3/sync-from-phase-2.sh
+phase-3/sync-from-phase-2.3.sh
 ```
 
-It replays each phase-2 commit since the base onto `phase-3/` (rewriting paths),
-skips the per-phase identity files (`vite.config.js` port, `package.json` name,
-this README's header, proto-edits state), and advances `.phase2-sync-base`.
-Conflicting hunks are left as `.rej` files to resolve by hand — expected once
-phase-3 starts diverging in files phase 2 also touches.
+It skips the per-phase identity files (`vite.config.js` port, `package.json`
+name, this README's header) and advances the base; conflicting hunks land as
+`.rej` files to resolve by hand.
+
+## About the phase-2.3 baseline
+
+Phase 2.3 iterates on phase 2.2, which stays frozen as it was signed off: Add questions
+in the topic header, the welcome page previewed above the topics (with its own
+background, uploads included), the redesigned question check, one language panel
+in every dialog, and custom questions without a topic going to "Other questions".
 
 ## What's implemented
 
@@ -89,7 +98,7 @@ or step you're testing).
 
 ```sh
 npm install     # first time only
-npm run dev     # http://localhost:5182  (Fast Refresh on save)
+npm run dev     # http://localhost:5181  (Fast Refresh on save)
 ```
 
 ## Build (production)
@@ -106,7 +115,7 @@ npm run preview   # serve the built dist/ to sanity-check it
 
 ```
 index.html            DS boilerplate (base href, tokens→foundation→components→app css)
-vite.config.js        Vite + @vitejs/plugin-react, dev server on :5182
+vite.config.js        Vite + @vitejs/plugin-react, dev server on :5181
 public/
   icons.js            Engage DS icon loader (verbatim) — served at /icons.js
   assets/icons/       204 DS icon SVGs (verbatim) — served at /assets/icons/

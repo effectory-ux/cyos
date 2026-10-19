@@ -4,7 +4,9 @@
 // survey: renamed topics, added descriptions, custom questions and their
 // answer options. Every string starts as an automatic (machine) translation;
 // editing a target marks it reviewed. When a base text changes later, its
-// reviewed translation is dropped and the string reverts to automatic.
+// reviewed translation is kept but flagged "check if it's still correct" —
+// Looks right keeps it, Translate again goes back to automatic, and editing
+// it counts as reviewing it again.
 import { useState } from "react";
 import { Icon } from "./Icon.jsx";
 import { Tooltip } from "./shared.jsx";
@@ -35,13 +37,14 @@ function collectStrings({ pool, selectedIds, topicMeta, customTopics, qMeta }) {
   return items;
 }
 
-export function TranslationsDialog({ pool, selectedIds, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {}, onSave, onClose }) {
+export function TranslationsDialog({ pool, selectedIds, topicMeta = {}, customTopics = [], qMeta = {}, i18nEdits = {}, i18nStale = {}, onSave, onConfirm, onClose }) {
   const targets = LANGUAGES.filter(l => !l.primary);
   const [lang, setLang] = useState(targets[0].code);
   // Local drafts (lang+key) so typing doesn't write survey state on every key.
   const [drafts, setDrafts] = useState({});
   const items = collectStrings({ pool, selectedIds, topicMeta, customTopics, qMeta });
   const edited = (key) => (i18nEdits[lang] || {})[key];
+  const staleOf = (key) => !!edited(key) && !!(i18nStale[lang] || {})[key];
   const valueOf = (it) => {
     const dk = lang + "|" + it.key;
     if (dk in drafts) return drafts[dk];
@@ -103,6 +106,7 @@ export function TranslationsDialog({ pool, selectedIds, topicMeta = {}, customTo
                 <div className="trd-group">{g.name}</div>
                 {g.items.map(it => {
                   const isReviewed = !!edited(it.key);
+                  const isStale = staleOf(it.key);
                   const Input = it.multiline ? "textarea" : "input";
                   return (
                     <div key={it.key} className="trd-row">
@@ -116,9 +120,17 @@ export function TranslationsDialog({ pool, selectedIds, topicMeta = {}, customTo
                           aria-label={`${it.label} in ${targets.find(l => l.code === lang).label}`}
                           onChange={e => setDrafts(d => ({ ...d, [lang + "|" + it.key]: e.target.value }))}
                           onBlur={() => commit(it)} />
-                        <span className={"trd-status " + (isReviewed ? "is-reviewed" : "is-auto")}>
-                          {isReviewed ? <><Icon name="check" size={11} />Reviewed</> : "Machine translated"}
-                        </span>
+                        {isStale ? (
+                          <span className="trd-status is-stale" role="status">
+                            <Icon name="alert-circle" size={12} />The English changed — check if it's still correct
+                            <button type="button" className="trd-act" onClick={() => onConfirm && onConfirm(lang, it.key)}>Looks right</button>
+                            <button type="button" className="trd-act" onClick={() => onSave && onSave(lang, it.key, "")}>Translate again</button>
+                          </span>
+                        ) : (
+                          <span className={"trd-status " + (isReviewed ? "is-reviewed" : "is-auto")}>
+                            {isReviewed ? <><Icon name="check" size={11} />Reviewed</> : "Machine translated"}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );

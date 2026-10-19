@@ -9,21 +9,35 @@ import { POOL, THEMES, CUSTOM_GROUP, QTYPES } from "../data/data.js";
 // can belong to several (`q.themes`) — removing such a question can break more
 // than one theme at once. `themesOf` is the single source of truth; it defaults
 // to `[q.theme]` so single-theme questions behave exactly as before.
-export const themesOf = (q) => (q.themes && q.themes.length ? q.themes : (q.theme ? [q.theme] : []));
+// A copy of a question (the same question added a second time) shows its theme
+// tag but never counts toward the theme: the theme holds that question once.
+export const themesOf = (q) => (q.dupOf ? [] : q.themes && q.themes.length ? q.themes : (q.theme ? [q.theme] : []));
 
-// A theme's composite score shows only if ALL its pool questions are kept.
-// Computes over the given `pool` (defaults to the shared POOL) — pass the
-// survey's own pool so template-built surveys (whose ids aren't in POOL) still
-// register their themes as complete for the soft-lock.
-export function themeStatus(selectedIds, pool = POOL) {
-  const sel = new Set(selectedIds);
+// A theme's questions, one per wording: the library holds some wordings under
+// several topics (and templates), but a theme asks each question once. The
+// copy shown is the one in the questionnaire when there is one, else the
+// first. `kept` counts wordings with a copy selected.
+export function themeQuestions(pool, sel) {
   const map = {};
   pool.forEach(q => themesOf(q).forEach(name => {
-    map[name] = map[name] || { total: 0, kept: 0, name };
-    map[name].total++;
-    if (sel.has(q.id)) map[name].kept++;
+    const byText = (map[name] = map[name] || new Map());
+    const k = (q.text || "").trim().toLowerCase();
+    const cur = byText.get(k);
+    if (!cur || (!sel.has(cur.id) && sel.has(q.id))) byText.set(k, q);
   }));
-  return Object.values(map).map(t => ({ ...t, complete: t.kept === t.total, touched: t.kept > 0 }));
+  return Object.fromEntries(Object.entries(map).map(([name, byText]) => {
+    const questions = [...byText.values()];
+    return [name, { questions, kept: questions.filter(q => sel.has(q.id)).length, total: questions.length }];
+  }));
+}
+
+// A theme's composite score shows only if ALL its questions are kept (each
+// wording once). Computes over the given `pool` (defaults to the shared POOL)
+// — pass the survey's own pool so template-built surveys (whose ids aren't in
+// POOL) still register their themes as complete for the soft-lock.
+export function themeStatus(selectedIds, pool = POOL) {
+  const groups = themeQuestions(pool, new Set(selectedIds));
+  return Object.entries(groups).map(([name, t]) => ({ name, total: t.total, kept: t.kept, complete: t.kept === t.total, touched: t.kept > 0 }));
 }
 
 // ---- grouping ----------------------------------------------------------
@@ -113,9 +127,12 @@ export function Tooltip({ label, wrapClass, children }) {
   const close = () => setShow(false);
   return (
     <span ref={ref} className={"tt-demo" + (wrapClass ? " " + wrapClass : "")}
-      onMouseEnter={open} onMouseLeave={close} onMouseDown={close} onFocus={open} onBlur={close}>
+      onMouseEnter={open} onMouseLeave={close} onMouseDown={close} onBlur={close}
+      // Focus shows it only when it comes from the keyboard: a menu or dialog
+      // handing focus back to its button after a click must not pop it up.
+      onFocus={(e) => { if (e.target.matches(":focus-visible")) open(); }}>
       {children}
-      {show && xy && createPortal(
+      {show && xy && label && createPortal(
         <span className={"tooltip tooltip-float " + xy.side} role="tooltip" style={{ left: xy.left, top: xy.top }}>{label}</span>,
         document.body)}
     </span>

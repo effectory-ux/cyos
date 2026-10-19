@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Replay phase-2 commits onto phase-3/.
+# Replay phase-2.3 commits onto phase-3/.
 #
-# Phase 3 was forked from phase-2/ at the commit recorded in
-# phase-3/.phase2-sync-base. This script replays every commit since then that
-# touched phase-2/ onto phase-3/ (paths rewritten), then advances the base.
+# Phase 3 was forked from phase-2.3/ at the commit recorded in
+# phase-3/.phase23-sync-base. This script replays every commit since then that
+# touched phase-2.3/ onto phase-3/ (paths rewritten), then advances the base.
 #
 # Per-phase identity files are never synced: vite.config.js (port),
-# package.json (name), and the proto-edits state (each phase records its own
-# inline edits). README.md IS synced — its phase-3 header lives in hunks the
-# upstream body changes rarely touch.
+# package.json (name) and this phase's README.md (its header names phase 3).
+# The lock file is skipped too — its hunks never apply across the renamed
+# package; run `npm install --prefix phase-3` after a sync that touched
+# dependencies and commit the regenerated lock.
 #
 # Conflicts: hunks that no longer apply are written next to the file as .rej;
 # the script stops at that commit with the base already advanced past it, so
@@ -16,26 +17,26 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
-BASE_FILE=phase-3/.phase2-sync-base
+BASE_FILE=phase-3/.phase23-sync-base
 base=$(cat "$BASE_FILE")
 
 EXCLUDES=(
-  ':(exclude)phase-2/vite.config.js'
-  ':(exclude)phase-2/package.json'
-  ':(exclude)phase-2/public/proto-edits.json'
-  ':(exclude)phase-2/proto-edits-history.jsonl'
+  ':(exclude)phase-2.3/vite.config.js'
+  ':(exclude)phase-2.3/package.json'
+  ':(exclude)phase-2.3/package-lock.json'
+  ':(exclude)phase-2.3/README.md'
 )
 
-commits=$(git rev-list --reverse "$base"..HEAD -- phase-2/)
+commits=$(git rev-list --reverse "$base"..HEAD -- phase-2.3/)
 if [ -z "$commits" ]; then
-  echo "phase-3 is already in sync with phase-2 (base $(git rev-parse --short "$base"))."
+  echo "phase-3 is already in sync with phase-2.3 (base $(git rev-parse --short "$base"))."
   git rev-parse HEAD > "$BASE_FILE"
   exit 0
 fi
 
 for c in $commits; do
   subj=$(git log -1 --format='%h %s' "$c")
-  patch=$(git diff-tree --no-commit-id --binary --relative=phase-2 -p "$c" -- phase-2/ "${EXCLUDES[@]}")
+  patch=$(git diff-tree --no-commit-id --binary --relative=phase-2.3 -p "$c" -- phase-2.3/ "${EXCLUDES[@]}")
   if [ -z "$patch" ]; then
     echo "skip   $subj (only excluded files)"
     git rev-parse "$c" > "$BASE_FILE"

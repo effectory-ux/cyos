@@ -4,54 +4,169 @@
 // and custom topics live in the questionnaire (and the Custom questions tab),
 // never in the library view. Rows keep selection in the checkbox with hover
 // tooltips.
-import { useState, useMemo, useRef, useEffect, Fragment } from "react";
+import { useState, useMemo, useRef, useEffect, Fragment, createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { themeStatus, themesOf, groupQuestions, QTypeIcon, Checkbox, Tooltip, ThemeTag, CustomTag, RequiredMarker, useMediaQuery, Highlight } from "./shared.jsx";
+import { themeStatus, themeQuestions, themesOf, groupQuestions, QTypeIcon, Tooltip, ThemeTag, CustomTag, RequiredMarker, useMediaQuery, Highlight } from "./shared.jsx";
 import { CustomQuestionDialog } from "./CustomQuestionDialog.jsx";
+import { useAnchorMenu, AnchorConfirm, CONFIRM_GAP } from "./AnchorMenu.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
-import { THEMES, POOL, TEMPLATES, BADGE_COLORS, ORG_CUSTOM } from "../data/data.js";
+import { THEMES, POOL, TEMPLATES, ORG_CUSTOM } from "../data/data.js";
 import { templatePoolQuestions, TEMPLATE_META } from "../data/qlib.js";
 
-// Two-line tooltip for a "select the whole subject" checkbox — names the current
-// state and the action a click performs (select the rest, or clear them).
-// Per-topic select-all control. Deliberately a BUTTON, not a checkbox: a
-// checkbox reads as "the topic is selected", but what you actually do is add the
-// topic's questions — in the questionnaire the topic is only structure. Labels
-// stay short ("Select all" / "Deselect all") so translations can't break the
-// row, and the topic's total question count rides along in a grey pill.
-// Org-required questions can't be deselected; their own marker carries that.
-function SelectAllTopic({ allOn, total, onToggle }) {
+// The Question library decides WHAT is in the questionnaire; the
+// questionnaire itself decides how it's arranged (topics, order, moving).
+// Every question has a checkbox: ticked = in (or going in). A question that is
+// in already starts ticked, and unticking it takes it out; the footer says
+// what Save will do. The state behind the boxes lives in one context
+// so the shared pieces (rows, cards, theme and template details) all read the
+// same thing:
+//   initial      ids that were in the questionnaire when the dialog opened
+//   sel          ids ticked now
+//   whereLine(q) the line under a wording: where it is, or where it goes
+// Pieces used outside this dialog (the builder's theme details) get no context
+// and keep their plain checkboxes.
+const AddCtx = createContext(null);
+
+// A topic, theme or survey named inside a sentence goes in quotes: names like
+// "Tools & resources" otherwise run into the words around them.
+const qt = (name) => `“${name}”`;
+
+// Per-topic "Select all". Deliberately a BUTTON, not a checkbox: in the
+// questionnaire a topic is only structure, and what you do here is pick its
+// questions. It ticks only what can be ticked; once everything is, "Deselect
+// all" unticks the lot (required questions stay). Labels stay short so translations fit,
+// and the topic's total question count rides along in a grey pill.
+function SelectAllTopic({ allOn, total, ids, onToggle }) {
+  const ctx = useContext(AddCtx);
+  if (!ctx) {
+    // Outside the dialog (the builder's theme details): the old select control.
+    return (
+      <button className="btn btn-tertiary aql-selectall" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
+        {allOn ? "Deselect all" : "Select all"}
+        <span className="tag tag-count">{total}</span>
+      </button>
+    );
+  }
+  return <GroupSelect ids={ids || []} allOn={allOn} total={total} onToggle={onToggle} />;
+}
+
+// The box itself is the DS checkbox (.cb in .cb-wrap), drawn only; the control
+// is the button around it, so it takes focus, reads as a checkbox, and can
+// carry a tooltip and open a menu. Greyed out (`disabled`) it shows a muted
+// tick: the question is there already. aria-disabled rather than disabled, so
+// it stays focusable and its tooltip still says why.
+// `disabled`: greyed and ticked — a required question, set up outside this
+// survey. `unavailable`: greyed and empty — nothing to pick (a custom question
+// with this exact wording is in already); its tooltip says why.
+// `elsewhere`: in the questionnaire, but in another topic than the one you're
+// adding to — an empty box with a brand border: available, but different.
+function CheckBtn({ on, disabled, unavailable, elsewhere, tip, btnRef, label, onClick, ...aria }) {
+  const inert = disabled || unavailable;
+  const ticked = !unavailable && !elsewhere && !!(on || disabled);
   return (
-    <button className="btn btn-tertiary aql-selectall" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
-      {allOn ? "Deselect all" : "Select all"}
-      <span className="tag tag-count">{total}</span>
+    <Tooltip label={tip}>
+      <button ref={btnRef} type="button" role="checkbox" aria-checked={ticked} aria-label={label}
+        aria-disabled={inert || undefined} {...aria}
+        className={"aql-check" + (disabled || unavailable ? " is-disabled" : "")}
+        onClick={(e) => { e.stopPropagation(); if (!inert && onClick) onClick(e); }}>
+        {elsewhere
+          ? <span className="aql-else-box" aria-hidden="true" />
+          : <span className="cb-wrap" aria-hidden="true">
+              <input type="checkbox" className={"cb cb-lg" + (disabled || unavailable ? " is-disabled" : "")} checked={ticked}
+                readOnly tabIndex={-1} />
+            </span>}
+      </button>
+    </Tooltip>
+  );
+}
+
+// A question row's checkbox. Ticked = in the questionnaire, from the bar; in
+// this topic, from a topic's "Add questions". Unticking takes a question out
+// on Save. Opened from a topic, a question that sits in another topic gets the
+// in-between box: pressing it asks, in place, whether to move it here (the
+// 2.2 confirm); once moved it's ticked, and pressing again undoes the move. A
+// required question can move too, but never be taken out (a disabled tick in
+// its own topic; the required marker sits with its tags). The same wording
+// ticked elsewhere counts as in.
+const REQUIRED_TIP = "Required by your project settings, so it's always included";
+const IN_TIP = "Already in your questionnaire";
+function QCheck({ q, on, onClick }) {
+  const ctx = useContext(AddCtx);
+  const confirm = useAnchorMenu(130, "left", CONFIRM_GAP);
+  const label = q.text;
+  const inQ = ctx.initial.has(q.id);
+  if (ctx.isElsewhere(q.id)) {
+    const moved = ctx.moves.has(q.id);
+    const from = qt(ctx.topicLabel(ctx.topicOf(q)));
+    return (
+      <>
+        <CheckBtn btnRef={confirm.btn} on={moved} elsewhere={!moved} label={label}
+          tip={confirm.at ? null : moved ? "Don't move" : `Already in ${from}. Move to ${qt(ctx.target.label)}`}
+          aria-haspopup={moved ? undefined : "dialog"} aria-expanded={moved ? undefined : !!confirm.at}
+          onClick={() => (moved ? ctx.undoMove(q.id) : confirm.toggle())} />
+        {confirm.at && <AnchorConfirm at={confirm.at} anchor={confirm.btn} onClose={confirm.close}
+          text={`This question is already in your questionnaire, under ${from}`}
+          actions={[{ label: `Move to ${qt(ctx.target.label)}`, primary: true, onPick: () => { confirm.close(); ctx.move(q.id); } }]} />}
+      </>
+    );
+  }
+  // Required: always in, never taken out — a disabled tick, with the required
+  // marker among the row's tags saying why. (In another topic it can still
+  // move, above: moving keeps it in.)
+  if (q.required && inQ) return <CheckBtn disabled label={label} tip={REQUIRED_TIP} />;
+  const blocked = !on ? ctx.blocked(q.id) : null;
+  if (blocked) return <CheckBtn disabled label={label} tip={IN_TIP} />;
+  const addTip = ctx.target ? `Add to ${qt(ctx.target.label)}` : "Add to questionnaire";
+  const tip = on ? (inQ ? "Remove from questionnaire" : "Don't add") : (inQ ? "Keep in questionnaire" : addTip);
+  return <CheckBtn on={on} label={label} tip={tip} onClick={onClick} />;
+}
+
+// A row is clicked the way its checkbox is, so it asks the same questions.
+const clickCheck = (e) => { const b = e.currentTarget.querySelector(".aql-check"); if (b) b.click(); };
+
+// "Select all" for a group: a topic header (`total` rides along in a pill), or
+// the Select button of a theme or template `card` (Select, ✓ Selected once all
+// of it is ticked). It works on the selection like the checkboxes do: Select
+// ticks what isn't ticked yet, and once everything is ticked a click unticks
+// it all — questions that were in already included (they leave on Save
+// changes), required ones excepted. Hidden when there is nothing to change.
+function GroupSelect({ ids, allOn, total, card, onToggle }) {
+  const ctx = useContext(AddCtx);
+  const missing = ids.filter(id => !ctx.sel.has(id) && !ctx.blocked(id));
+  const done = missing.length === 0;
+  const removable = ids.filter(id => ctx.sel.has(id) && !ctx.isLocked(id));
+  // Nothing to tick and nothing to untick (all required, or all elsewhere and
+  // only movable one by one): no button at all.
+  if (done && !removable.length) return null;
+  // Everything ticked (or blocked): a click clears the group; otherwise it
+  // ticks what's missing.
+  const click = () => (done ? ctx.setMany(ids, false) : onToggle());
+  return (
+    <button type="button"
+      className={card ? "btn " + (done ? "btn-primary" : "btn-secondary") : "btn btn-tertiary aql-selectall"}
+      onClick={(e) => { e.stopPropagation(); click(); }}>
+      {card
+        ? (done ? <><Icon name="check" size={16} />Selected</> : "Select")
+        : <>{done ? "Deselect all" : "Select all"}{total != null && <span className="tag tag-count">{total}</span>}</>}
     </button>
   );
 }
 
-function selectAllTip(nSel, total) {
-  if (total === 0) return "Select all";
-  if (nSel === 0) return "Select all questions";
-  if (nSel >= total) return <><span className="tt-title">All {total} selected</span>Deselect all questions</>;
-  return <><span className="tt-title">{nSel} of {total} selected</span>Select all questions</>;
-}
-
-// Checkbox + tooltip for one question row: unchecked = add, checked = added.
-function RowCheckbox({ on, onClick }) {
-  const label = on ? "Added to questionnaire" : "Add to questionnaire";
-  return (
-    <Tooltip label={label} pos="is-above" float>
-      <Checkbox on={on} large onClick={onClick} />
-    </Tooltip>
-  );
+// Under the wording, where a question is or goes, when the list around it
+// doesn't say it already. `always`: in a theme's or template's list, where
+// nothing else names the topic.
+function WhereLine({ q, always }) {
+  const ctx = useContext(AddCtx);
+  const line = ctx.whereLine(q, always);
+  return line ? <span className="aql-where">{line}</span> : null;
 }
 
 // Which survey a custom question is already used in. Truncates; the tooltip
 // carries the whole sentence.
 function UsedInTag({ survey }) {
   return (
-    <Tooltip label={`Custom question used in ${survey}`} pos="is-above" float>
+    <Tooltip label={`Custom question used in ${qt(survey)}`} pos="is-above" float>
       <span className="tag tag-draft text-w500 eq-usedin">{survey}</span>
     </Tooltip>
   );
@@ -72,7 +187,7 @@ function UsedInTag({ survey }) {
 // The menu renders in a portal at fixed coordinates: the list it sits in
 // scrolls and clips, and rows below it are painted later, so an absolutely
 // positioned menu ends up under them.
-function RowActions({ q, on, onToggle, onSettings, onEditCustom, onDelete }) {
+function RowActions({ q, on, inQ, onToggle, onSettings, onEditCustom, onDelete }) {
   const ownCustom = !!q.custom && !q.from;
   const openDialog = () => (q.custom ? onEditCustom && onEditCustom(q) : onSettings && onSettings(q));
   const [at, setAt] = useState(null);
@@ -102,16 +217,10 @@ function RowActions({ q, on, onToggle, onSettings, onEditCustom, onDelete }) {
     };
   }, [at ? 1 : 0]); // eslint-disable-line
 
-  if (!ownCustom) {
-    return (
-      <Tooltip label="Question settings">
-        <button className="ib ib-36 ib-tertiary" aria-label="Question settings"
-          onClick={(e) => { e.stopPropagation(); openDialog(); }}>
-          <Icon name="sliders" size={16} />
-        </button>
-      </Tooltip>
-    );
-  }
+  // A library question's settings aren't offered here: this dialog is for
+  // adding, and a question's wording and translations are edited from the
+  // questionnaire. Only a custom question written here keeps its menu.
+  if (!ownCustom) return null;
 
   const item = (icon, label, act, danger) => (
     <div className={"menu-item" + (danger ? " is-danger" : "")} role="menuitem"
@@ -137,11 +246,7 @@ function RowActions({ q, on, onToggle, onSettings, onEditCustom, onDelete }) {
         <div className="menu qrow-portal-menu" role="menu"
           style={{ position: "fixed", top: at.top, right: at.right, width: 264, zIndex: 1200 }}>
           {item("edit", "Edit question", openDialog)}
-          <div className="menu-divider" />
-          {on
-            ? item("minus", "Remove from questionnaire", onToggle)
-            : item("plus", "Add to questionnaire", onToggle)}
-          {onDelete && (
+          {onDelete && !inQ && (
             <>
               <div className="menu-divider" />
               {item("trash", "Delete question", () => onDelete(q), true)}
@@ -152,33 +257,46 @@ function RowActions({ q, on, onToggle, onSettings, onEditCustom, onDelete }) {
   );
 }
 
-function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom, onSettings, onDeleteCustom, usedInTag, hl }) {
-  const required = q.required;
-  // Required questions keep an INTERACTIVE (checked) checkbox — pressing it can't
-  // uncheck it; instead it surfaces a live info notification explaining why. A
-  // static asterisk marker on the right is the persistent "required" cue.
+function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom, onSettings, onDeleteCustom, usedInTag, hl, plain, hideTheme, showTopic }) {
+  const ctxQ = useContext(AddCtx);
+  const inQ = !!ctxQ?.initial.has(q.id);
+  // The whole row is clicked the way its checkbox is.
   return (
     <div ref={rowRef} className={"aql-row" + (leaving ? " is-leaving" : "")}
-      onClick={leaving ? undefined : (required ? onRequiredPress : onToggle)}>
-      {required
-        ? <Checkbox on large locked onClick={(e) => { e.stopPropagation(); onRequiredPress(); }} />
-        : <RowCheckbox on={on} onClick={(e) => { e.stopPropagation(); onToggle(); }} />}
-      <div className="aql-text">{hl ? <Highlight text={q.text} q={hl} /> : q.text}</div>
+      onClick={leaving ? undefined : clickCheck}>
+      <QCheck q={q} on={on} onClick={onToggle} />
+      <div className="aql-text">
+        {hl ? <Highlight text={q.text} q={hl} /> : q.text}
+        {/* No description here: descriptions belong to the questionnaire
+            (shown there when set). The line under a wording in the library
+            says where a question is, or goes. */}
+        {/* In search results, where it is in the library: the same wording
+            can live under several topics, and the hits look alike otherwise. */}
+        {showTopic && q.topic && !(ctxQ && ctxQ.whereLine(q, true))
+          && <span className="thm-q-topic">Found under {qt(ctxQ ? ctxQ.topicLabel(q.topic) : q.topic)}</span>}
+        {ctxQ && <WhereLine q={q} always={showTopic} />}
+      </div>
       {/* Tags and actions travel as one group so a narrow screen can drop them
           to their own line instead of squeezing the wording into a column. */}
       <div className="aql-meta">
         {/* On the Custom questions page the "Custom question" tag is redundant —
             you are on that page. The space carries where the question is used
             instead, truncated, with the full sentence in its tooltip. */}
-        {q.theme
+        {/* plain (the grouped layout): the theme as a quiet label — its
+            completion colours and the required marker are noise while
+            choosing what to add. */}
+        {plain
+          ? (q.theme && !hideTheme ? <span className="tag aql-theme-plain">{hl ? <Highlight text={q.theme} q={hl} /> : q.theme}</span>
+            : !q.theme && q.custom ? <span className="tag aql-theme-plain">{q.from ? q.from : "Custom question"}</span> : null)
+          : q.theme
           ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-above" float
               hl={hl} onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
           : usedInTag
             ? (q.from ? <UsedInTag survey={q.from} /> : null)
             : q.custom ? <CustomTag label="Custom question" pos="is-above" float onOpen={onEditCustom ? () => onEditCustom(q) : undefined} /> : null}
-        {required && <RequiredMarker size={24} />}
+        {q.required && <RequiredMarker size={24} />}
         <QTypeIcon type={q.type} size={24} tip pos="is-above" float />
-        <RowActions q={q} on={on} onToggle={onToggle} onSettings={onSettings} onEditCustom={onEditCustom} onDelete={onDeleteCustom} />
+        <RowActions q={q} on={on} inQ={inQ} onToggle={onToggle} onSettings={onSettings} onEditCustom={onEditCustom} onDelete={onDeleteCustom} />
       </div>
     </div>
   );
@@ -193,20 +311,26 @@ function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, on
 // button into a filled "✓ Active"; clicking it again clears the selection.
 // `art` is a template's DS illustration path (the same SVG the create-survey
 // dialog shows); `illus` stays the icon tile themes use.
-function ChoiceCard({ variant, title, desc, illus, art, selCount, total, hl, onToggle, onDetails }) {
+function ChoiceCard({ variant, title, desc, illus, art, selCount, total, ids, hl, onToggle, onDetails }) {
   const isTemplate = variant === "template";
   const allOn = total > 0 && selCount >= total;
+  const ctx = useContext(AddCtx);
   const pct = total ? Math.round((selCount / total) * 100) : 0;
-  // Once every question is in, the button already reads "Active", so the count
-  // drops the "All questions selected" phrasing back to a plain question total.
-  const countText = (allOn || selCount === 0) ? `${total} ${total === 1 ? "question" : "questions"}`
-    : `${selCount} of ${total} questions selected`;
+  // The count says how much of the set is in the questionnaire as ticked
+  // now — the same meaning as the checkboxes (ticked = in). Nothing is
+  // "removed" from a theme or template: questions only leave the
+  // questionnaire, which the footer says.
+  const inQ = ctx ? (ids || []).filter(id => ctx.sel.has(id)).length : 0;
+  const countText = !ctx ? ((allOn || selCount === 0) ? `${total} ${total === 1 ? "question" : "questions"}` : `${selCount} of ${total} questions selected`)
+    : inQ ? (inQ >= total ? (total === 1 ? "In your questionnaire" : `All ${total} in your questionnaire`) : `${inQ} of ${total} in your questionnaire`)
+    : `${total} ${total === 1 ? "question" : "questions"}`;
   // Clicking the card body opens View details; only the Select/Active button
   // toggles it into the questionnaire.
   return (
     <div className={"cc-card " + (isTemplate ? "cc-template" : "cc-theme") + (allOn ? " is-active" : "")}
       role="button" tabIndex={0} onClick={onDetails}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onDetails(); } }}>
+      // Only the card itself: Enter on its Add button adds, it doesn't open details too.
+      onKeyDown={(e) => { if (e.target !== e.currentTarget) return; if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onDetails(); } }}>
       <div className="cc-head">
         {art
           ? <img className="cc-art" src={"assets/illustrations/" + art} alt="" />
@@ -225,8 +349,7 @@ function ChoiceCard({ variant, title, desc, illus, art, selCount, total, hl, onT
         </div>
       )}
       <div className="cc-foot">
-        <button className={"btn " + (allOn ? "btn-primary" : "btn-secondary")} onClick={(e) => { e.stopPropagation(); onToggle(); }}>
-          {allOn ? <><Icon name="check" size={16} />Active</> : "Select"}</button>
+        <GroupSelect card ids={ids || []} allOn={allOn} onToggle={onToggle} />
         <button className="btn btn-tertiary" onClick={(e) => { e.stopPropagation(); onDetails(); }}>View details</button>
       </div>
     </div>
@@ -238,22 +361,36 @@ function ChoiceCard({ variant, title, desc, illus, art, selCount, total, hl, onT
 // is in, and the theme's questions to toggle one by one. Toggles apply live and
 // skip the soft-lock; Cancel reverts this theme's questions to how they were on
 // open, Got it keeps them.
-export function ThemeDetailsDialog({ theme, sel, onToggle, onToggleAll, onClose }) {
+export function ThemeDetailsDialog({ theme, sel, onToggle, onToggleAll, whereOf, onClose, zIndex = 65 }) {
   const { name, about, desc, questions, kept, total } = theme;
   const complete = total > 0 && kept >= total;
+  const ctx = useContext(AddCtx);
   // Snapshot the theme's selection on open so Cancel can restore it.
   const initial = useMemo(() => new Set(questions.filter(qq => sel.has(qq.id)).map(qq => qq.id)), []); // eslint-disable-line
   const cancel = () => {
     questions.forEach(qq => { if (initial.has(qq.id) !== sel.has(qq.id)) onToggle(qq.id); });
     onClose();
   };
+  // Opened from the questionnaire (no library around it) it composes the
+  // theme both ways: tick to add a question, untick to take one out — only a
+  // required question stays put. Changes apply as you go (the questionnaire
+  // behind follows); Save keeps them, Cancel puts everything back.
+  const free = questions.filter(qq => !qq.required).map(qq => qq.id);
+  const added = questions.filter(qq => sel.has(qq.id) && !initial.has(qq.id)).length;
+  const removed = questions.filter(qq => !sel.has(qq.id) && initial.has(qq.id)).length;
+  const changed = added + removed;
+  const allOn = free.length > 0 && free.every(id => sel.has(id));
+  const pickAll = () => free.filter(id => (allOn ? sel.has(id) : !sel.has(id))).forEach(onToggle);
+  const rowTip = (qq) => sel.has(qq.id)
+    ? (initial.has(qq.id) ? "Remove from questionnaire" : "Don't add")
+    : (initial.has(qq.id) ? "Keep in questionnaire" : "Add to questionnaire");
   return (
-    <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 65 }}
-      onMouseDown={e => { if (e.target === e.currentTarget) cancel(); }}>
+    <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex }}
+      onMouseDown={e => { if (e.target === e.currentTarget && (ctx || !changed)) onClose(); }}>
       <div className="dialog dialog-m dialog-worksurface" role="dialog" aria-modal="true" aria-labelledby="thd-title"
         style={{ display: "flex", flexDirection: "column", maxHeight: "min(880px, calc(100vh - 96px))" }}>
         <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
-          <button className="dialog-close" aria-label="Close" onClick={cancel}><Icon name="cross" /></button>
+          <button className="dialog-close" aria-label="Close" onClick={ctx ? onClose : cancel}><Icon name="cross" /></button>
         </Tooltip>
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
           <h2 className="dialog-title" id="thd-title">{name}</h2>
@@ -277,26 +414,86 @@ export function ThemeDetailsDialog({ theme, sel, onToggle, onToggleAll, onClose 
           <div className="aql-sechead" style={{ paddingTop: 0 }}>
             <h3>Theme questions</h3>
             <div className="spacer" />
-            <SelectAllTopic allOn={complete} total={total} onToggle={() => onToggleAll(kept < total)} />
+            {ctx ? <SelectAllTopic allOn={complete} total={total} ids={questions.map(x => x.id)} onToggle={() => onToggleAll(kept < total)} /> : (
+              <button type="button" className={"btn btn-tertiary aql-selectall" + (free.length ? "" : " is-disabled")}
+                aria-disabled={!free.length || undefined} onClick={(e) => { e.stopPropagation(); if (free.length) pickAll(); }}>
+                {allOn ? "Deselect all" : "Select all"}<span className="tag tag-count">{total}</span></button>
+            )}
           </div>
-          {questions.map(qq => (
-            <div key={qq.id} className="aql-row" onClick={() => onToggle(qq.id)}>
-              <Tooltip label={sel.has(qq.id) ? "Remove from questionnaire" : "Add to questionnaire"} pos="is-above" float>
-                <Checkbox on={sel.has(qq.id)} large onClick={(e) => { e.stopPropagation(); onToggle(qq.id); }} />
-              </Tooltip>
+          {questions.map(qq => ctx ? (
+            <div key={qq.id} className="aql-row" onClick={clickCheck}>
+              <QCheck q={qq} on={sel.has(qq.id)} onClick={() => onToggle(qq.id)} />
               <div className="aql-text">
                 <span className="thm-q-text">{qq.text}</span>
-                {qq.topic && <span className="thm-q-topic">Found under {qq.topic}</span>}
+                {ctx.whereLine(qq, true) ? <WhereLine q={qq} always /> : qq.topic && <span className="thm-q-topic">Found under {qt(qq.topic)}</span>}
+              </div>
+              <QTypeIcon type={qq.type} size={24} tip pos="is-above" float />
+            </div>
+          ) : (
+            <div key={qq.id} className="aql-row" onClick={clickCheck}>
+              {qq.required
+                ? <CheckBtn disabled label={qq.text} tip={REQUIRED_TIP} />
+                : <CheckBtn on={sel.has(qq.id)} label={qq.text} tip={rowTip(qq)} onClick={() => onToggle(qq.id)} />}
+              <div className="aql-text">
+                <span className="thm-q-text">{qq.text}</span>
+                {initial.has(qq.id)
+                  ? whereOf && <span className="thm-q-topic">In {qt(whereOf(qq))}</span>
+                  : qq.topic && <span className="thm-q-topic">Found under {qt(qq.topic)}</span>}
               </div>
               <QTypeIcon type={qq.type} size={24} tip pos="is-above" float />
             </div>
           ))}
         </div>
-        <div className="dialog-footer">
-          <div className="spacer" />
-          <button className="btn btn-secondary" onClick={cancel}>Cancel</button>
-          <button className="btn btn-primary" onClick={onClose}>Confirm</button>
-        </div>
+        {/* In the Question library its ticks are part of that dialog's
+            selection, which its own footer adds, so the cross (and the
+            backdrop) only close it. Opened from the questionnaire it has its
+            own footer: what changed, Cancel, and Save (always there: with
+            nothing changed it simply closes). */}
+        {!ctx && (
+          <div className="dialog-footer">
+            <span className="text-medium text-w500" style={{ color: "var(--content-base)" }}>
+              {[added && `${added} ${added === 1 ? "question" : "questions"} added`,
+                removed && `${removed} ${removed === 1 ? "question" : "questions"} removed`].filter(Boolean).join(" · ") || "No changes"}</span>
+            <div className="spacer" />
+            <button className="btn btn-secondary" onClick={cancel}>Cancel</button>
+            <button className="btn btn-primary" onClick={onClose}>Save</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// After Add from the bar's Add questions: a DS system notification in the
+// questionnaire, top-right, saying how many questions went in and where — a
+// template's worth spread over a dozen topics is impossible to check by
+// scrolling. Auto-dismisses; a live region, so it is announced too.
+export function AddedNotice({ summary, onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 7000);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line
+  const { count, topics } = summary;
+  const nq = (k) => `${k} ${k === 1 ? "question" : "questions"}`;
+  const join = (names) => names.length < 2 ? names[0] : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+  const fresh = topics.filter(t => t.isNew);
+  let desc;
+  if (topics.length === 1) {
+    desc = fresh.length ? `In ${qt(topics[0].label)}, a new topic.` : `In ${qt(topics[0].label)}.`;
+  } else if (fresh.length === topics.length) {
+    desc = topics.length <= 3 ? `In the new topics ${join(topics.map(t => qt(t.label)))}.` : `In ${topics.length} new topics.`;
+  } else if (topics.length <= 3) {
+    desc = `In ${join(topics.map(t => qt(t.label)))}.`
+      + (fresh.length === 1 ? ` ${qt(fresh[0].label)} is a new topic.` : fresh.length ? ` ${fresh.length} of them are new topics.` : "");
+  } else {
+    desc = `Across ${topics.length} topics` + (fresh.length ? `, ${fresh.length} of them new.` : ".");
+  }
+  return (
+    <div className="sysnotif-stack">
+      <div className="sysnotif" role="status" aria-live="polite">
+        <div className="sysnotif-title">{nq(count)} added</div>
+        <div className="sysnotif-desc">{desc}</div>
+        <button className="sysnotif-close" aria-label="Dismiss" onClick={onClose}><Icon name="cross" size={16} /></button>
       </div>
     </div>
   );
@@ -309,7 +506,7 @@ function AddedToast({ topic, onClose }) {
     <div className="sysnotif-stack">
       <div className="sysnotif" role="status">
         <div className="sysnotif-title">Custom question added</div>
-        <div className="sysnotif-desc">Added to “{topic}” and selected in your questionnaire</div>
+        <div className="sysnotif-desc">It's in “{topic}” now</div>
         <button className="sysnotif-close" aria-label="Dismiss" onClick={onClose}><Icon name="cross" size={16} /></button>
       </div>
     </div>
@@ -370,7 +567,8 @@ function TcThemeCard({ name, multi, style }) {
 export function ThemeConfirm({ q, themes, pool, onKeep, onRemove }) {
   const list = themes && themes.length ? themes : (q.theme ? [q.theme] : []);
   const multi = list.length > 1;
-  const count = (pool || POOL).filter(p => themesOf(p).includes(list[0])).length;
+  // Each wording once, as everywhere a theme is counted.
+  const count = new Set((pool || POOL).filter(p => themesOf(p).includes(list[0])).map(p => (p.text || "").trim().toLowerCase())).size;
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 70 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onKeep(); }}>
@@ -406,11 +604,16 @@ export function ThemeConfirm({ q, themes, pool, onKeep, onRemove }) {
   );
 }
 
-// "Show:" filter — DS selection button + menu (All / Selected / Not selected).
+// "Show:" filter — DS selection button + menu (All / Added / Not added).
+// What the checkboxes say: Selected = every ticked box (picked, a move, or
+// already in — required questions too), In
+// your questionnaire = there already, Not in your questionnaire = the rest
+// (ticked or not — ticking one doesn't make it leave this view).
 const SHOW_OPTIONS = [
   { value: "all", label: "All questions" },
   { value: "selected", label: "Selected" },
-  { value: "unselected", label: "Not selected" },
+  { value: "unselected", label: "Not in your questionnaire" },
+  { value: "in", label: "In your questionnaire" },
 ];
 const THEME_SHOW_OPTIONS = [
   { value: "all", label: "All themes" },
@@ -443,10 +646,22 @@ function mergeTopics(options, poolTopics) {
 }
 
 const EQ_PAGES = [
+  // Each item names where you are; the dialog's title says what you do
+  // there (Add questions), and the rows' checkboxes and the footer's Add do it.
   { value: "questions", label: "Library questions", icon: "list-unordered" },
   { value: "custom", label: "Custom questions", icon: "edit" },
-  { value: "themes", label: "Themes", icon: "themes", group: "Question sets" },
+  { value: "themes", label: "Themes", icon: "themes" },
   { value: "templates", label: "Templates", icon: "layout" },
+];
+// The default layout. Two sources — the library and custom questions — and the
+// library browsed by one trait: its topic, its theme, or the template a question
+// is in. The rail shows that hierarchy: the three ways of browsing sit under
+// Library questions; Custom questions stands on its own.
+const EQ_VIEWS = [
+  { value: "topic", label: "By topic", icon: "folder", group: "Library questions" },
+  { value: "theme", label: "By theme", icon: "themes" },
+  { value: "template", label: "By template", icon: "layout" },
+  { value: "custom", label: "Custom questions", icon: "edit", top: true },
 ];
 // Under this the dialog can't hold the 280px rail next to a usable list, so the
 // rail becomes a menu button on the left of the search field.
@@ -454,9 +669,11 @@ const EQ_COMPACT = "(max-width: 1120px)";
 
 const GENERIC_SHOW = {
   questions: [
-    { value: "all", label: "All" }, { value: "selected", label: "Selected" }, { value: "unselected", label: "Not selected" }],
+    { value: "all", label: "All" }, { value: "selected", label: "Selected" },
+    { value: "unselected", label: "Not in your questionnaire" }, { value: "in", label: "In your questionnaire" }],
   custom: [
-    { value: "all", label: "All" }, { value: "selected", label: "Selected" }, { value: "unselected", label: "Not selected" }],
+    { value: "all", label: "All" }, { value: "selected", label: "Selected" },
+    { value: "unselected", label: "Not in your questionnaire" }, { value: "in", label: "In your questionnaire" }],
   themes: [
     { value: "all", label: "All" }, { value: "complete", label: "Complete" }, { value: "incomplete", label: "Incomplete" }],
   templates: [
@@ -464,7 +681,7 @@ const GENERIC_SHOW = {
 };
 // The rail as a menu, for when the dialog is too narrow to hold it. Same pages,
 // same order, same group label — and the page you are on is selected.
-function PagesMenu({ tab, onPick }) {
+function PagesMenu({ tab, onPick, pages = EQ_PAGES, label = "Pages" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -472,18 +689,18 @@ function PagesMenu({ tab, onPick }) {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
   }, [open]);
-  const cur = EQ_PAGES.find(p => p.value === tab);
+  const cur = pages.find(p => p.value === tab);
   return (
     <div ref={ref} style={{ position: "relative", flex: "none" }}>
-      <Tooltip label={cur ? "Pages: " + cur.label : "Pages"}>
-        <button className={"ib ib-36 ib-secondary" + (open ? " is-pressed" : "")} aria-label="Pages"
+      <Tooltip label={cur ? label + ": " + cur.label : label}>
+        <button className={"ib ib-36 ib-secondary" + (open ? " is-pressed" : "")} aria-label={label}
           aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
           <Icon name="menu" size={16} />
         </button>
       </Tooltip>
       {open && (
         <div className="menu" role="menu" style={{ position: "absolute", left: 0, top: 44, width: 240, zIndex: 30 }}>
-          {EQ_PAGES.map(p => (
+          {pages.map(p => (
             <Fragment key={p.value}>
               {p.group && <div className="menu-group-lbl" role="presentation">{p.group}</div>}
               <div className={"menu-item" + (p.value === tab ? " is-selected" : "")} role="menuitem"
@@ -603,9 +820,10 @@ function ShowFilter({ value, onChange, options = SHOW_OPTIONS, label = "Show:" }
 // checkboxes and a "Select all questions" toggle. Selecting here is the same
 // action as the card's Select button — it just works question by question.
 function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
-  const b = BADGE_COLORS[t.badge] || {};
   const meta = TEMPLATE_META[t.id] || {};
-  const groups = groupQuestions(t.questions, "library");
+  // The template's own structure: its questions under the topics it puts
+  // them in (tmplTopic), which can differ from their library topic.
+  const groups = groupQuestions(t.questions.map(q => (q.tmplTopic && q.tmplTopic !== q.topic ? { ...q, topic: q.tmplTopic } : q)), "library");
   const allOn = t.total > 0 && t.selCount >= t.total;
   return (
     <>
@@ -632,27 +850,26 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
         <div className="tmpl-qpanel">
           <div className="tmpl-qpanel-head">
             <h3 className="tpv-section-title" style={{ fontSize: 20, margin: 0 }}>Questionnaire</h3>
-            <button className="btn btn-secondary" onClick={() => onSelectAll(!allOn)}>{allOn ? "Deselect all questions" : "Select all questions"}</button>
+            <GroupSelect ids={t.questions.map(x => x.id)} allOn={allOn} onToggle={() => onSelectAll(!allOn)} />
           </div>
           {groups.map(g => {
             const ids = g.items.map(x => x.id);
             const gAll = ids.every(id => sel.has(id));
-            const gSome = ids.some(id => sel.has(id));
-            const nSel = g.items.filter(x => sel.has(x.id)).length;
             return (
               <section key={g.key} className="tmpl-qsec">
                 <div className="aql-sechead tmpl-qsec-head">
                   <h3>{g.label}</h3>
                   <div className="spacer" />
-                  <SelectAllTopic allOn={gAll} total={ids.length}
+                  <SelectAllTopic allOn={gAll} total={ids.length} ids={ids}
                     onToggle={() => ids.forEach(id => { if (gAll ? sel.has(id) : !sel.has(id)) onToggleQuestion(id); })} />
                 </div>
                 {g.items.map(qq => (
-                  <div key={qq.id} className="aql-row" onClick={() => onToggleQuestion(qq.id)}>
-                    <Tooltip label={sel.has(qq.id) ? "Remove from questionnaire" : "Add to questionnaire"} pos="is-above" float>
-                      <Checkbox on={sel.has(qq.id)} large onClick={(e) => { e.stopPropagation(); onToggleQuestion(qq.id); }} />
-                    </Tooltip>
-                    <div className="aql-text">{qq.text}</div>
+                  <div key={qq.id} className="aql-row" onClick={clickCheck}>
+                    <QCheck q={qq} on={sel.has(qq.id)} onClick={() => onToggleQuestion(qq.id)} />
+                    <div className="aql-text">
+                      {qq.text}
+                      <WhereLine q={qq} always />
+                    </div>
                     <QTypeIcon type={qq.type} size={24} tip pos="is-above" float />
                   </div>
                 ))}
@@ -670,15 +887,23 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
 // "sidebar" — Miro/Qualtrics-style: a left rail to browse (with the topics as
 //             jump anchors) and ONE search on top that looks across questions,
 //             themes and templates, results grouped by where they came from.
-export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", qMeta = {}, addToTopic = null, topicOptions = [], onUpdateQMeta, onMoveTopic, onClose, onSave }) {
+export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", qMeta = {}, addToTopic = null, topicOptions = [], onUpdateQMeta, onMoveTopic, onAddTopic, translationsFor, onCommitCustom, onCommitCustomEdit, autoTopic, onClose, onSave }) {
   const compact = useMediaQuery(EQ_COMPACT);
+  const narrow = compact;
   const [pool, setPool] = useState(initialPool);
   const [sel, setSel] = useState(() => new Set(initialSelected));
   const initial = useMemo(() => new Set(initialSelected), []); // selection when the dialog opened
-  // "Add questions to this topic": while set, everything selected here files
-  // into that topic on Confirm. The user can drop back to normal adding with
-  // the notice's own button; the mode never outlives the dialog.
-  const [target, setTarget] = useState(addToTopic || null);
+  // Where what you add lands depends on where the library was opened:
+  //   • a topic's "Add questions" (`addToTopic`, the target): into that topic;
+  //   • the bar's "Add questions": each question into its own topic, a topic
+  //     that isn't in the questionnaire yet arriving at the end.
+  // Questions that are in already never move: moving is done on the page.
+  const target = addToTopic || null;
+  // Questions moved here from another topic (opened from a topic only): id →
+  // that topic's key. Applied on Save, like everything else.
+  const [moves, setMoves] = useState(() => new Map());
+  const move = (id) => setMoves(m => new Map(m).set(id, target.key));
+  const undoMove = (id) => setMoves(m => { const n = new Map(m); n.delete(id); return n; });
   const targetAdds = useRef(new Set());
   const markAdded = (ids) => { if (target) ids.forEach(id => targetAdds.current.add(id)); };
   const [q, setQ] = useState("");
@@ -688,7 +913,16 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // a match by pre-scoping, but you can still get precision on demand.
   const [resFilter, setResFilter] = useState("all");
   const [tab, setTab] = useState(initialTab);
+  const [view, setView] = useState(() => ({ themes: "theme", templates: "template", custom: "custom" })[initialTab] || "topic");
+  const customOnly = view === "custom";
+  const groupBy = customOnly ? "topic" : view;
+  const [gq2, setGq2] = useState("");               // grouped layout: its one search
   const [show, setShow] = useState("all");
+  // The Show filter, by what the checkboxes say (see SHOW_OPTIONS).
+  // Selected = every ticked box: picked here, moved, or already in (required
+  // questions included — they're ticked too).
+  const showMatch = (x) => show === "selected" ? sel.has(x.id)
+    : show === "in" ? initial.has(x.id) : show === "unselected" ? !initial.has(x.id) : true;
   const [themeQ, setThemeQ] = useState("");       // Themes tab search
   const [themeShow, setThemeShow] = useState("all"); // Themes tab completion filter
   const [tmplQ, setTmplQ] = useState("");         // Templates tab search
@@ -727,18 +961,27 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const statusFor = (name) => status.find(t => t.name === name);
   // Org-required questions are always selected and can't be toggled/deselected.
   const requiredIds = useMemo(() => new Set(pool.filter(qq => qq.required).map(qq => qq.id)), [pool]);
+  // In the questionnaire, in another topic than the one the library was opened
+  // from. Its box only moves it (see QCheck); nothing else ticks or unticks it.
+  const isElsewhere = (id) => {
+    if (!addToTopic || !initial.has(id)) return false;
+    const x = pool.find(p2 => p2.id === id);
+    return !!x && ((qMeta[x.id] || {}).topic || x.topic) !== addToTopic.key;
+  };
+  // What no tick can take out: required questions, and questions in another
+  // topic (they move, they don't leave).
+  const locked = (id) => requiredIds.has(id) || isElsewhere(id);
 
   // Themes present in this pool, with their questions and selection progress.
   const themeGroups = useMemo(() => {
-    const map = {};
-    pool.forEach(qq => themesOf(qq).forEach(nm => (map[nm] = map[nm] || []).push(qq)));
-    return Object.entries(map).map(([name, questions]) => {
+    // Each wording once (themeQuestions): a theme asks a question once.
+    return Object.entries(themeQuestions(pool, sel)).map(([name, t]) => {
       const meta = THEMES[name] || {};
       return {
-        name, questions, ...meta,
+        name, questions: t.questions, ...meta,
         desc: meta.desc || "A group of related questions that combine into one theme score.",
         about: meta.about || meta.desc || "Add all of this theme's questions to read them together as one benchmarked score in your results.",
-        kept: questions.filter(qq => sel.has(qq.id)).length, total: questions.length,
+        kept: t.kept, total: t.total,
       };
     });
   }, [pool, sel]);
@@ -791,13 +1034,13 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const gRes = gqt ? (() => {
     // "Show" narrows search results too — one Filter button, so every option in
     // it has to actually do something while a query is live.
-    const byShow = (x) => (show === "selected" ? sel.has(x.id) : show === "unselected" ? !sel.has(x.id) : true);
+    const byShow = showMatch;
     // A question matches on its own wording OR on a tag it carries: searching a
     // theme has to find the questions IN that theme, not only the theme card.
     // Wording matches lead — they are what you typed — and tag matches follow.
     const inText = (x) => (x.text || "").toLowerCase().includes(gqt);
     const inTheme = (x) => themesOf(x).some(t => t.toLowerCase().includes(gqt));
-    const direct = pool.filter(x => inText(x) || inTheme(x)).filter(byShow)
+    const direct = pool.filter(x => !x.dupOf && (inText(x) || inTheme(x))).filter(byShow)
       .sort((a, b) => (inText(b) ? 1 : 0) - (inText(a) ? 1 : 0) || bySource(a, b));
     const seen = new Set(direct.map(x => x.id));
     // A theme or topic whose NAME matches brings its questions along. The
@@ -810,7 +1053,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     const viaTopic = topicNames
       .filter(n => n.toLowerCase().includes(gqt))
       .map(n => ({ kind: "topic", key: "tp:" + n, name: n,
-        questions: pool.filter(x => x.topic === n && !seen.has(x.id)).filter(byShow) }))
+        questions: pool.filter(x => !x.dupOf && x.topic === n && !seen.has(x.id)).filter(byShow) }))
       .filter(g => g.questions.length);
     viaTopic.forEach(g => g.questions.forEach(x => seen.add(x.id)));
     return {
@@ -838,12 +1081,17 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     const add = qs.filter(qq => !have.has(qq.id));
     return add.length ? [...p, ...add] : p;
   });
+  // Opened from a topic's "Add questions", a template's questions go into that
+  // topic like everything else added there (markAdded), and skip a wording the
+  // topic already has — the line at the top promises exactly that.
   const setTemplate = (t, on) => {
-    const ids = t.questions.map(qq => qq.id);
-    if (on) mergeIntoPool(t.questions);
-    setSel(s => { const n = new Set(s); ids.forEach(id => on ? n.add(id) : n.delete(id)); return n; });
+    const ids = t.questions.map(qq => qq.id).filter(id => !on || !blocked(id));
+    if (on) { mergeIntoPool(t.questions); markAdded(ids.filter(id => !initial.has(id))); }
+    setSel(s => { const n = new Set(s); ids.forEach(id => on ? n.add(id) : (locked(id) || n.delete(id))); return n; });
   };
   const toggleTemplateQuestion = (t, id) => {
+    if (locked(id)) return;
+    if (!sel.has(id)) { if (blocked(id)) return; if (!initial.has(id)) markAdded([id]); }
     mergeIntoPool(t.questions.filter(qq => qq.id === id));
     setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
@@ -853,17 +1101,21 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   // be in this survey's pool yet (its settings are reachable from its row), so
   // saving it there brings it in — you edited it to use it.
   const saveCustomEdit = (nq) => {
+    // One that is in the questionnaire is saved there right away, as its
+    // dialog says — Cancel here doesn't take an edit back.
+    if (initial.has(nq.id) && onCommitCustomEdit) onCommitCustomEdit(nq);
     setPool(p => (p.some(x => x.id === nq.id) ? p.map(x => x.id === nq.id ? nq : x) : [...p, nq]));
     setSel(s2 => (s2.has(nq.id) ? s2 : new Set([...s2, nq.id])));
     setEditCustomQ(null);
   };
   const deleteCustomQ = (nq) => {
+    if (initial.has(nq.id)) return; // in the questionnaire: removed there, not here
     setPool(p => p.filter(x => x.id !== nq.id));
     setSel(s => { const n = new Set(s); n.delete(nq.id); return n; });
     setEditCustomQ(null);
   };
   // Flip one question without the theme soft-lock (used inside a theme card / details).
-  const plainToggle = (id) => { if (requiredIds.has(id)) return; setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); };
+  const plainToggle = (id) => { if (locked(id)) return; setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; }); };
 
   // Scroll the just-added question into view inside the dialog body.
   useEffect(() => {
@@ -881,40 +1133,80 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     reqTimer.current = setTimeout(() => setReqNotice(0), 4000);
   };
   const toggle = (qq) => {
-    if (qq.required) return; // required questions are locked on
+    if (locked(qq.id)) return; // required, or in already when opened from a topic
     const isOn = sel.has(qq.id);
+    if (!isOn && blocked(qq.id)) return;
     if (isOn && tweaks.integrity === "lock") {
       // Removing this question may break one OR several complete themes.
       const broken = themesOf(qq).filter(name => statusFor(name)?.complete);
       if (broken.length) { setConfirm({ q: qq, themes: broken }); return; }
     }
     const willBeOn = !isOn;
-    if (willBeOn) markAdded([qq.id]);
+    if (willBeOn && !initial.has(qq.id)) markAdded([qq.id]);
     setSel(s => { const n = new Set(s); isOn ? n.delete(qq.id) : n.add(qq.id); return n; });
     // Under a Selected / Not-selected filter the row no longer matches — ease it out.
-    if ((show === "selected" && !willBeOn) || (show === "unselected" && willBeOn)) easeOut(qq.id);
+    if (show === "selected" && !willBeOn) easeOut(qq.id);
   };
   const doRemove = (qq) => {
     setSel(s => { const n = new Set(s); n.delete(qq.id); return n; }); setConfirm(null);
     if (show === "selected") easeOut(qq.id);
   };
   // Closing always drops the dialog back to the default (unfiltered) view.
+  // What is ticked goes in with the footer's Add; leaving any other way
+  // (Cancel, the cross, the backdrop) drops it.
   const close = () => { setShow("all"); setThemeShow("all"); setTmplShow("all"); onClose(); };
   const apply = () => {
     setShow("all"); setThemeShow("all"); setTmplShow("all");
-    // File everything selected under a target topic. Custom questions carry
+    // File everything added under a target topic. Custom questions carry
     // their topic on the pool object (saved wholesale below); a library
     // question keeps its canonical topic and gets a survey-scoped override.
     let outPool = pool;
     if (target) {
-      const adds = [...targetAdds.current].filter(id => sel.has(id));
+      const adds = [...targetAdds.current].filter(id => sel.has(id) && !initial.has(id));
       outPool = pool.map(x => (adds.includes(x.id) && x.custom) ? { ...x, topic: target.key } : x);
       adds.forEach(id => {
         const x = pool.find(p2 => p2.id === id);
         if (x && !x.custom) onMoveTopic && onMoveTopic(id, target.key);
       });
+      moves.forEach((key, id) => {
+        const x = outPool.find(p2 => p2.id === id);
+        if (!x) return;
+        if (x.custom) outPool = outPool.map(p2 => p2.id === id ? { ...p2, topic: key } : p2);
+        else onMoveTopic && onMoveTopic(id, key);
+      });
     }
-    onSave([...sel], outPool);
+    // What Add did, for the notification the questionnaire shows once the
+    // questions are in — only when added from the bar's Add questions: they
+    // can land anywhere then, and after a whole template the list alone can't
+    // tell you whether everything arrived. Added to one topic, they arrive
+    // highlighted in that topic, which says it already.
+    // From the bar, a library question goes to the topic in the questionnaire
+    // with its library topic's NAME. A topic added from the library is a copy:
+    // once renamed it no longer matches, and the next question from that
+    // library topic starts a new topic with the library name, at the end.
+    const here = new Set(topicOptions.map(o => o.value));
+    const made = new Map(); // library name → new topic key, made during this save
+    const placed = [];
+    [...sel].filter(id => !initial.has(id)).map(id => outPool.find(p2 => p2.id === id)).filter(Boolean).forEach(x => {
+      if (target || x.custom || !x.topic) { placed.push({ label: topicLabel(destOf(x)), isNew: !here.has(destOf(x)) }); return; }
+      const name = x.topic;
+      const same = topicOptions.find(o => o.label === name);
+      if (same) {
+        if (same.value !== name) onMoveTopic && onMoveTopic(x.id, same.value);
+        placed.push({ label: name, isNew: false });
+      } else if (!here.has(name)) {
+        placed.push({ label: name, isNew: true });
+      } else {
+        if (!made.has(name)) made.set(name, onAddTopic ? onAddTopic({ name }) : name);
+        onMoveTopic && onMoveTopic(x.id, made.get(name));
+        placed.push({ label: name, isNew: true });
+      }
+    });
+    const summary = target ? null : {
+      count: placed.length,
+      topics: [...new Map(placed.map(t => [t.label, t])).values()],
+    };
+    onSave([...sel], outPool, summary);
   };
   const setMany = (ids, on) => {
     // Deselect all keeps required questions — and says so, same notice as
@@ -923,17 +1215,22 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       const kept = ids.filter(id => requiredIds.has(id) && sel.has(id)).length;
       if (kept > 0) showReqNotice(kept);
     }
-    if (on) markAdded(ids);
-    setSel(s => { const n = new Set(s); ids.forEach(id => { if (!on && requiredIds.has(id)) return; on ? n.add(id) : n.delete(id); }); return n; });
+    if (on) ids = ids.filter(id => !blocked(id));
+    if (on) markAdded(ids.filter(id => !initial.has(id)));
+    setSel(s => { const n = new Set(s); ids.forEach(id => { if (!on && locked(id)) return; on ? n.add(id) : n.delete(id); }); return n; });
   };
   // Adding without closing the create dialog: it confirms the question there
   // and offers writing another one, so it decides when it goes away.
+  // A question written here goes into the questionnaire at once — its dialog
+  // says "Question added", and Cancel on this one mustn't throw it away. From
+  // then on it counts as one that was in already.
   const addCustomKeepOpen = (nq) => {
+    if (onCommitCustom) { onCommitCustom(nq); initial.add(nq.id); }
     setPool(p => [...p, nq]); setSel(s => new Set([...s, nq.id]));
     // Make the new question visible where it landed: clear search/filter,
     // switch to the Questions tab, scroll to the row, and toast.
     setQ(""); setShow("all"); setTab("custom");
-    setJustAdded(nq.id); setToast({ topic: nq.topic });
+    setJustAdded(nq.id); setToast({ topic: nq.topic ? topicLabel(nq.topic) : (autoTopic || "No topic") });
     timers.current.forEach(clearTimeout);
     timers.current = [
       setTimeout(() => setJustAdded(null), 2600),
@@ -942,7 +1239,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   };
   const addCustom = (nq) => { addCustomKeepOpen(nq); setCustomOpen(false); };
 
-  const customQs = pool.filter(x => x.custom && !x.from);   // written in this survey
+  const customQs = pool.filter(x => x.custom && !x.from && !x.dupOf);   // written in this survey
 // The tabbed variant searches per page, so the Custom questions page filters
 // its own two groups. In the sidebar variant a query goes to the global search
 // instead, so nothing here is ever filtered.
@@ -950,11 +1247,64 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const customShown = cqt ? customQs.filter(x => (x.text || "").toLowerCase().includes(cqt)) : customQs;
   const orgShown = cqt ? orgCustomQs.filter(x => (x.text || "").toLowerCase().includes(cqt)) : orgCustomQs;
 
-  const visible = pool.filter(x => !x.custom)
+  const visible = pool.filter(x => !x.custom && !x.dupOf)
     .filter(x => [x.text, x.theme, x.topic].some(v => (v || "").toLowerCase().includes(q.toLowerCase())))
-    .filter(x => (show === "all" ? true : show === "selected" ? sel.has(x.id) : !sel.has(x.id)) || leaving.has(x.id));
+    .filter(x => showMatch(x) || leaving.has(x.id));
   const groups = groupQuestions(visible, "library");
-  const selCount = [...sel].length;
+  // What Save does: the questions ticked here go in, the ones unticked here
+  // come out.
+  const addedIds = [...sel].filter(id => !initial.has(id));
+  const removedIds = [...initial].filter(id => !sel.has(id));
+  const hasChanges = addedIds.length + removedIds.length + moves.size > 0;
+  const nq = (k) => `${k} ${k === 1 ? "question" : "questions"}`;
+  // The footer's line: what Save does, in counts only — no topic or theme
+  // names (they don't fit, and the list itself shows where things are).
+  const changeLine = () => [addedIds.length && `${nq(addedIds.length)} added`, moves.size && `${nq(moves.size)} moved`, removedIds.length && `${nq(removedIds.length)} removed`]
+    .filter(Boolean).join(" · ") || "No changes";
+
+  // Where a question already sits: its topic, plus the topic of every copy of
+  // it, by the names this survey uses.
+  const topicOf = (x) => ((qMeta[x.id] || {}).topic) || x.topic;
+  const topicLabel = (k) => (topicOptions.find(o => o.value === k) || {}).label || k || "No topic";
+  const whereKeys = (id) => [...new Set(pool.filter(x => initial.has(x.id) && (x.id === id || x.dupOf === id)).map(topicOf))];
+  const joinNames = (names) => names.length < 2 ? (names[0] || "") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+  // Where questions sit, by name ("“A” and “B”"); past three names, a count.
+  const whereMany = (ids) => {
+    const keys = [...new Set(ids.flatMap(whereKeys))];
+    return keys.length > 3 ? `${keys.length} other topics` : joinNames(keys.map(k => qt(topicLabel(k))));
+  };
+  const where = (id) => whereMany([id]);
+  // Same wording, same question: the library has some wordings under several
+  // topics. The topic a question would land in, and whether that topic
+  // already asks it (in the questionnaire, or added in this dialog).
+  const norm = (t) => (t || "").trim().toLowerCase();
+  const destOf = (x) => moves.get(x.id) || (target && !initial.has(x.id) ? target.key : topicOf(x));
+  const hasText = (key, text) => pool.some(x => sel.has(x.id) && norm(x.text) === norm(text) && destOf(x) === key);
+  // A wording is in the questionnaire once: when the same wording is ticked
+  // under another library topic (in already, or added here), this copy has
+  // nothing to pick — greyed, with where that one is. Returns that topic.
+  const blocked = (id) => {
+    const x = pool.find(p2 => p2.id === id);
+    if (!x || sel.has(id) || initial.has(id)) return null;
+    const twin = pool.find(y => y.id !== id && sel.has(y.id) && norm(y.text) === norm(x.text));
+    return twin ? destOf(twin) : null;
+  };
+  // The line under a question's wording: only where it says something the
+  // list doesn't — a move you picked (it happens on Save, so "Moves"), or
+  // where a question sits in a theme's or template's list (`always`).
+  const whereLine = (x, always) => {
+    if (moves.has(x.id)) return `Moves to ${qt(target.label)}`;
+    if (!always) return null;
+    if (initial.has(x.id)) {
+      if (!sel.has(x.id)) return null;
+      const k = topicOf(x);
+      return k ? `In ${qt(topicLabel(k))}` : null;
+    }
+    const b = blocked(x.id);
+    return b ? `In ${qt(topicLabel(b))}` : null;
+  };
+  const addCtx = { initial, sel, qMeta, where, target, topicLabel, blocked, hasText, whereMany, joinNames, whereLine,
+    isRequired: (id) => requiredIds.has(id), isLocked: locked, isElsewhere, moves, move, undoMove, topicOf, setMany };
   // Per-section collapse (Questions tab): a chevron per header, plus a
   // collapse-all / expand-all toolbar toggle over the currently visible groups.
   // Collapse all acts on the sections of the page you are on.
@@ -965,18 +1315,179 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
   const toggleSec = (k) => setCollapsed(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
   const toggleAllSecs = () => setCollapsed(allCollapsed ? new Set() : new Set(secKeys));
 
+  // ---- grouped layout ------------------------------------------------------
+  // Every group is { key, title, sub?, meta?, rows, noAddAll?, onAll? }; a row
+  // is { q, kind } where kind says how it is added: a pool question, a custom
+  // one from another survey, or a template's question (pulled in on add).
+  const gqt2 = gq2.trim().toLowerCase();
+  const libAndOwn = pool.filter(x => !x.dupOf && !(x.custom && x.from));
+  const rowsOf = (qs, kind, t) => qs.map(q => ({ q, kind, t }));
+  const groupsFor = () => {
+    if (customOnly) return [
+      { key: "own", title: "Created in this survey", rows: rowsOf(customQs, "pool") },
+      { key: "org", title: "Created in other surveys", rows: rowsOf(orgCustomQs, "org") }];
+    // Themes and templates render as cards, not groups (see the body below).
+    if (groupBy === "theme" || groupBy === "template") return [];
+    // Library questions only: custom ones have their own place in the rail.
+    return groupQuestions(libAndOwn.filter(x => !x.custom), "library")
+      .map(g => ({ key: g.key, title: topicLabel(g.key), rows: rowsOf(g.items, "pool") }));
+  };
+  const rowShown = showMatch;
+  const rowHit = (x) => [x.text, x.theme, x.topic].some(v => (v || "").toLowerCase().includes(gqt2));
+  // A search matches wording, theme and topic; a group whose NAME matches keeps
+  // all its questions, so searching a theme or template finds all of it.
+  const gGroups = groupsFor().map(g => {
+    const byName = gqt2 && g.title.toLowerCase().includes(gqt2);
+    return { ...g, shown: g.rows.filter(r => (!gqt2 || byName || rowHit(r.q)) && (rowShown(r.q) || leaving.has(r.q.id))) };
+  }).filter(g => g.shown.length > 0);
+  const gKey = (g) => view + ":" + g.key;
+  const toggleRow = (r) => (r.kind === "org" ? toggleOrgQuestion(r.q) : r.kind === "tmpl" ? toggleTemplateQuestion(r.t, r.q.id) : toggle(r.q));
+  const addAllGroup = (g, allOn) => {
+    if (g.onAll) return g.onAll(!allOn);
+    const ids = g.rows.map(r => r.q.id);
+    if (allOn) return setMany(ids, false);
+    g.rows.forEach(r => { if (!sel.has(r.q.id)) { if (r.kind === "org") toggleOrgQuestion(r.q); } });
+    setMany(g.rows.filter(r => r.kind !== "org").map(r => r.q.id), true);
+  };
+  const renderRow = (r) => r.kind === "org" ? (
+    <div key={r.q.id} className="aql-row" onClick={clickCheck}>
+      <QCheck q={r.q} on={sel.has(r.q.id)} onClick={() => toggleOrgQuestion(r.q)} />
+      <div className="aql-text">
+        {gqt2 ? <Highlight text={r.q.text} q={gqt2} /> : r.q.text}
+        <WhereLine q={r.q} />
+      </div>
+      <div className="aql-meta">
+        <UsedInTag survey={r.q.from} />
+        <QTypeIcon type={r.q.type} size={24} tip pos="is-above" float />
+        <RowActions q={r.q} on={sel.has(r.q.id)} inQ={initial.has(r.q.id)} onToggle={() => toggleOrgQuestion(r.q)} onEditCustom={setEditCustomQ} />
+      </div>
+    </div>
+  ) : (
+    <QRow key={r.q.id} q={r.q} on={sel.has(r.q.id)} hl={gqt2 || undefined} usedInTag={customOnly}
+      leaving={leaving.has(r.q.id)} themeInfo={r.q.theme ? themeCountFor(r.q.theme) : null}
+      onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
+      onToggle={() => toggleRow(r)} onRequiredPress={showReqNotice} rowRef={r.q.id === justAdded ? addedRef : null} />
+  );
+
   return (
-    <div className="overlay is-fullbleed" onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
+    <AddCtx.Provider value={addCtx}>
+    {/* A press beside it closes it only while nothing is picked: a stray
+        click mustn't cost a selection. Cancel and the cross still drop it. */}
+    <div className="overlay is-fullbleed" onMouseDown={e => { if (e.target === e.currentTarget && !hasChanges) close(); }}>
       {/* Height lives in CSS (.eq-dialog): on a small screen this dialog IS
           the screen, and an inline height would win over that rule. */}
       <div className={"dialog dialog-l dialog-worksurface eq-dialog" + (nav === "sidebar" ? " eq-wide" : "")} role="dialog" aria-modal="true" aria-labelledby="eq-title"
         style={{ display: "flex", flexDirection: "column" }}>
-        {nav === "tabs" && (
+        {/* The DS close: top right of the dialog — in the tabbed layout, and in
+            the sidebar layout once the rail is gone (the title takes its row). */}
+        {(nav === "tabs" || (nav === "sidebar" && narrow)) && (
           <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
             <button className="dialog-close" aria-label="Close" onClick={close}><Icon name="cross" /></button>
           </Tooltip>
         )}
-        {templateDetail && detailTemplate ? (
+        {nav === "group" ? (
+        <div className="eq-frame">
+          {!compact && (
+            <nav className="eq-rail" aria-label="Browse questions">
+              <div className="eq-rail-title" id="eq-title">Question library</div>
+              {EQ_VIEWS.map(p => (
+                <Fragment key={p.value}>
+                  {p.group && <div className="eq-rail-group">{p.group}</div>}
+                  <button className={"eq-rail-item" + (p.top ? " is-top" : " is-sub") + (view === p.value ? " is-active" : "")}
+                    aria-current={view === p.value ? "true" : undefined}
+                    onClick={() => { setView(p.value); setTemplateDetail(null); }}>
+                    <Icon name={p.icon} size={16} />{p.label}</button>
+                </Fragment>
+              ))}
+            </nav>
+          )}
+          <div className="eq-main">
+            {view === "template" && templateDetail && detailTemplate ? (
+              <TemplateDetailView t={detailTemplate} sel={sel} onBack={() => setTemplateDetail(null)}
+                onToggleQuestion={(id) => toggleTemplateQuestion(detailTemplate, id)}
+                onSelectAll={(on) => setTemplate(detailTemplate, on)} />
+            ) : (<>
+            <div className="eq-toolbar">
+              {compact && <PagesMenu tab={view} onPick={(v) => { setView(v); setTemplateDetail(null); }} pages={EQ_VIEWS} label="Browse" />}
+              <div className="search-wrap eq-toolbar-search">
+                <span className="search-icon"><Icon name="search" size={16} /></span>
+                <input type="search" className="srch" placeholder={customOnly ? "Search custom questions" : "Search questions, themes and templates"}
+                  value={gq2} onChange={e => setGq2(e.target.value)} />
+              </div>
+              <Tooltip label="Close" pos="is-left">
+                <button className="ib ib-36 ib-tertiary" aria-label="Close" onClick={close}><Icon name="cross" size={16} /></button>
+              </Tooltip>
+            </div>
+            {target && (
+              <span className="eq-target-line" role="status">
+                Adding to <b>{target.label}</b> in your questionnaire
+              </span>
+            )}
+            <div className="dialog-body scroll-y">
+              {/* Themes and templates are sets: they read best as cards — what
+                  the set is for, how much of it is in, and one Add — with their
+                  questions a click away. */}
+              {groupBy === "theme" || groupBy === "template" ? (() => {
+                const hitCard = (t) => !gqt2 || [t.name, t.desc].some(v => (v || "").toLowerCase().includes(gqt2));
+                const cards = (groupBy === "theme" ? themeGroups : templateCards).filter(hitCard);
+                if (!cards.length) return (
+                  <div className="eq-empty">
+                    <img className="eq-empty-art" src="assets/illustrations/templates/search-no-results-illustration.svg" alt="" />
+                    <div className="eq-empty-title">We couldn't find any matches for "{gq2.trim()}"</div>
+                    <p className="eq-empty-body">Check the spelling or try another word</p>
+                  </div>
+                );
+                return (
+                  <div className="thm-grid">
+                    {groupBy === "theme"
+                      ? cards.map(t => <ChoiceCard key={t.name} variant="theme" hl={gqt2 || undefined}
+                          title={t.name} desc={t.desc} selCount={t.kept} total={t.total} ids={t.questions.map(x => x.id)}
+                          onToggle={() => setMany(t.questions.map(x => x.id), t.kept < t.total)}
+                          onDetails={() => setThemeDetails(t.name)} />)
+                      : cards.map(t => <ChoiceCard key={t.id} variant="template" hl={gqt2 || undefined}
+                          title={t.name} desc={t.desc} art={t.illus} selCount={t.selCount} total={t.total} ids={t.questions.map(x => x.id)}
+                          onToggle={() => setTemplate(t, !t.active)}
+                          onDetails={() => setTemplateDetail(t.id)} />)}
+                  </div>
+                );
+              })() : gGroups.length === 0 ? (
+                customOnly && !gqt2 && customQs.length === 0 && orgCustomQs.length === 0 ? (
+                  <div className="eq-empty">
+                    <img className="eq-empty-art" src="assets/illustrations/templates/search-no-results-illustration.svg" alt="" />
+                    <div className="eq-empty-title">No custom questions yet</div>
+                    <p className="eq-empty-body">The library covers most of what organizations measure. Write your own for something specific to your context. Custom questions don't carry a benchmark.</p>
+                    <button className="btn btn-primary" onClick={() => setCustomOpen(true)}><Icon name="plus" size={16} />Create custom question</button>
+                  </div>
+                ) : (
+                  <div className="eq-empty">
+                    <img className="eq-empty-art" src="assets/illustrations/templates/search-no-results-illustration.svg" alt="" />
+                    <div className="eq-empty-title">We couldn't find any matches for "{gq2.trim()}"</div>
+                    <p className="eq-empty-body">Check the spelling or try another word</p>
+                  </div>
+                )
+              ) : gGroups.map(g => {
+                const ids = g.rows.map(r => r.q.id);
+                const allOn = ids.length > 0 && ids.every(id => sel.has(id));
+                return (
+                  <section key={gKey(g)} className="aql-sec">
+                    <div className="aql-sechead">
+                      <div className="aql-sechead-text">
+                        <h3>
+                          {gqt2 ? <Highlight text={g.title} q={gqt2} /> : g.title}<span className="aql-sec-count">{g.shown.length}</span></h3>
+                        {(g.meta || g.sub) && <p className="aql-sechead-sub">{g.meta}{g.meta && g.sub ? " · " : ""}{g.sub}</p>}
+                      </div>
+                      <div className="spacer" />
+                      {!g.noAddAll && <SelectAllTopic allOn={allOn} total={ids.length} ids={ids} onToggle={() => addAllGroup(g, allOn)} />}
+                    </div>
+                    {g.shown.map(renderRow)}
+                  </section>
+                );
+              })}
+            </div>
+            </>)}
+          </div>
+        </div>
+        ) : templateDetail && detailTemplate ? (
           <TemplateDetailView t={detailTemplate} sel={sel} onBack={() => setTemplateDetail(null)}
             onToggleQuestion={(id) => toggleTemplateQuestion(detailTemplate, id)}
             onSelectAll={(on) => setTemplate(detailTemplate, on)} />
@@ -984,7 +1495,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         <>
         {nav === "tabs" && (
           <div className="dialog-header" style={{ paddingRight: 24 }}>
-            <h2 className="dialog-title" id="eq-title" style={{ fontSize: 20, lineHeight: "28px" }}>Select questions</h2>
+            <h2 className="dialog-title" id="eq-title" style={{ fontSize: 20, lineHeight: "28px" }}>Question library</h2>
           </div>
         )}
 
@@ -1002,9 +1513,9 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         )}
 
         <div className={nav === "sidebar" ? "eq-frame" : "eq-col"}>
-        {nav === "sidebar" && !compact && (
+        {nav === "sidebar" && !narrow && (
           <div className="eq-rail" role="tablist" aria-orientation="vertical">
-            <div className="eq-rail-title" id="eq-title">Add questions</div>
+            <div className="eq-rail-title" id="eq-title">Question library</div>
             {/* Source is a place (Library / Custom); the global search is the
                 everything view. While a query is live NO rail item is active —
                 the results belong to the whole library, not to a section.
@@ -1024,57 +1535,56 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         )}
         <div className="eq-main">
         {nav === "sidebar" && (
+          <div className={narrow ? "eq-head-stack" : "eq-toolbar-wrap"}>
+          {/* Without the rail the title it carried leads the column, with the
+              close in the dialog's corner and the search and buttons below. */}
+          {narrow && <h2 className="dialog-title eq-title" id="eq-title">Question library</h2>}
           <div className="eq-toolbar">
             {/* With no room for the rail, the pages move into a menu that sits
                 where the rail was: left of the search field. */}
             {compact && <PagesMenu tab={tab} onPick={(v) => { setTab(v); setGq(""); setResFilter("all"); }} />}
+            {/* OUT OF SCOPE for v2 (feedback round 2): one search across
+                questions, themes and templates isn't in the product today and
+                is extra work. Kept in the prototype because it tested well —
+                not part of the v2 release. */}
             <div className="search-wrap eq-toolbar-search">
               <span className="search-icon"><Icon name="search" size={16} /></span>
               <input type="search" className="srch" placeholder="Search questions, themes and templates"
                 value={gq} onChange={e => setGq(e.target.value)} />
             </div>
-            <FilterMenu compact={compact}
+            <FilterMenu compact={narrow}
               show={tab === "themes" ? themeShow : tab === "templates" ? tmplShow : show}
               onShow={tab === "themes" ? setThemeShow : tab === "templates" ? setTmplShow : setShow}
               showOptions={GENERIC_SHOW[tab] || GENERIC_SHOW.questions}
               kind={resFilter} onKind={setResFilter}
               kindOptions={gqt ? RESULT_FILTERS : null} />
-            {/* Creating a custom question is reachable from every page: it is
-                the answer when the library does not cover something, and that
-                is a realisation you have while browsing it. */}
-            {compact ? (
-              <Tooltip label="Add custom question">
-                <button className="ib ib-36 ib-secondary" aria-label="Add custom question" onClick={() => setCustomOpen(true)}>
-                  <Icon name="plus" size={16} /></button>
+            {/* Not in the library? Write it: the custom question dialog, on top
+                of this one, adds it to the selection here. */}
+            {narrow ? (
+              <Tooltip label="Create question">
+                <button className="ib ib-36 ib-secondary" aria-label="Create question" onClick={() => setCustomOpen(true)}><Icon name="plus" size={16} /></button>
               </Tooltip>
             ) : (
-              <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
-                <Icon name="plus" size={16} />Add custom question</button>
+              <button className="btn btn-secondary eq-create-q" onClick={() => setCustomOpen(true)}><Icon name="plus" size={16} />Create question</button>
             )}
-            <span className="eq-tool-div" aria-hidden="true" />
-            <Tooltip label="Close" pos="is-left">
-              <button className="ib ib-36 ib-tertiary" aria-label="Close" onClick={close}><Icon name="cross" size={16} /></button>
-            </Tooltip>
+            {!narrow && (
+              <>
+                <span className="eq-tool-div" aria-hidden="true" />
+                <Tooltip label="Close" pos="is-left">
+                  <button className="ib ib-36 ib-tertiary" aria-label="Close" onClick={close}><Icon name="cross" size={16} /></button>
+                </Tooltip>
+              </>
+            )}
+          </div>
           </div>
         )}
 
-        {/* The top bar carries only what every page uses (search + the
-            filter); an action that belongs to ONE page sits on that page's
-            title row instead, tertiary, hard right. */}
-        {nav === "sidebar" && (
+        {/* The rail (or, without it, the title row) names the dialog, so the
+            list needs no title of its own — only a live search says what the
+            results are. */}
+        {nav === "sidebar" && gqt && (
           <div className="eq-section-row">
-            {/* With the rail collapsed, this row's title is the dialog's
-                accessible name. */}
-            <h3 className="eq-section-title" id={compact ? "eq-title" : undefined}>{gqt
-              ? `Results for “${gq.trim()}”`
-              : tab === "questions" ? "Library questions"
-              : tab === "custom" ? "Custom questions"
-              : tab === "themes" ? "Themes" : "Templates"}</h3>
-            <span className="spacer" />
-            {!gqt && (tab === "questions" || tab === "custom") && secKeys.length > 0 && (
-              <button className="btn btn-tertiary" onClick={toggleAllSecs}>
-                <Icon name={allCollapsed ? "double-chevron-down" : "double-chevron-up"} size={16} />{allCollapsed ? "Expand all" : "Collapse all"}</button>
-            )}
+            <h3 className="eq-section-title">Results for “{gq.trim()}”</h3>
           </div>
         )}
 
@@ -1103,7 +1613,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 value={customQ} onChange={e => setCustomQ(e.target.value)} />
             </div>
             <button className="btn btn-secondary" style={{ flex: "none" }} onClick={() => setCustomOpen(true)}>
-              <Icon name="plus" size={16} />Add custom question</button>
+              <Icon name="plus" size={16} />Create custom question</button>
           </div>
         )}
 
@@ -1127,15 +1637,17 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
           </div>
         )}
 
-        {/* The one thing that changes in "add to this topic" mode: a quiet
-            banner naming where selections go, with its own way out. */}
-        {target && (
+        {/* Opened from a topic's "Add questions": where what you add goes.
+            ("in your questionnaire": the list below has topic headings of its
+            own, so the name alone could read as one of those.) From the bar's
+            Add questions each question simply goes to its own topic, which
+            needs no note. */}
+        {target ? (
           <div className="eq-target-note" role="status">
             <Icon name="info" size={16} />
-            <span className="eq-target-txt">Questions you select are added to <b>{target.label}</b></span>
-            <button className="btn btn-tertiary" onClick={() => setTarget(null)}>Stop adding to this topic</button>
+            <span className="eq-target-txt">Questions you add go to <b>{target.label}</b> in your questionnaire</span>
           </div>
-        )}
+        ) : null}
 
         <div className="dialog-body scroll-y">
           {gRes ? (
@@ -1156,15 +1668,13 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                     <div className="eq-gres-head">Questions <span className="tag tag-count">
                       {gRes.questions.length + gRes.orgQuestions.length
                         + gRes.indirect.reduce((n, g) => n + g.questions.length, 0)}</span></div>
-                    {gRes.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} hl={gqt}
+                    {gRes.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} hl={gqt} showTopic
                       leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
                       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
                     {gRes.orgQuestions.map(oq => (
-                      <div key={oq.id} className="aql-row" onClick={() => toggleOrgQuestion(oq)}>
-                        <Tooltip label="Add to questionnaire" pos="is-above" float>
-                          <Checkbox on={false} large onClick={(e) => { e.stopPropagation(); toggleOrgQuestion(oq); }} />
-                        </Tooltip>
+                      <div key={oq.id} className="aql-row" onClick={clickCheck}>
+                        <QCheck q={oq} on={sel.has(oq.id)} onClick={() => toggleOrgQuestion(oq)} />
                         <div className="aql-text"><Highlight text={oq.text} q={gqt} /></div>
                         <CustomTag label="Custom question" pos="is-above" float />
                         <UsedInTag survey={oq.from} />
@@ -1182,16 +1692,16 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                       return (
                         <section key={g.key} className={"aql-sec eq-res-sec" + (open ? "" : " is-collapsed")}>
                           <div className="aql-sechead">
-                            <h3><Highlight text={g.name} q={gqt} /></h3>
-                            <span className="text-medium text-subdued">{g.kind}</span>
-                            <div className="spacer" />
-                            <SelectAllTopic allOn={allOn} total={ids.length} onToggle={() => setMany(ids, !allOn)} />
                             <Tooltip label={open ? "Collapse" : "Expand"} pos="is-above" float>
                               <button className="ib ib-tertiary aql-sec-toggle" aria-label={open ? "Collapse questions" : "Expand questions"}
                                 aria-expanded={open} onClick={() => toggleResGroup(g.key)}>
-                                <Icon name="chevron-down" size={16} className={"aql-chevron" + (open ? " is-expanded" : "")} />
+                                <Icon name="chevron-right" size={16} className={"aql-chevron" + (open ? " is-expanded" : "")} />
                               </button>
                             </Tooltip>
+                            <h3 className="aql-sec-title" onClick={() => toggleResGroup(g.key)}><Highlight text={g.name} q={gqt} /></h3>
+                            <span className="text-medium text-subdued">{g.kind}</span>
+                            <div className="spacer" />
+                            <SelectAllTopic allOn={allOn} total={ids.length} ids={ids} onToggle={() => setMany(ids, !allOn)} />
                           </div>
                           {open && g.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
                             leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
@@ -1207,7 +1717,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                     <div className="eq-gres-head">Themes <span className="tag tag-count">{gRes.themes.length}</span></div>
                     <div className="thm-grid">
                       {gRes.themes.map(t => <ChoiceCard key={t.name} variant="theme" hl={gqt}
-                        title={t.name} desc={t.desc} selCount={t.kept} total={t.total}
+                        title={t.name} desc={t.desc} selCount={t.kept} total={t.total} ids={t.questions.map(x => x.id)}
                         onToggle={() => setMany(t.questions.map(x => x.id), t.kept < t.total)}
                         onDetails={() => setThemeDetails(t.name)} />)}
                     </div>
@@ -1218,7 +1728,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                     <div className="eq-gres-head">Templates <span className="tag tag-count">{gRes.templates.length}</span></div>
                     <div className="thm-grid">
                       {gRes.templates.map(t => <ChoiceCard key={t.id} variant="template" hl={gqt}
-                        title={t.name} desc={t.desc} art={t.illus} selCount={t.selCount} total={t.total}
+                        title={t.name} desc={t.desc} art={t.illus} selCount={t.selCount} total={t.total} ids={t.questions.map(x => x.id)}
                         onToggle={() => setTemplate(t, !t.active)}
                         onDetails={() => setTemplateDetail(t.id)} />)}
                     </div>
@@ -1240,7 +1750,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 ) : (
                   <div className="thm-grid">
                     {visibleThemes.map(t => <ChoiceCard key={t.name} variant="theme"
-                      title={t.name} desc={t.desc} selCount={t.kept} total={t.total}
+                      title={t.name} desc={t.desc} selCount={t.kept} total={t.total} ids={t.questions.map(x => x.id)}
                       onToggle={() => setMany(t.questions.map(x => x.id), t.kept < t.total)}
                       onDetails={() => setThemeDetails(t.name)} />)}
                   </div>
@@ -1263,7 +1773,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                   something specific to your context. Custom questions don't carry a benchmark.
                 </p>
                 <button className="btn btn-primary" onClick={() => setCustomOpen(true)}>
-                  <Icon name="plus" size={16} />Add custom question</button>
+                  <Icon name="plus" size={16} />Create custom question</button>
               </div>
             ) : (
               <>
@@ -1273,16 +1783,16 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 {customShown.length > 0 && (
                   <section className={"aql-sec" + (collapsed.has("cq:own") ? " is-collapsed" : "")}>
                     <div className="aql-sechead">
-                      <h3>Created in this survey</h3>
-                      <div className="spacer" />
-                      <SelectAllTopic allOn={customShown.every(x => sel.has(x.id))} total={customShown.length}
-                        onToggle={() => setMany(customShown.map(x => x.id), !customShown.every(x => sel.has(x.id)))} />
                       <Tooltip label={collapsed.has("cq:own") ? "Expand" : "Collapse"} pos="is-above" float>
                         <button className="ib ib-tertiary aql-sec-toggle" aria-label="Collapse questions"
                           aria-expanded={!collapsed.has("cq:own")} onClick={() => toggleSec("cq:own")}>
-                          <Icon name="chevron-down" size={16} className={"aql-chevron" + (collapsed.has("cq:own") ? "" : " is-expanded")} />
+                          <Icon name="chevron-right" size={16} className={"aql-chevron" + (collapsed.has("cq:own") ? "" : " is-expanded")} />
                         </button>
                       </Tooltip>
+                      <h3 className="aql-sec-title" onClick={() => toggleSec("cq:own")}>Created in this survey</h3>
+                      <div className="spacer" />
+                      <SelectAllTopic allOn={customShown.every(x => sel.has(x.id))} total={customShown.length} ids={customShown.map(x => x.id)}
+                        onToggle={() => setMany(customShown.map(x => x.id), !customShown.every(x => sel.has(x.id)))} />
                     </div>
                     {!collapsed.has("cq:own") && customShown.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} usedInTag
                       leaving={leaving.has(qq.id)} themeInfo={null}
@@ -1293,31 +1803,32 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 {orgShown.length > 0 && (
                   <section className={"aql-sec" + (collapsed.has("cq:org") ? " is-collapsed" : "")}>
                     <div className="aql-sechead">
-                      <h3>Created and used in other surveys</h3>
+                      <Tooltip label={collapsed.has("cq:org") ? "Expand" : "Collapse"} pos="is-above" float>
+                        <button className="ib ib-tertiary aql-sec-toggle" aria-label="Collapse questions"
+                          aria-expanded={!collapsed.has("cq:org")} onClick={() => toggleSec("cq:org")}>
+                          <Icon name="chevron-right" size={16} className={"aql-chevron" + (collapsed.has("cq:org") ? "" : " is-expanded")} />
+                        </button>
+                      </Tooltip>
+                      <h3 className="aql-sec-title" onClick={() => toggleSec("cq:org")}>Created and used in other surveys</h3>
                       <div className="spacer" />
-                      <SelectAllTopic allOn={orgShown.length > 0 && orgShown.every(x => sel.has(x.id))} total={orgShown.length}
+                      <SelectAllTopic allOn={orgShown.length > 0 && orgShown.every(x => sel.has(x.id))} total={orgShown.length} ids={orgShown.map(x => x.id)}
                         onToggle={() => {
                           const allOn = orgShown.every(x => sel.has(x.id));
                           if (allOn) setMany(orgShown.map(x => x.id), false);
                           else orgShown.forEach(x => { if (!sel.has(x.id)) toggleOrgQuestion(x); });
                         }} />
-                      <Tooltip label={collapsed.has("cq:org") ? "Expand" : "Collapse"} pos="is-above" float>
-                        <button className="ib ib-tertiary aql-sec-toggle" aria-label="Collapse questions"
-                          aria-expanded={!collapsed.has("cq:org")} onClick={() => toggleSec("cq:org")}>
-                          <Icon name="chevron-down" size={16} className={"aql-chevron" + (collapsed.has("cq:org") ? "" : " is-expanded")} />
-                        </button>
-                      </Tooltip>
                     </div>
                     {!collapsed.has("cq:org") && orgShown.map(oq => (
-                      <div key={oq.id} className="aql-row" onClick={() => toggleOrgQuestion(oq)}>
-                        <Tooltip label={sel.has(oq.id) ? "Added to questionnaire" : "Add to questionnaire"} pos="is-above" float>
-                          <Checkbox on={sel.has(oq.id)} large onClick={(e) => { e.stopPropagation(); toggleOrgQuestion(oq); }} />
-                        </Tooltip>
-                        <div className="aql-text">{oq.text}</div>
+                      <div key={oq.id} className="aql-row" onClick={clickCheck}>
+                        <QCheck q={oq} on={sel.has(oq.id)} onClick={() => toggleOrgQuestion(oq)} />
+                        <div className="aql-text">
+                          {oq.text}
+                          {initial.has(oq.id) && <WhereLine q={oq} />}
+                        </div>
                         <div className="aql-meta">
                           <UsedInTag survey={oq.from} />
                           <QTypeIcon type={oq.type} size={24} tip pos="is-above" float />
-                          <RowActions q={oq} on={sel.has(oq.id)} onToggle={() => toggleOrgQuestion(oq)} onEditCustom={setEditCustomQ} />
+                          <RowActions q={oq} on={sel.has(oq.id)} inQ={initial.has(oq.id)} onToggle={() => toggleOrgQuestion(oq)} onEditCustom={setEditCustomQ} />
                         </div>
                       </div>
                     ))}
@@ -1331,7 +1842,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
             ) : (
               <div className="thm-grid">
                 {visibleTemplates.map(t => <ChoiceCard key={t.id} variant="template"
-                  title={t.name} desc={t.desc} art={t.illus} selCount={t.selCount} total={t.total}
+                  title={t.name} desc={t.desc} art={t.illus} selCount={t.selCount} total={t.total} ids={t.questions.map(x => x.id)}
                   onToggle={() => setTemplate(t, !t.active)}
                   onDetails={() => setTemplateDetail(t.id)} />)}
               </div>
@@ -1341,21 +1852,19 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
               {groups.map(g => {
                 const ids = g.items.map(x => x.id);
                 const allOn = ids.every(id => sel.has(id));
-                const someOn = ids.some(id => sel.has(id));
-                const nSel = g.items.filter(x => sel.has(x.id)).length;
                 const isColl = collapsed.has(g.key);
                 return (
                   <section key={g.key} id={"eq-sec-" + g.key} className={"aql-sec" + (isColl ? " is-collapsed" : "")}>
                     <div className="aql-sechead">
-                      <h3>{g.label}</h3>
-                      <div className="spacer" />
-                      <SelectAllTopic allOn={allOn} total={ids.length} onToggle={() => setMany(ids, !allOn)} />
                       <Tooltip label={isColl ? "Expand" : "Collapse"} pos="is-above" float>
                         <button className="ib ib-tertiary aql-sec-toggle" aria-label={isColl ? "Expand questions" : "Collapse questions"}
                           aria-expanded={!isColl} onClick={() => toggleSec(g.key)}>
-                          <Icon name="chevron-down" size={16} className={"aql-chevron" + (isColl ? "" : " is-expanded")} />
+                          <Icon name="chevron-right" size={16} className={"aql-chevron" + (isColl ? "" : " is-expanded")} />
                         </button>
                       </Tooltip>
+                      <h3 className="aql-sec-title" onClick={() => toggleSec(g.key)}>{g.label}</h3>
+                      <div className="spacer" />
+                      <SelectAllTopic allOn={allOn} total={ids.length} ids={ids} onToggle={() => setMany(ids, !allOn)} />
                     </div>
                     {!isColl && g.items.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
                       leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
@@ -1375,26 +1884,36 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         </>
         )}
 
+        {/* What Save does — added, where to, and removed — and the one place
+            it happens. Save is always there: with nothing changed it closes. */}
         <div className="dialog-footer">
-          <span className="text-medium text-w500" style={{ color: "var(--content-base)" }}>{selCount} total {selCount === 1 ? "question" : "questions"} selected</span>
+          <span className="text-medium text-w500 eq-change-line" style={{ color: "var(--content-base)" }}>{changeLine()}</span>
           <div className="spacer" />
           <button className="btn btn-secondary" onClick={close}>Cancel</button>
-          <button className="btn btn-primary" onClick={apply}>Confirm</button>
+          <button className="btn btn-primary" onClick={hasChanges ? apply : close}>Save</button>
         </div>
       </div>
 
-      {customOpen && <CustomQuestionDialog defaultTopic={target ? target.key : undefined}
+      {customOpen && <CustomQuestionDialog defaultTopic={target ? target.key : undefined} autoTopic={autoTopic}
+        onGoToQuestion={(q) => {
+          // Already selected here: close the dialog and show its row.
+          setCustomOpen(false); setQ(""); setShow("all"); setTab(q.custom ? "custom" : "questions");
+          setJustAdded(q.id); timers.current.push(setTimeout(() => setJustAdded(null), 2600));
+        }}
         topics={mergeTopics(topicOptions, pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))}
         pool={[...pool, ...orgCustomQs]} selectedIds={[...sel]}
-        alwaysSimilar={tweaks.similarAlways}
+        alwaysSimilar={tweaks.similarAlways} checkBlocks={!tweaks.checkWarnsOnly} qMeta={qMeta}
         onUseSuggestion={(q) => { if (pool.some(pq => pq.id === q.id)) setMany([q.id], true); else toggleOrgQuestion(q); }}
         onCancel={() => setCustomOpen(false)} onAdd={addCustom} onAddAnother={addCustomKeepOpen}
         onOpenCreated={(q) => { setCustomOpen(false); setEditCustomQ(q); }} />}
+      {/* Its translations: still riding on the question when it was made in
+          this dialog, otherwise from the survey's store. */}
       {editCustomQ && <CustomQuestionDialog question={editCustomQ} focusTitle={focusTitleQ}
+        translations={editCustomQ.i18n || (translationsFor ? translationsFor(editCustomQ) : {})}
         topics={mergeTopics(topicOptions, pool.filter(x => (sel.has(x.id) || x.id === editCustomQ.id) && x.topic).map(x => x.topic))}
         onCancel={() => { setEditCustomQ(null); setFocusTitleQ(false); }}
         onSubmit={(q2) => { saveCustomEdit(q2); setFocusTitleQ(false); }}
-        onDelete={(q2) => { deleteCustomQ(q2); setFocusTitleQ(false); }} />}
+        onDelete={initial.has(editCustomQ.id) ? undefined : (q2) => { deleteCustomQ(q2); setFocusTitleQ(false); }} />}
       {settingsQ && (() => {
         const meta = qMeta[settingsQ.id] || {};
         const t = themeGroups.find(g => g.name === settingsQ.theme);
@@ -1405,7 +1924,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
             allVariants={!!tweaks.altWordings}
             topicOptions={[...new Set(pool.filter(x => sel.has(x.id) && x.topic).map(x => x.topic))].map(x => ({ value: x, label: x }))}
             onCancel={() => setSettingsQ(null)}
-            onDetach={({ text, topic }) => {
+            onDetach={settingsQ.required ? undefined : ({ text, topic }) => {
               // Same move as in the questionnaire: the library question leaves
               // the selection and a custom copy of it takes its place, opened
               // for editing — wording is the reason anyone detaches.
@@ -1436,5 +1955,6 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
       {toast && <AddedToast topic={toast.topic} onClose={() => setToast(null)} />}
       {reqNotice > 0 && <RequiredNotice key={reqNotice} count={reqCount} onClose={() => setReqNotice(0)} />}
     </div>
+    </AddCtx.Provider>
   );
 }

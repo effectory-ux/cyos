@@ -3,7 +3,7 @@
 // THEME = research-based construct with a COMPOSITE SCORE. Only ~30–50% of
 //         questions belong to a theme. A theme's score appears in results only
 //         if ALL of its questions are kept — breaking it is a deliberate problem.
-import { libraryPool, templatePoolQuestions } from "./qlib.js";
+import { templatePoolQuestions, fullLibrary } from "./qlib.js";
 
 export const QTYPES = {
   scale5:   { label: "5-point scale",   icon: "point-scale",  bg: "var(--bg-accent-turquoise-subtle)", fg: "var(--content-accent-turquoise)", creatable: true },
@@ -125,45 +125,28 @@ export const BADGE_COLORS = {
 export const DEFAULT_MC = ["", ""];
 export const SCALE_LABELS = ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"];
 
-// The answer options a question can TRIGGER logic with (question logic =
-// conditional visibility: show a later question only when one of the chosen
-// answers was given here). Open text has no fixed answers, so it can't
-// trigger; a rule stores answer INDICES into this list.
-export const answerOptionsOf = (q) => {
-  if (!q) return [];
-  if (q.type === "multiple" || q.type === "single") return q.options || [];
-  if (q.type === "text") return [];
-  return SCALE_LABELS;
-};
-
 // Build a real questionnaire (pool + all-selected) from a template's own
 // question set in the library export — so each template loads its own questions.
 // `preselectPerTopic` controls how many questions per topic start selected — the
 // rest stay in the library, unselected, so there are plenty more to add.
 export function surveyFromTemplate(templateId, id, name, preselectPerTopic = Infinity) {
+  // The whole library (each question once), the template's own questions
+  // first; theirs are selected (the first N per topic), plus the org-required
+  // ones. A template question whose library topic differs from the topic the
+  // template puts it in is filed there for this survey (qMeta topic), so the
+  // survey starts with the template's structure.
   const tqs = templatePoolQuestions(templateId);
-  const pool = [...tqs], selectedIds = [];
-  const byKey = new Map(tqs.map(q => [q.topic + "||" + q.text, q])); // to dedup the library
-  // Pre-select the first N questions of each topic; the rest start unselected.
-  const perTopic = {};
+  const pool = fullLibrary(templateId);
+  const selectedIds = [], qMeta = {}, perTopic = {};
   tqs.forEach(q => {
-    const n = perTopic[q.topic] || 0;
-    if (n < preselectPerTopic) selectedIds.push(q.id);
-    perTopic[q.topic] = n + 1;
+    const n = perTopic[q.tmplTopic] || 0;
+    if (n < preselectPerTopic || q.required) selectedIds.push(q.id);
+    perTopic[q.tmplTopic] = n + 1;
+    if (q.tmplTopic && q.tmplTopic !== q.topic) qMeta[q.id] = { topic: q.tmplTopic };
   });
-  // Add the rest of the shared library (unselected) so there's plenty more to
-  // add. Templates reuse base-library questions, so DEDUPE by topic+text: a
-  // library question already in the template isn't added twice; if it's
-  // org-required, the template's copy inherits the required flag. Required
-  // questions with no template match are added (and selected).
-  libraryPool().forEach(q => {
-    const dup = byKey.get(q.topic + "||" + q.text);
-    if (dup) { if (q.required) { dup.required = true; if (!selectedIds.includes(dup.id)) selectedIds.push(dup.id); } return; }
-    pool.push(q);
-    if (q.required) selectedIds.push(q.id);
-  });
+  pool.forEach(q => { if (q.required && !selectedIds.includes(q.id)) selectedIds.push(q.id); });
   const t = TEMPLATES.find(x => x.id === templateId);
-  return { id, name, templateName: t ? t.name : templateId, isTemplate: true, selectedIds, pool };
+  return { id, name, templateName: t ? t.name : templateId, isTemplate: true, selectedIds, pool, qMeta };
 }
 
 // Seed rows for the Surveys landing page. Drafts created in the flow are

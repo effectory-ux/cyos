@@ -10,10 +10,12 @@ import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 import { QTypeIcon, Tooltip, ThemeTag, useMediaQuery, MiniSelect } from "./shared.jsx";
-import { QTYPES, SCALE_LABELS, answerOptionsOf } from "../data/data.js";
-import { LANGUAGES, flagSrc, autoTranslation } from "../data/i18n.js";
+import { LANG_STATUS, LangPanel, AutoTextarea } from "./CustomQuestionDialog.jsx";
+import { QTYPES, SCALE_LABELS } from "../data/data.js";
+import { LANGUAGES, flagSrc, autoTranslation, scaleFor } from "../data/i18n.js";
 import { variantsOf } from "../data/variants.js";
 import { designWash } from "../data/designs.js";
+import { BenchmarkInfo } from "./BenchmarkInfo.jsx";
 
 const SCALE_DOTS = [
   "var(--bg-distribution-strongly-disagree)",
@@ -83,6 +85,7 @@ const skipDetachWarn = () => { try { return localStorage.getItem(SKIP_KEY) === "
 // (the tag flips from Benchmarked to Custom); when the question belongs to a
 // theme the loss is bigger — the theme connection goes too, and if it was the
 // last question holding the theme complete, the composite score breaks.
+
 function DetachWarning({ theme, completes, themeCount, onCancel, onConfirm }) {
   const [dontShow, setDontShow] = useState(false);
   return (
@@ -135,35 +138,16 @@ function DetachWarning({ theme, completes, themeCount, onCancel, onConfirm }) {
   );
 }
 
-export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, allVariants = false, logicCandidates = [], onCancel, onSave, onDetach }) {
+export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, allVariants = false, onCancel, onSave, onDetach, onOpenTheme }) {
+  const [infoOpen, setInfoOpen] = useState(false);
   // Staged edits — committed on Save only.
   const [variant, setVariant] = useState(meta.variant);
   const [desc, setDesc] = useState(meta.desc);
   const [topic, setTopic] = useState(topicKey || q.topic);
-  // Question logic (masking): show this question only when the participant
-  // gave one of the chosen answers to an EARLIER question. One rule per
-  // question; several chosen answers count as OR. `logicCandidates` is the
-  // ordered list of earlier questions with fixed answers — logic only looks
-  // backwards, so a question that comes later can never trigger this one.
-  const savedLogic = meta.logic && logicCandidates.some(c => c.id === meta.logic.trigger) ? meta.logic : null;
-  const [logicOn, setLogicOn] = useState(!!savedLogic);
-  const [trigger, setTrigger] = useState(savedLogic ? savedLogic.trigger : undefined);
-  const [logicAnswers, setLogicAnswers] = useState(savedLogic ? savedLogic.answers : []);
-  const [triggerOpen, setTriggerOpen] = useState(false);
-  // A required question always shows — it can't be masked.
-  const canLogic = logicCandidates.length > 0 && !q.required;
-  const triggerQ = logicCandidates.find(c => c.id === trigger) || null;
-  const triggerOpts = answerOptionsOf(triggerQ);
-  const toggleLogicAnswer = (i) => setLogicAnswers(a => (a.includes(i) ? a.filter(x => x !== i) : [...a, i].sort((x, y) => x - y)));
-  const pickTrigger = (id) => { setTrigger(id); setLogicAnswers([]); setTriggerOpen(false); };
-  // The staged rule this dialog would save: null while incomplete.
-  const stagedLogic = logicOn && triggerQ && logicAnswers.length > 0 ? { trigger, answers: logicAnswers } : null;
-  const logicOk = !logicOn || !!stagedLogic;
   const [lang, setLang] = useState("en");
   // Same breakpoint as the custom-question dialog: below it the language list
   // can't sit next to the preview, so it becomes a select above it.
   const compact = useMediaQuery("(max-width: 1160px)");
-  const [topicOpen, setTopicOpen] = useState(false);
   const [detachAsk, setDetachAsk] = useState(false);
   // A description is ALWAYS the coordinator's own text: it clarifies the
   // question for this survey and never carries the benchmark, so there is no
@@ -178,26 +162,27 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   const wording = variant || q.text;
   const variants = variantsOf(q.text, allVariants, q.type);
   const primary = lang === "en";
-  // Mirrors the side list, so the compact menu reads the same way.
-  const langItems = [
-    { header: true, label: "Primary language" },
-    ...LANGUAGES.filter(l => l.primary).map(l => ({ value: l.code, label: l.label, sub: l.country,
-      lead: <span className="cq-flag"><img src={flagSrc(l.flag)} alt="" /></span> })),
-    { header: true, label: `Translations (${LANGUAGES.length - 1})` },
-    ...LANGUAGES.filter(l => !l.primary).map(l => ({ value: l.code, label: l.label, sub: l.country,
-      lead: <span className="cq-flag"><img src={flagSrc(l.flag)} alt="" /></span> })),
-  ];
+  // Mirrors the side list, so the compact menu reads the same way. The
+  // wording's translations come with the benchmark: Effectory makes them, so
+  // every translation says so instead of the automatic/manual status a
+  // custom question has.
+  const langStatus = (l) => (l.primary ? "source" : "effectory");
+  const langItems = LANGUAGES.map(l => ({ value: l.code, label: `${l.label} (${l.country})`,
+    sub: LANG_STATUS[langStatus(l)].label,
+    lead: <span className="cq-flag"><img src={flagSrc(l.flag)} alt="" /></span> }));
   const t = (text) => (primary || !text ? text : autoTranslation(text, lang));
+  // The answer scale has real translations (the same the custom question
+  // dialog shows), not the machine's.
+  const pt = (i) => (primary ? SCALE_LABELS[i] : scaleFor(lang).points[i]);
 
   const dirty = (variant || undefined) !== (meta.variant || undefined)
     || (desc || undefined) !== (meta.desc || undefined)
-    || topic !== (topicKey || q.topic)
-    || JSON.stringify(stagedLogic) !== JSON.stringify(savedLogic);
+    || topic !== (topicKey || q.topic);
 
   const save = () => {
     if (!dirty) { onCancel(); return; }
     onSave({
-      qMeta: { variant: variant || undefined, desc: desc || undefined, logic: stagedLogic || undefined },
+      qMeta: { variant: variant || undefined, desc: desc || undefined },
       topic: topic !== (topicKey || q.topic) ? topic : undefined,
     });
   };
@@ -205,7 +190,6 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   // Detaching pulls the question out of its theme too. If it is the last one
   // holding that theme complete, the warning leads with the theme instead.
   const completesTheme = !!(q.theme && themeInfo && themeInfo.total > 0 && themeInfo.kept >= themeInfo.total);
-  const topicLabel = (topicOptions.find(o => o.value === topic) || {}).label || topic;
   // The dialog is titled by the thing itself: the wording actually in use, so
   // picking an alternative retitles it.
   const title = wording;
@@ -218,12 +202,17 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
+          {/* The tags are ways in: Benchmarked explains itself, the theme
+              opens its theme. */}
           <div className="bmq-kind">
-            <span className="infotag is-standard"><Icon name="barchart-2" size={12} />Benchmarked</span>
-            {variant && <span className="infotag is-alt">Alternative wording</span>}
-            {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below" />}
+            <Tooltip label="This question is benchmarked" pos="is-below">
+              <button type="button" className="infotag is-standard is-interactive" onClick={() => setInfoOpen(true)}>
+                <Icon name="barchart-2" size={12} />Benchmarked
+              </button>
+            </Tooltip>
+            {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below"
+              onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />}
             {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
-            {stagedLogic && <span className="infotag is-logic"><Icon name="eye" size={12} />Conditional</span>}
           </div>
           <h2 className="dialog-title" id="bmq-title">{title}</h2>
           <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
@@ -233,32 +222,10 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
           <div className="bmq-field">
             <span className="bmq-lbl">Add to topic
               <Tooltip label="Topics organize questions in this survey. They don't affect benchmarks.">
-                <span className="cq-info"><Icon name="info" size={16} /></span>
+                <button type="button" className="cq-info" aria-label="About topics"><Icon name="info" size={16} /></button>
               </Tooltip>
             </span>
-            <div style={{ position: "relative" }}>
-              <button type="button" className={"sel-btn bmq-top-sel" + (topicOpen ? " is-pressed" : "")}
-                aria-haspopup="listbox" aria-expanded={topicOpen} onClick={() => setTopicOpen(o => !o)}>
-                <span className="sel-btn-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{topicLabel}</span>
-                <span className="spacer" />
-                <Icon name="chevron-down" size={16} />
-              </button>
-              {topicOpen && (
-                <>
-                  <div className="cq-menu-scrim" onMouseDown={() => setTopicOpen(false)} />
-                  <div className="menu" role="listbox" style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 3, maxHeight: 260, overflowY: "auto" }}>
-                    {topicOptions.map(o => (
-                      <div key={o.value} role="option" aria-selected={o.value === topic}
-                        className={"menu-item" + (o.value === topic ? " is-selected" : "")}
-                        onClick={() => { setTopic(o.value); setTopicOpen(false); }}>
-                        <span className="menu-item-body"><span className="menu-item-title">{o.label}</span></span>
-                        {o.value === topic && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            <MiniSelect ariaLabel="Add to topic" value={topic} items={topicOptions} onChange={setTopic} block />
           </div>
           <div className="bmq-field">
             <span className="bmq-lbl">Answer type</span>
@@ -271,80 +238,6 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
           </div>
         </div>
 
-        {/* Logic sits with the other settings (topic, answer type), not in the
-            preview: it decides WHO gets the question, not what it looks like. */}
-        <div className="bmq-logic">
-          <div className="bmq-logic-head">
-            <span className="bmq-logic-ic"><Icon name="eye" size={16} /></span>
-            <span className="bmq-logic-text">
-              <span className="bmq-logic-title">Show this question conditionally</span>
-              <span className="bmq-logic-sub">
-                {canLogic
-                  ? "Only participants who gave a chosen answer to an earlier question get this question."
-                  : q.required
-                    ? "This question is required, so everyone gets it — logic can't hide it."
-                    : "Logic needs an earlier question with fixed answers. Move this question later, or add questions before it."}
-              </span>
-            </span>
-            <button type="button" role="switch" aria-checked={logicOn} aria-label="Show this question conditionally"
-              className={"bmq-switch" + (logicOn ? " is-on" : "") + (canLogic ? "" : " is-off-limits")}
-              disabled={!canLogic} onClick={() => setLogicOn(v => !v)} />
-          </div>
-          {logicOn && canLogic && (
-            <div className="bmq-logic-body">
-              <div className="bmq-field">
-                <span className="bmq-lbl">Earlier question</span>
-                <div style={{ position: "relative" }}>
-                  <button type="button" className={"sel-btn bmq-top-sel" + (triggerOpen ? " is-pressed" : "")}
-                    aria-haspopup="listbox" aria-expanded={triggerOpen} onClick={() => setTriggerOpen(o => !o)}>
-                    <span className={"sel-btn-name" + (triggerQ ? "" : " is-placeholder")}
-                      style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {triggerQ ? triggerQ.text : "Choose a question"}
-                    </span>
-                    <span className="spacer" />
-                    <Icon name="chevron-down" size={16} />
-                  </button>
-                  {triggerOpen && (
-                    <>
-                      <div className="cq-menu-scrim" onMouseDown={() => setTriggerOpen(false)} />
-                      <div className="menu" role="listbox" style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 3, maxHeight: 260, overflowY: "auto" }}>
-                        {logicCandidates.map(c => (
-                          <div key={c.id} role="option" aria-selected={c.id === trigger}
-                            className={"menu-item" + (c.id === trigger ? " is-selected" : "")}
-                            onClick={() => pickTrigger(c.id)}>
-                            <span className="menu-item-body"><span className="menu-item-title">{c.text}</span></span>
-                            {c.id === trigger && <span className="menu-item-check"><Icon name="check" size={16} /></span>}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-              {triggerQ && (
-                <div className="bmq-field">
-                  <span className="bmq-lbl">Show when the answer is
-                    <Tooltip label="Any chosen answer counts — one match is enough.">
-                      <span className="cq-info"><Icon name="info" size={16} /></span>
-                    </Tooltip>
-                  </span>
-                  <div className="bmq-logic-answers" role="group" aria-label="Answers that show this question">
-                    {triggerOpts.map((o, i) => (
-                      <label key={i} className={"bmq-logic-answer" + (logicAnswers.includes(i) ? " is-on" : "")}>
-                        <span className="cb-wrap">
-                          <input type="checkbox" className="cb" checked={logicAnswers.includes(i)} onChange={() => toggleLogicAnswer(i)} />
-                        </span>
-                        <span>{o}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {logicAnswers.length === 0 && <span className="bmq-logic-hint">Choose at least one answer</span>}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
         {/* Above the stage, not inside it: the preview scrolls, and a language
             control that scrolls out of view is a control you can't find. */}
         <div className="bmq-stage">
@@ -355,7 +248,6 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               <div className="cq-field cq-langsel">
                 <span className="cq-lbl">Languages</span>
                 <MiniSelect ariaLabel="Languages" value={lang} items={langItems} onChange={setLang} block />
-                {!primary && <div className="bmq-lang-note is-inline">Translations of benchmarked questions are provided by Effectory. Change the wording in the primary language.</div>}
               </div>
             )}
             {/* margin:auto centers the group when there is room and degrades
@@ -387,8 +279,10 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               )}
 
               {primary ? (
-                <textarea className="bmq-descfield" rows={2} value={desc || ""}
-                  placeholder="Add a description (optional)" aria-label="Description"
+                // The custom question dialog's own description field: one line
+                // that grows with its text, the same invitation.
+                <AutoTextarea className="cq-descfield" value={desc || ""}
+                  placeholder="Elaborate the context of your question here (optional)" aria-label="Description"
                   onChange={e => setDesc(e.target.value)} />
               ) : ((desc || "").trim() ? <div className="bmq-locked">{t(desc)}</div> : null)}
 
@@ -401,50 +295,38 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                   ))}
                 </div>
               ) : q.type === "text" ? (
-                <div className="bmq-textbox">{t("Share your thoughts")}</div>
+                <div className="bmq-textbox">{primary ? "Share your thoughts" : scaleFor(lang).open}</div>
               ) : (
                 <div className="bmq-scale">
                   <div className="bmq-scale-row">
-                    <span className="bmq-scale-end">{t(SCALE_LABELS[0])}</span>
+                    <span className="bmq-scale-end">{pt(0)}</span>
                     {SCALE_DOTS.map((c, i) => (
-                      <Tooltip key={i} label={t(SCALE_LABELS[i])}>
+                      <Tooltip key={i} label={pt(i)}>
                         <span className="bmq-dot" style={{ "--dot": c }} tabIndex={0}
-                          role="img" aria-label={t(SCALE_LABELS[i])} />
+                          role="img" aria-label={pt(i)} />
                       </Tooltip>
                     ))}
-                    <span className="bmq-scale-end">{t(SCALE_LABELS[4])}</span>
+                    <span className="bmq-scale-end">{pt(4)}</span>
                   </div>
-                  <span className="bmq-idk">{t("I don't know")}</span>
+                  <span className="bmq-idk">{primary ? "I don't know" : scaleFor(lang).dontKnow}</span>
                 </div>
               )}
               </div>
             </div>
           </div>
-          {!compact && <div className="bmq-langs">
-            <div className="bmq-langs-head">Primary language</div>
-            {LANGUAGES.filter(l => l.primary).map(l => (
-              <button key={l.code} className={"bmq-lang" + (lang === l.code ? " is-selected" : "")} onClick={() => setLang(l.code)}>
-                <span className="lang-flag"><img src={flagSrc(l.flag)} alt="" /></span>
-                <span className="bmq-lang-text"><b>{l.label}</b><span>{l.country}</span></span>
-              </button>
-            ))}
-            <div className="bmq-langs-head" style={{ paddingTop: 16 }}>Translations ({LANGUAGES.length - 1})</div>
-            {LANGUAGES.filter(l => !l.primary).map(l => (
-              <button key={l.code} className={"bmq-lang" + (lang === l.code ? " is-selected" : "")} onClick={() => setLang(l.code)}>
-                <span className="lang-flag"><img src={flagSrc(l.flag)} alt="" /></span>
-                <span className="bmq-lang-text"><b>{l.label}</b><span>{l.country}</span></span>
-              </button>
-            ))}
-            {!primary && <div className="bmq-lang-note">Translations of benchmarked questions are provided by Effectory. Change the wording in the primary language.</div>}
-          </div>}
+          {/* The same language panel as the custom question dialog; a
+              standard question's translations are Effectory's own. */}
+          {!compact && <LangPanel active={lang} onSelect={setLang}
+            source={{ label: "Translated by Effectory" }} />}
         </div>
 
         <div className="dialog-footer">
           <div className="spacer" />
           <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-          <button className={"btn btn-primary" + (dirty && logicOk ? "" : " is-disabled")} disabled={!dirty || !logicOk} onClick={save}>Save</button>
+          <button className="btn btn-primary" onClick={save}>Save</button>
         </div>
       </div>
+      {infoOpen && <BenchmarkInfo onClose={() => setInfoOpen(false)} />}
       {detachAsk && <DetachWarning onCancel={() => setDetachAsk(false)} onConfirm={doDetach}
         theme={q.theme || undefined} completes={completesTheme} themeCount={themeInfo && themeInfo.total} />}
     </div>

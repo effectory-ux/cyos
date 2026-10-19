@@ -20,7 +20,8 @@ function TemplateCard({ t, onUse, onPreview }) {
     <div className="card card-elevated tpl-card"
       onMouseEnter={() => setHot(true)} onMouseLeave={() => setHot(false)}
       onFocus={() => setHot(true)} onBlur={() => setHot(false)}>
-      {t.recommended && <span className="tag tag-brand tpl-recommended">Recommended</span>}
+      {/* Promoted as the one most people pick — not as right for everyone. */}
+      {t.recommended && <span className="tag tag-brand tpl-recommended">Most used</span>}
       <div className="card-body">
         <img className="tpl-card-img" src={"assets/illustrations/" + t.illus} alt="" />
         <span className="text-large text-w600 tpl-name">{t.name}</span>
@@ -155,10 +156,15 @@ export function TemplateModal({ changing, onClose, onUse, onScratch }) {
                 </div>
               )}
             </div>
-            <div className="dialog-footer tpl-footnote">
-              <Icon name="info" size={16} />
-              Can’t find a template? Look in other projects, or start from scratch and add questions yourself.
-            </div>
+            {/* Only from within a project (here: changing a survey's template) —
+                from All surveys the project isn't chosen yet, so "other projects"
+                means nothing there. */}
+            {changing && (
+              <div className="dialog-footer tpl-footnote">
+                <Icon name="info" size={16} />
+                Can’t find a template? Look in other projects, or start from scratch and add questions yourself.
+              </div>
+            )}
           </>
         )}
       </div>

@@ -11,7 +11,7 @@
 // files are the DS country marks exported from the design library.
 export const LANGUAGES = [
   { code: "en", label: "English", country: "United Kingdom", flag: "gb.svg", primary: true },
-  { code: "nl", label: "Dutch", country: "The Netherlands", flag: "nl.svg" },
+  { code: "nl", label: "Dutch", country: "Netherlands", flag: "nl.svg" },
   { code: "de", label: "German", country: "Germany", flag: "de.svg" },
 ];
 
@@ -30,8 +30,8 @@ const EN_SCALE = {
 export const ANSWER_SCALE = {
   en: EN_SCALE,
   nl: {
-    points: ["Helemaal oneens", "Oneens", "Niet eens, niet oneens", "Eens", "Helemaal eens"],
-    dontKnow: "Weet ik niet", open: "Deel hier je gedachten…",
+    points: ["Helemaal mee oneens", "Mee oneens", "Niet mee eens, niet mee oneens", "Mee eens", "Helemaal mee eens"],
+    dontKnow: "Ik weet het niet", open: "Deel hier je gedachten…",
   },
   de: {
     points: ["Stimme überhaupt nicht zu", "Stimme nicht zu", "Weder noch", "Stimme zu", "Stimme voll und ganz zu"],

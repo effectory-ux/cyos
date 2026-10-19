@@ -15,8 +15,8 @@ export const EDGE_CASES = [
   },
   {
     key: "similarAlways",
-    label: "Similar questions on every check",
-    desc: "Whether a new custom question looks like anything in the library depends on the draft. Turn this on to always reach the pick-a-question step.",
+    label: "Always show similar questions",
+    desc: "Whether a new custom question looks like anything in the library depends on the draft. Turn this on to always show the closest questions under the form while you write.",
     on: false,
   },
   {
