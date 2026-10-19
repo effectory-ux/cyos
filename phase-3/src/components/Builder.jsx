@@ -1770,14 +1770,19 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         const q = pool.find(p => p.id === settingsQId);
         return q ? (
           <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]} design={design}
-            logicCandidates={earlierOf(q)}
+            allQuestions={flatOrder}
+            logicByQuestion={Object.fromEntries(flatOrder.map(x => [x.id, (qMeta[x.id] || {}).logic || null]))}
             onOpenTheme={setThemeDetail}
             allVariants={edges.altWordings}
             topicOptions={visibleSections.map(x => ({ value: x.key, label: topicName(x.key) }))}
             onCancel={() => setSettingsQId(null)}
             onDetach={q.required ? undefined : ({ text, topic }) => { setSettingsQId(null); onDetachQuestion && onDetachQuestion(q, text, topic); }}
-            onSave={({ qMeta: patch, topic }) => {
+            onSave={({ qMeta: patch, topic, logicPatches }) => {
               onUpdateQMeta && onUpdateQMeta(q.id, patch);
+              // The logic editor's rail can touch several questions in one
+              // visit; each changed rule lands on its own question here.
+              Object.entries(logicPatches || {}).forEach(([id, lg]) =>
+                onUpdateQMeta && onUpdateQMeta(id, { logic: lg || undefined }));
               if (topic) onMoveTopic && onMoveTopic(q.id, topic);
               setSettingsQId(null);
             }} />

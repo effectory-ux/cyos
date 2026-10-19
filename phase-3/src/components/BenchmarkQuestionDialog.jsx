@@ -204,54 +204,102 @@ function LogicCondition({ c, earlier, showErrors, onChange, onRemove }) {
   );
 }
 
-function LogicEditor({ logic, onChange, earlier, title, onDone, onRemoveAll }) {
+// The editor covers the WHOLE questionnaire, Typeform-style: a rail of the
+// questions on the left (hop freely), the selected question's rule on the
+// right. Rules stay per question; the question dialog's Save commits every
+// question touched here, Cancel discards them all.
+function LogicEditor({ questions, selectedId, onSelect, logicOf, onChangeLogic, earlierFor, onClose }) {
   const [showErrors, setShowErrors] = useState(false);
-  const conditions = logic.conditions || [];
-  const setCondition = (i, next) => onChange({ ...logic, conditions: conditions.map((c, j) => (j === i ? next : c)) });
-  const removeCondition = (i) => onChange({ ...logic, conditions: conditions.filter((_, j) => j !== i) });
-  const add = (c) => onChange({ ...logic, conditions: [...conditions, c] });
+  const selected = questions.find(x => x.id === selectedId) || questions[0];
+  const logic = logicOf(selected.id);
+  const conditions = (logic && logic.conditions) || [];
+  const earlier = earlierFor(selected.id);
+  const update = (next) => onChangeLogic(selected.id, next);
+  const setCondition = (i, next) => update({ ...logic, conditions: conditions.map((c, j) => (j === i ? next : c)) });
+  const removeCondition = (i) => {
+    const rest = conditions.filter((_, j) => j !== i);
+    update(rest.length ? { ...logic, conditions: rest } : null);
+  };
+  const add = (c) => update({ match: "all", ...(logic || {}), conditions: [...conditions, c] });
   // The nearest earlier question is the likely trigger, so it is preselected;
   // attributes start on the first one. Only the answers/values stay open.
   const addAnswer = () => add({ type: "answer", trigger: (earlier[earlier.length - 1] || {}).id, answers: [] });
   const addAttribute = () => add({ type: "attribute", attribute: CHARACTERISTICS[0].key, values: [] });
-  const done = () => {
-    if (!conditions.length) { onRemoveAll(); return; }
-    if (conditions.every(c => conditionOK(c, earlier))) onDone(); else setShowErrors(true);
+  // Leaving the selected question — Done, the back link, or hopping the rail —
+  // holds one bar: no half-finished condition may be left behind anywhere.
+  const canLeave = () => {
+    if (!conditions.length) { if (logic) update(null); return true; }
+    if (conditions.every(c => conditionOK(c, earlier))) { setShowErrors(false); return true; }
+    setShowErrors(true); return false;
   };
+  const hop = (id) => { if (id !== selected.id && canLeave()) { setShowErrors(false); onSelect(id); } };
+  const done = () => { if (canLeave()) onClose(); };
   return (
     <>
-      <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
+      {/* The back link shares the close button's line: both are ways out,
+          they belong on one row. */}
+      <div className="lgc-top">
         <button type="button" className="lgc-back" onClick={done}><Icon name="arrow-left" size={16} />Back to question</button>
-        <h2 className="dialog-title">Who gets this question</h2>
-        <div className="dialog-subtitle lgc-lead">
-          <span>Show “{title}” when</span>
-          <MiniSelect ariaLabel="How the conditions combine" value={logic.match}
-            items={[{ value: "all", label: "all" }, { value: "any", label: "any" }]}
-            onChange={(m) => onChange({ ...logic, match: m })} />
-          <span>of these match. Everyone else skips it.</span>
-        </div>
       </div>
-      <div className="lgc-body scroll-y">
-        {conditions.map((c, i) => (
-          <LogicCondition key={i} c={c} earlier={earlier} showErrors={showErrors}
-            onChange={(next) => setCondition(i, next)} onRemove={() => removeCondition(i)} />
-        ))}
-        {/* Arriving with nothing set, the field promised options — so the add
-            choices lead, no empty-state prose in between. */}
-        <div className="lgc-add">
-          <button type="button" className={"btn btn-secondary" + (earlier.length ? "" : " is-disabled")}
-            disabled={!earlier.length}
-            title={earlier.length ? undefined : "Needs an earlier question with fixed answers before this one"}
-            onClick={addAnswer}>
-            <Icon name="plus" size={16} />Answer to an earlier question
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={addAttribute}>
-            <Icon name="plus" size={16} />Employee data
-          </button>
+      <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
+        <h2 className="dialog-title">Question logic</h2>
+        <p className="dialog-subtitle">Decide who gets a question. Rules are set per question — pick one on the left.</p>
+      </div>
+      <div className="lgc-layout">
+        <div className="lgc-rail scroll-y" role="listbox" aria-label="Questions in this survey">
+          {questions.map((x, i) => {
+            const lg = logicOf(x.id);
+            const n = lg && lg.conditions ? lg.conditions.length : 0;
+            return (
+              <button key={x.id} type="button" role="option" aria-selected={x.id === selected.id}
+                className={"lgc-q" + (x.id === selected.id ? " is-selected" : "")} onClick={() => hop(x.id)}>
+                <span className="lgc-q-n">{i + 1}</span>
+                <span className="lgc-q-text">{x.text}</span>
+                {x.required
+                  ? <span className="lgc-q-mark"><Icon name="asterisk" size={12} /></span>
+                  : n > 0 ? <span className="lgc-q-mark is-some"><Icon name="eye" size={12} />{n}</span> : null}
+              </button>
+            );
+          })}
+        </div>
+        <div className="lgc-main scroll-y">
+          {selected.required ? (
+            <div className="lgc-locked">
+              <b>Everyone gets this question.</b> It's required by the organization, so logic can't hide it.
+            </div>
+          ) : (
+            <>
+              <div className="lgc-lead">
+                <span>Show “{selected.text}” when</span>
+                <MiniSelect ariaLabel="How the conditions combine" value={(logic && logic.match) || "all"}
+                  items={[{ value: "all", label: "all" }, { value: "any", label: "any" }]}
+                  onChange={(m) => update({ ...(logic || { conditions: [] }), match: m })} />
+                <span>of these match. Everyone else skips it.</span>
+              </div>
+              {conditions.map((c, i) => (
+                <LogicCondition key={i} c={c} earlier={earlier} showErrors={showErrors}
+                  onChange={(next) => setCondition(i, next)} onRemove={() => removeCondition(i)} />
+              ))}
+              {/* Arriving with nothing set, the field promised options — so the
+                  add choices lead, no empty-state prose in between. */}
+              <div className="lgc-add">
+                <button type="button" className={"btn btn-secondary" + (earlier.length ? "" : " is-disabled")}
+                  disabled={!earlier.length}
+                  title={earlier.length ? undefined : "Needs an earlier question with fixed answers before this one"}
+                  onClick={addAnswer}>
+                  <Icon name="plus" size={16} />Answer to an earlier question
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={addAttribute}>
+                  <Icon name="plus" size={16} />Employee data
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
       <div className="dialog-footer">
-        {conditions.length > 0 && <button className="btn btn-secondary" onClick={onRemoveAll}>Remove logic</button>}
+        {conditions.length > 0 && !selected.required &&
+          <button className="btn btn-secondary" onClick={() => update(null)}>Remove logic</button>}
         <div className="spacer" />
         <button className="btn btn-primary" onClick={done}>Done</button>
       </div>
@@ -259,19 +307,28 @@ function LogicEditor({ logic, onChange, earlier, title, onDone, onRemoveAll }) {
   );
 }
 
-export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, allVariants = false, logicCandidates = [], onCancel, onSave, onDetach, onOpenTheme }) {
+export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, allVariants = false, allQuestions = [], logicByQuestion = {}, onCancel, onSave, onDetach, onOpenTheme }) {
   const [infoOpen, setInfoOpen] = useState(false);
   // Staged edits — committed on Save only.
   const [variant, setVariant] = useState(meta.variant);
   const [desc, setDesc] = useState(meta.desc);
   const [topic, setTopic] = useState(topicKey || q.topic);
-  // Question logic, staged like everything else (committed on Save). The
-  // dialog shows a one-line summary; `logicOpen` swaps the dialog body for the
-  // editor takeover. A required question can't be masked at all.
-  const [logic, setLogic] = useState(() => (meta.logic ? JSON.parse(JSON.stringify(meta.logic)) : null));
-  const [logicOpen, setLogicOpen] = useState(false);
-  const hasLogic = !!(logic && (logic.conditions || []).length);
-  const logicLine = hasLogic ? logicSummary(logic, logicCandidates) : "";
+  // Question logic, staged like everything else (committed on Save) — but the
+  // editor covers the whole questionnaire (its rail hops between questions),
+  // so the staging is a per-question overlay map. `logicFor` is the question
+  // open in the takeover; null = the normal dialog.
+  const [logicMap, setLogicMap] = useState({});
+  const [logicFor, setLogicFor] = useState(null);
+  const normLogic = (l) => (l && (l.conditions || []).length ? l : null);
+  const baseLogicOf = (id) => normLogic(logicByQuestion[id] || (id === q.id ? meta.logic : null));
+  const logicOf = (id) => (Object.prototype.hasOwnProperty.call(logicMap, id) ? logicMap[id] : baseLogicOf(id));
+  const orderIndex = {}; allQuestions.forEach((x, i) => { orderIndex[x.id] = i; });
+  const earlierFor = (id) => allQuestions.slice(0, orderIndex[id] ?? 0).filter(x => answerOptionsOf(x).length > 0);
+  const changedLogicIds = Object.keys(logicMap)
+    .filter(id => JSON.stringify(normLogic(logicMap[id])) !== JSON.stringify(baseLogicOf(id)));
+  const ownLogic = normLogic(logicOf(q.id));
+  const hasLogic = !!ownLogic;
+  const logicLine = hasLogic ? logicSummary(ownLogic, earlierFor(q.id)) : "";
   const [lang, setLang] = useState("en");
   // Same breakpoint as the custom-question dialog: below it the language list
   // can't sit next to the preview, so it becomes a select above it.
@@ -303,17 +360,19 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   // dialog shows), not the machine's.
   const pt = (i) => (primary ? SCALE_LABELS[i] : scaleFor(lang).points[i]);
 
-  const stagedLogic = hasLogic ? logic : undefined;
   const dirty = (variant || undefined) !== (meta.variant || undefined)
     || (desc || undefined) !== (meta.desc || undefined)
     || topic !== (topicKey || q.topic)
-    || JSON.stringify(stagedLogic || null) !== JSON.stringify(meta.logic || null);
+    || changedLogicIds.length > 0;
 
   const save = () => {
     if (!dirty) { onCancel(); return; }
     onSave({
-      qMeta: { variant: variant || undefined, desc: desc || undefined, logic: stagedLogic },
+      qMeta: { variant: variant || undefined, desc: desc || undefined },
       topic: topic !== (topicKey || q.topic) ? topic : undefined,
+      // The logic editor can touch several questions in one visit; each one's
+      // rule rides home here (null = rule removed).
+      logicPatches: Object.fromEntries(changedLogicIds.map(id => [id, normLogic(logicMap[id])])),
     });
   };
 
@@ -331,10 +390,10 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
         <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
-        {logicOpen && logic ? (
-          <LogicEditor logic={logic} onChange={setLogic} earlier={logicCandidates} title={title}
-            onDone={() => setLogicOpen(false)}
-            onRemoveAll={() => { setLogic(null); setLogicOpen(false); }} />
+        {logicFor ? (
+          <LogicEditor questions={allQuestions} selectedId={logicFor} onSelect={setLogicFor}
+            logicOf={logicOf} onChangeLogic={(id, next) => setLogicMap(m => ({ ...m, [id]: next }))}
+            earlierFor={earlierFor} onClose={() => setLogicFor(null)} />
         ) : (<>
         <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
           {/* The tags are ways in: Benchmarked explains itself, the theme
@@ -388,10 +447,10 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             ) : (
               <Tooltip label={hasLogic ? logicLine : "Show this question only after a chosen answer, or only to some employees"} wrapClass="bmq-who-tt">
                 <button type="button" className={"sel-btn bmq-who" + (hasLogic ? " is-some" : "")} aria-haspopup="dialog"
-                  onClick={() => { setLogic(l => l || { match: "all", conditions: [] }); setLogicOpen(true); }}>
+                  onClick={() => setLogicFor(q.id)}>
                   {hasLogic && <span className="bmq-who-ic"><Icon name="eye" size={16} /></span>}
                   <span className="sel-btn-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {hasLogic ? `Some · ${logic.conditions.length} ${logic.conditions.length === 1 ? "condition" : "conditions"}` : "Everyone"}
+                    {hasLogic ? `Some · ${ownLogic.conditions.length} ${ownLogic.conditions.length === 1 ? "condition" : "conditions"}` : "Everyone"}
                   </span>
                   <span className="spacer" />
                   <Icon name="chevron-right" size={16} />
