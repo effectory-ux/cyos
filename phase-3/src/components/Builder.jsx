@@ -1801,9 +1801,12 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         <QuestionLogicDialog initialId={logicQId}
           sections={visibleSections.map(x => ({ key: x.key, label: topicName(x.key), items: x.items }))}
           logicByQuestion={Object.fromEntries(flatOrder.map(x => [x.id, (qMeta[x.id] || {}).logic || null]))}
+          logicByTopic={Object.fromEntries(visibleSections.map(x => [x.key, (topicMeta[x.key] || {}).logic || null]))}
           zIndex={settingsQId ? 80 : undefined}
-          onApply={(patches) => Object.entries(patches).forEach(([id, lg]) =>
-            onUpdateQMeta && onUpdateQMeta(id, { logic: lg || undefined }))}
+          onApply={({ questions = {}, topics = {} }) => {
+            Object.entries(questions).forEach(([id, lg]) => onUpdateQMeta && onUpdateQMeta(id, { logic: lg || undefined }));
+            Object.entries(topics).forEach(([key, lg]) => onUpdateTopicMeta && onUpdateTopicMeta(key, { logic: lg || undefined }));
+          }}
           onClose={() => setLogicQId(null)} />
       )}
       {translationsOpen && <TranslationsDialog pool={pool} selectedIds={selectedIds}

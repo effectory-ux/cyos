@@ -567,10 +567,17 @@ export function App() {
         const trigger = scales.find(x => scales.some(y => y !== x && !y.required && y.topic === x.topic));
         const target = trigger && scales.find(y => y !== trigger && !y.required && y.topic === trigger.topic);
         if (!target) break;
-        openBuilder({ ...sv, qMeta: { ...sv.qMeta, [target.id]: { logic: { match: "all", conditions: [
-          { type: "answer", trigger: trigger.id, answers: [0, 1] },
-          { type: "attribute", attribute: "role", values: [0] },
-        ] } } } }, { dialog: "question-logic", arg: target.id });
+        // A whole-topic rule too (topics are selectable in the logic rail):
+        // some other topic goes manager-only.
+        const otherTopic = (sv.pool.find(x => sel.has(x.id) && x.topic !== trigger.topic) || {}).topic;
+        openBuilder({ ...sv,
+          qMeta: { ...sv.qMeta, [target.id]: { logic: { conditions: [
+            { type: "answer", trigger: trigger.id, op: "is", answers: [0, 1] },
+            { type: "attribute", attribute: "role", op: "is", values: [0] },
+          ] } } },
+          topicMeta: otherTopic ? { ...sv.topicMeta, [otherTopic]: { ...(sv.topicMeta || {})[otherTopic],
+            logic: { conditions: [{ type: "attribute", attribute: "role", op: "is", values: [0] }] } } } : sv.topicMeta,
+        }, { dialog: "question-logic", arg: target.id });
         break;
       }
       case "topic-dialog": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "topic", arg: (sv.pool.find(q => sv.selectedIds.includes(q.id)) || {}).topic }); break; }

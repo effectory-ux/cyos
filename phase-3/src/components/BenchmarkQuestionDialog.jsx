@@ -163,6 +163,7 @@ function LgcValues({ options, picked, onToggle, placeholder, invalid }) {
     <div className="cq-menu-wrap is-block">
       <button type="button" className={"sel-btn" + (open ? " is-pressed" : "") + (invalid ? " is-error" : "")}
         aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        <Icon name="filter" size={16} className="lgc-filter-ic" />
         <span className={label ? "sel-btn-name" : "cq-sel-placeholder"}
           style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {label || placeholder}
@@ -194,9 +195,11 @@ function LgcValues({ options, picked, onToggle, placeholder, invalid }) {
 
 const OP_ITEMS = [{ value: "is", label: "Is" }, { value: "not", label: "Is not" }];
 
-// One question's rule: the two condition cards. `onChange` gets the whole
-// normalized logic (or null when both cards sit on their neutral option).
-function LogicRulePane({ selected, logic, earlier, showErrors, onChange }) {
+// One subject's rule: the two condition cards. The subject is a question or —
+// since topics became selectable in the rail — a whole topic (`noun` keeps the
+// copy honest). `onChange` gets the whole normalized logic (or null when both
+// cards sit on their neutral option).
+function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", onChange }) {
   const answer = conditionOfType(logic, "answer");
   const audience = conditionOfType(logic, "attribute");
   const emit = (a, b) => {
@@ -237,7 +240,7 @@ function LogicRulePane({ selected, logic, earlier, showErrors, onChange }) {
           </div>
         )}
         {earlier.length === 0 && !answer && (
-          <span className="lgc-hint">Nothing comes before this question yet, so there is no earlier answer to use.</span>
+          <span className="lgc-hint">Nothing comes before this {noun} yet, so there is no earlier answer to use.</span>
         )}
         {answerErr && <span className="lgc-err">{answerErr}</span>}
       </div>
@@ -259,7 +262,12 @@ function LogicRulePane({ selected, logic, earlier, showErrors, onChange }) {
         )}
         {audienceErr && <span className="lgc-err">{audienceErr}</span>}
       </div>
-      {answer && audience && <span className="lgc-hint">Both must match for the question to show.</span>}
+      {answer && audience && <span className="lgc-hint">Both must match for the {noun} to show.</span>}
+      {(answer || audience) && (
+        <button type="button" className="btn btn-secondary lgc-reset" onClick={() => emit(null, null)}>
+          Reset logic
+        </button>
+      )}
     </>
   );
 }
@@ -300,38 +308,59 @@ function LogicEditor({ q, logic, onChange, earlier, onClose }) {
 // rule on the right. It owns its commit: Save applies every touched
 // question's rule immediately, Cancel discards them all — independent of the
 // question dialog's staging, so there is never a nested-save puzzle.
-export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion = {}, onApply, onClose, zIndex }) {
+export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion = {}, logicByTopic = {}, onApply, onClose, zIndex }) {
   const questions = sections.flatMap(s => s.items);
-  const [selectedId, setSelectedId] = useState(initialId || (questions[0] || {}).id);
+  // The rail selects questions AND topics (a topic's rule gates its whole
+  // group). One key space: question ids as-is, topics as "t:<key>".
+  const tKey = (k) => "t:" + k;
+  const isTopic = (key) => typeof key === "string" && key.startsWith("t:");
+  const [selectedKey, setSelectedKey] = useState(initialId || (questions[0] || {}).id);
   const [logicMap, setLogicMap] = useState({});
   const [showErrors, setShowErrors] = useState(false);
   const normLogic = (l) => (l && (l.conditions || []).length ? l : null);
-  const baseOf = (id) => normLogic(logicByQuestion[id] || null);
-  const logicOf = (id) => (Object.prototype.hasOwnProperty.call(logicMap, id) ? logicMap[id] : baseOf(id));
+  const baseOf = (key) => normLogic((isTopic(key) ? logicByTopic[key.slice(2)] : logicByQuestion[key]) || null);
+  const logicOf = (key) => (Object.prototype.hasOwnProperty.call(logicMap, key) ? logicMap[key] : baseOf(key));
   const orderIndex = {}; questions.forEach((x, i) => { orderIndex[x.id] = i; });
-  const earlierFor = (id) => questions.slice(0, orderIndex[id] ?? 0).filter(x => answerOptionsOf(x).length > 0);
-  const selected = questions.find(x => x.id === selectedId) || questions[0];
-  const logic = logicOf(selected.id);
-  const update = (next) => setLogicMap(m => ({ ...m, [selected.id]: next }));
-  // Leaving the selected question — a rail hop, Save or the close paths —
-  // holds one bar: no half-finished condition may be left behind anywhere.
+  // Earlier answers a rule may use: everything before the question — or, for
+  // a topic, before its first question (empty topics can use the whole list
+  // that precedes their spot, which is everything until they get questions).
+  const earlierFor = (key) => {
+    let cut;
+    if (isTopic(key)) {
+      const s = sections.find(x => tKey(x.key) === key);
+      const first = s && s.items[0];
+      cut = first ? orderIndex[first.id] : questions.length;
+    } else cut = orderIndex[key] ?? 0;
+    return questions.slice(0, cut).filter(x => answerOptionsOf(x).length > 0);
+  };
+  const section = isTopic(selectedKey) ? sections.find(x => tKey(x.key) === selectedKey) : null;
+  const selected = section
+    ? { text: section.label }
+    : questions.find(x => x.id === selectedKey) || questions[0];
+  const selKey = section ? selectedKey : selected.id;
+  const logic = logicOf(selKey);
+  const update = (next) => setLogicMap(m => ({ ...m, [selKey]: next }));
+  // Leaving the selected question or topic — a rail hop, Save or the close
+  // paths — holds one bar: no half-finished condition may be left anywhere.
   const canLeave = () => {
     const conditions = (logic && logic.conditions) || [];
-    if (conditions.every(c => conditionOK(c, earlierFor(selected.id)))) { setShowErrors(false); return true; }
+    if (conditions.every(c => conditionOK(c, earlierFor(selKey)))) { setShowErrors(false); return true; }
     setShowErrors(true); return false;
   };
-  const hop = (id) => { if (id !== selected.id && canLeave()) { setShowErrors(false); setSelectedId(id); } };
+  const hop = (key) => { if (key !== selKey && canLeave()) { setShowErrors(false); setSelectedKey(key); } };
   const save = () => {
     if (!canLeave()) return;
-    const patches = {};
-    Object.keys(logicMap).forEach(id => {
-      if (JSON.stringify(normLogic(logicMap[id])) !== JSON.stringify(baseOf(id))) patches[id] = normLogic(logicMap[id]);
+    const qPatches = {}, tPatches = {};
+    Object.keys(logicMap).forEach(key => {
+      if (JSON.stringify(normLogic(logicMap[key])) === JSON.stringify(baseOf(key))) return;
+      if (isTopic(key)) tPatches[key.slice(2)] = normLogic(logicMap[key]);
+      else qPatches[key] = normLogic(logicMap[key]);
     });
-    if (Object.keys(patches).length) onApply(patches);
+    if (Object.keys(qPatches).length + Object.keys(tPatches).length) onApply({ questions: qPatches, topics: tPatches });
     onClose();
   };
-  const hasRule = (id) => { const l = logicOf(id); return !!(l && (l.conditions || []).length); };
-  // The rail must show WHOSE logic is open: keep the selected question in
+  const hasRule = (key) => { const l = logicOf(key); return !!(l && (l.conditions || []).length); };
+  // The rail must show WHOSE logic is open: keep the selected row in
   // view (centered on open, nudged on hops). Positioned via layout offsets —
   // scrollIntoView would drag every ancestor, and rects lie during the
   // dialog's rise animation — and re-run once after it, because scroll
@@ -376,7 +405,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
       rail && rail.removeEventListener("pointerdown", mark);
       rail && rail.removeEventListener("scroll", onScroll);
     };
-  }, [selected.id]);
+  }, [selKey]);
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: zIndex || 70 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -388,22 +417,24 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
           <div className="lgc-rail scroll-y" ref={railRef}>
             <h2 className="lgc-title" id="lgc-title">Conditional logic</h2>
             {sections.map(s => {
-              const eligible = s.items.filter(x => !x.required);
-              const allRuled = eligible.length > 0 && eligible.every(x => hasRule(x.id));
+              const topicRuled = hasRule(tKey(s.key));
               return (
                 <div key={s.key} className="lgc-group" role="listbox" aria-label={s.label}>
-                  <div className="lgc-group-head">
-                    <span className="lgc-group-lbl">{s.label}</span>
-                    {allRuled && <span className="lgc-q-mark is-some"><Icon name="split" size={12} /></span>}
-                  </div>
+                  <button type="button" role="option" aria-selected={tKey(s.key) === selKey}
+                    ref={tKey(s.key) === selKey ? selRef : undefined}
+                    className={"lgc-q is-topic" + (tKey(s.key) === selKey ? " is-selected" : "")} onClick={() => hop(tKey(s.key))}>
+                    <span className="lgc-q-text">{s.label}</span>
+                    {topicRuled && <span className="lgc-q-mark is-topic-rule"><Icon name="split" size={14} /></span>}
+                  </button>
                   {s.items.map(x => (
-                    <button key={x.id} type="button" role="option" aria-selected={x.id === selected.id}
-                      ref={x.id === selected.id ? selRef : undefined}
-                      className={"lgc-q" + (x.id === selected.id ? " is-selected" : "")} onClick={() => hop(x.id)}>
+                    <button key={x.id} type="button" role="option" aria-selected={x.id === selKey}
+                      ref={x.id === selKey ? selRef : undefined}
+                      className={"lgc-q" + (x.id === selKey ? " is-selected" : "")} onClick={() => hop(x.id)}>
                       <span className="lgc-q-text">{x.text}</span>
                       {x.required
                         ? <span className="lgc-q-mark"><Icon name="asterisk" size={12} /></span>
-                        : hasRule(x.id) ? <span className="lgc-q-mark is-some"><Icon name="split" size={12} /></span> : null}
+                        : hasRule(x.id) ? <span className="lgc-q-mark is-own"><Icon name="split" size={14} /></span>
+                        : topicRuled ? <span className="lgc-q-mark is-inherit"><Icon name="split" size={14} /></span> : null}
                     </button>
                   ))}
                 </div>
@@ -411,8 +442,8 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
             })}
           </div>
           <div className="lgc-main scroll-y">
-            <LogicRulePane selected={selected} logic={logic} earlier={earlierFor(selected.id)}
-              showErrors={showErrors} onChange={update} />
+            <LogicRulePane selected={selected} logic={logic} earlier={earlierFor(selKey)}
+              noun={section ? "topic" : "question"} showErrors={showErrors} onChange={update} />
           </div>
         </div>
         <div className="dialog-footer">

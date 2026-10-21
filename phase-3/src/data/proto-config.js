@@ -24,7 +24,7 @@ export const USE_CASES = [
   { key: "library-in-topic", label: "Question library from a topic", desc: "A topic's Add questions: what you tick goes into that topic" },
   { key: "question-settings", label: "Benchmarked question", desc: "Alternative wording + description" },
   { key: "question-edited", label: "Question with a variant", desc: "Alternative wording already applied" },
-  { key: "question-logic", label: "Question with logic", desc: "Shows conditionally: a low earlier answer plus a manager-only rule" },
+  { key: "question-logic", label: "Question with logic", desc: "Shows conditionally: a low earlier answer plus a manager-only rule, and one whole topic set to managers only" },
   { key: "topic-dialog", label: "Topic settings", desc: "Participant intro screen" },
   { key: "topic-custom", label: "Custom topic", desc: "A topic added in this survey" },
   { key: "add-topic", label: "Add topic", desc: "Name a new topic where you clicked; it arrives empty, ready to fill" },
