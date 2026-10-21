@@ -1,0 +1,27 @@
+{
+  "name": "CYOS survey creation",
+  "description": "Create your own survey — the phases side by side.",
+  "owner": "Jamal",
+  "track": "Surveying",
+  "pages": [
+    {
+      "label": "CYOS research · central library sync",
+      "path": "site/research/central-library-sync/index.html"
+    },
+    {
+      "label": "Phase 1 — survey creation flow",
+      "path": "phase-1/index.html",
+      "tag": "In development"
+    },
+    {
+      "label": "Phase 2 — survey-scoped customization",
+      "path": "phase-2/index.html",
+      "tag": "In testing"
+    },
+    {
+      "label": "Phase 3 — question logic",
+      "path": "phase-3/index.html",
+      "tag": "In progress"
+    }
+  ]
+}
