@@ -243,7 +243,7 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
             <span className="tt-title">Shows conditionally</span>
             {logic.line}
           </>}>
-            <span className="tag tag-logic"><Icon name="eye" size={12} /><span className="tag-ellip">Conditional</span></span>
+            <span className="tag tag-logic"><Icon name="split" size={12} /><span className="tag-ellip">Conditional</span></span>
           </Tooltip>
         )}
         {q.required && <RequiredMarker size={24} />}
@@ -1798,7 +1798,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
       {/* The standalone logic dialog (the default surface) sits over whatever
           opened it and commits itself — its Save applies, Cancel discards. */}
       {logicQId && (
-        <QuestionLogicDialog questions={flatOrder} initialId={logicQId}
+        <QuestionLogicDialog initialId={logicQId}
+          sections={visibleSections.map(x => ({ key: x.key, label: topicName(x.key), items: x.items }))}
           logicByQuestion={Object.fromEntries(flatOrder.map(x => [x.id, (qMeta[x.id] || {}).logic || null]))}
           zIndex={settingsQId ? 80 : undefined}
           onApply={(patches) => Object.entries(patches).forEach(([id, lg]) =>

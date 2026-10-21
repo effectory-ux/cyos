@@ -6,14 +6,14 @@
 // description in the preview are selects whose dropdowns list the
 // Effectory-approved alternatives (Figma 6271:9052). Everything is staged and
 // committed with Save; all changes are survey-scoped.
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 import { QTypeIcon, Tooltip, ThemeTag, useMediaQuery, MiniSelect } from "./shared.jsx";
 import { LANG_STATUS, LangPanel, AutoTextarea } from "./CustomQuestionDialog.jsx";
 import { QTYPES, SCALE_LABELS, answerOptionsOf } from "../data/data.js";
 import { CHARACTERISTICS, characteristicOf } from "../data/characteristics.js";
-import { conditionOK, logicSummary } from "../data/logic.js";
+import { conditionOK, conditionOfType, logicSummary } from "../data/logic.js";
 import { LANGUAGES, flagSrc, autoTranslation, scaleFor } from "../data/i18n.js";
 import { variantsOf } from "../data/variants.js";
 import { designWash } from "../data/designs.js";
@@ -147,79 +147,64 @@ function DetachWarning({ theme, completes, themeCount, onCancel, onConfirm }) {
 // answer given to an EARLIER question, and an employee-data attribute. See
 // data/logic.js for the model.
 
-function LogicCondition({ c, earlier, showErrors, onChange, onRemove }) {
-  const answerKind = c.type === "answer";
-  const trigger = answerKind ? earlier.find(x => x.id === c.trigger) : null;
-  const attr = answerKind ? null : characteristicOf(c.attribute);
-  const opts = answerKind ? answerOptionsOf(trigger) : (attr ? attr.values : []);
-  const picked = answerKind ? (c.answers || []) : (c.values || []);
-  const togglePick = (i) => {
-    const next = picked.includes(i) ? picked.filter(x => x !== i) : [...picked, i].sort((a, b) => a - b);
-    onChange(answerKind ? { ...c, answers: next } : { ...c, values: next });
-  };
-  const err = showErrors && !conditionOK(c, earlier)
-    ? (answerKind && !trigger ? "Choose an earlier question"
-      : `Choose at least one ${answerKind ? "answer" : "value"}`)
-    : null;
+// ---- Conditional logic (Figma 6316:27977) ----------------------------------
+// Jamal's structure: conditions are compact select-rows inside grey cards —
+// subject on top, then "Is / Is not" + the chosen answers in a dropdown. Two
+// fixed cards per question (an earlier answer, the audience), each with a
+// neutral "no condition" first option, so there are no add/remove buttons at
+// all. Nothing more, nothing less.
+
+// Multi-select for a condition's answers/values: a select-shaped button whose
+// menu holds checkboxes; it stays open while picking, the scrim closes it.
+function LgcValues({ options, picked, onToggle, placeholder, invalid }) {
+  const [open, setOpen] = useState(false);
+  const label = picked.map(i => options[i]).filter(Boolean).join(" or ");
   return (
-    <div className={"lgc-card" + (err ? " is-invalid" : "")}>
-      <div className="lgc-card-head">
-        <span className="lgc-kind">
-          <Icon name={answerKind ? "point-scale" : "user"} size={14} />
-          {answerKind ? "Answer to an earlier question" : "Employee data"}
+    <div className="cq-menu-wrap is-block">
+      <button type="button" className={"sel-btn" + (open ? " is-pressed" : "") + (invalid ? " is-error" : "")}
+        aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        <span className={label ? "sel-btn-name" : "cq-sel-placeholder"}
+          style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {label || placeholder}
         </span>
-        <Tooltip label="Remove condition" pos="is-left">
-          <button type="button" className="ib ib-36 ib-tertiary" aria-label="Remove condition" onClick={onRemove}>
-            <Icon name="trash" size={16} />
-          </button>
-        </Tooltip>
-      </div>
-      {answerKind ? (
-        <MiniSelect ariaLabel="Earlier question" value={c.trigger} placeholder="Choose a question"
-          items={earlier.map(x => ({ value: x.id, label: x.text }))}
-          onChange={(id) => onChange({ ...c, trigger: id, answers: [] })} block />
-      ) : (
-        <MiniSelect ariaLabel="Employee data attribute" value={c.attribute}
-          items={CHARACTERISTICS.map(a => ({ value: a.key, label: a.label }))}
-          onChange={(key) => onChange({ ...c, attribute: key, values: [] })} block />
-      )}
-      {opts.length > 0 && (
+        <span className="spacer" />
+        <Icon name="chevron-down" size={16} />
+      </button>
+      {open && (
         <>
-          <span className="lgc-lbl">{answerKind ? "Show when the answer is" : "Show when it is"}</span>
-          <div className="lgc-opts" role="group" aria-label={answerKind ? "Answers that show the question" : "Values that see the question"}>
-            {opts.map((o, i) => (
-              <label key={i} className={"lgc-opt" + (picked.includes(i) ? " is-on" : "")}>
-                <span className="cb-wrap">
-                  <input type="checkbox" className="cb" checked={picked.includes(i)} onChange={() => togglePick(i)} />
+          <div className="cq-menu-scrim" onMouseDown={() => setOpen(false)} />
+          <div className="menu" role="listbox" aria-multiselectable="true"
+            style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 3, maxHeight: 260, overflowY: "auto" }}>
+            {options.map((o, i) => (
+              <div key={i} role="option" aria-selected={picked.includes(i)}
+                className={"menu-item" + (picked.includes(i) ? " is-selected" : "")}
+                onClick={() => onToggle(i)}>
+                <span className="cb-wrap" style={{ pointerEvents: "none" }}>
+                  <input type="checkbox" className="cb" checked={picked.includes(i)} readOnly tabIndex={-1} />
                 </span>
-                <span>{o}</span>
-              </label>
+                <span className="menu-item-body"><span className="menu-item-title">{o}</span></span>
+              </div>
             ))}
           </div>
         </>
       )}
-      {err ? <span className="lgc-err">{err}</span>
-        : opts.length > 0 && <span className="lgc-hint">{`Any chosen ${answerKind ? "answer" : "value"} counts.`}</span>}
     </div>
   );
 }
 
-// One question's rule, as an editing pane: subject line, the all/any lead,
-// the condition cards, the add buttons. Shared by both logic surfaces — the
-// standalone Question logic dialog (with its question rail) and the in-place
-// takeover variant that stays scoped to one question.
+const OP_ITEMS = [{ value: "is", label: "Is" }, { value: "not", label: "Is not" }];
+
+// One question's rule: the two condition cards. `onChange` gets the whole
+// normalized logic (or null when both cards sit on their neutral option).
 function LogicRulePane({ selected, logic, earlier, showErrors, onChange }) {
-  const conditions = (logic && logic.conditions) || [];
-  const setCondition = (i, next) => onChange({ ...logic, conditions: conditions.map((c, j) => (j === i ? next : c)) });
-  const removeCondition = (i) => {
-    const rest = conditions.filter((_, j) => j !== i);
-    onChange(rest.length ? { ...logic, conditions: rest } : null);
+  const answer = conditionOfType(logic, "answer");
+  const audience = conditionOfType(logic, "attribute");
+  const emit = (a, b) => {
+    const conditions = [a, b].filter(Boolean);
+    onChange(conditions.length ? { conditions } : null);
   };
-  const add = (c) => onChange({ match: "all", ...(logic || {}), conditions: [...conditions, c] });
-  // The nearest earlier question is the likely trigger, so it is preselected;
-  // attributes start on the first one. Only the answers/values stay open.
-  const addAnswer = () => add({ type: "answer", trigger: (earlier[earlier.length - 1] || {}).id, answers: [] });
-  const addAttribute = () => add({ type: "attribute", attribute: CHARACTERISTICS[0].key, values: [] });
+  const setAnswer = (next) => emit(next, audience);
+  const setAudience = (next) => emit(answer, next);
   if (selected.required) {
     return (
       <div className="lgc-locked">
@@ -227,33 +212,54 @@ function LogicRulePane({ selected, logic, earlier, showErrors, onChange }) {
       </div>
     );
   }
+  const trigger = answer ? earlier.find(x => x.id === answer.trigger) : null;
+  const triggerOpts = answerOptionsOf(trigger);
+  const attr = audience ? characteristicOf(audience.attribute) : null;
+  const answerErr = showErrors && answer && (!trigger ? "Choose an earlier question" : !(answer.answers || []).length ? "Choose at least one answer" : null);
+  const audienceErr = showErrors && audience && !(audience.values || []).length ? "Choose at least one value" : null;
   return (
     <>
-      <div className="lgc-subject">{selected.text}</div>
-      <div className="lgc-lead">
-        <span>Shown when</span>
-        <MiniSelect ariaLabel="How the conditions combine" value={(logic && logic.match) || "all"}
-          items={[{ value: "all", label: "all" }, { value: "any", label: "any" }]}
-          onChange={(m) => onChange({ ...(logic || { conditions: [] }), match: m })} />
-        <span>of these match. Everyone else skips it.</span>
+      <h3 className="lgc-subject">{selected.text}</h3>
+      <div className={"lgc-card" + (answerErr ? " is-invalid" : "")}>
+        <MiniSelect ariaLabel="Earlier question" value={answer ? answer.trigger : ""} block
+          items={[{ value: "", label: "No earlier answer — always asked" },
+            ...earlier.map(x => ({ value: x.id, label: x.text, lead: <QTypeIcon type={x.type} size={16} /> }))]}
+          onChange={(id) => setAnswer(id ? { type: "answer", trigger: id, op: (answer && answer.op) || "is", answers: [] } : null)} />
+        {answer && trigger && (
+          <div className="lgc-row">
+            <MiniSelect ariaLabel="Is or is not" value={answer.op || "is"} items={OP_ITEMS}
+              onChange={(op) => setAnswer({ ...answer, op })} />
+            <LgcValues options={triggerOpts} picked={answer.answers || []} placeholder="Choose answers"
+              invalid={!!answerErr} onToggle={(i) => {
+                const cur = answer.answers || [];
+                setAnswer({ ...answer, answers: cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i].sort((a, b) => a - b) });
+              }} />
+          </div>
+        )}
+        {earlier.length === 0 && !answer && (
+          <span className="lgc-hint">Nothing comes before this question yet, so there is no earlier answer to use.</span>
+        )}
+        {answerErr && <span className="lgc-err">{answerErr}</span>}
       </div>
-      {conditions.map((c, i) => (
-        <LogicCondition key={i} c={c} earlier={earlier} showErrors={showErrors}
-          onChange={(next) => setCondition(i, next)} onRemove={() => removeCondition(i)} />
-      ))}
-      {/* Arriving with nothing set, the field promised options — so the add
-          choices lead, no empty-state prose in between. */}
-      <div className="lgc-add">
-        <button type="button" className={"btn btn-secondary" + (earlier.length ? "" : " is-disabled")}
-          disabled={!earlier.length}
-          title={earlier.length ? undefined : "Needs an earlier question with fixed answers before this one"}
-          onClick={addAnswer}>
-          <Icon name="plus" size={16} />Answer to an earlier question
-        </button>
-        <button type="button" className="btn btn-secondary" onClick={addAttribute}>
-          <Icon name="plus" size={16} />Employee data
-        </button>
+      <div className={"lgc-card" + (audienceErr ? " is-invalid" : "")}>
+        <MiniSelect ariaLabel="Who gets this question" value={audience ? audience.attribute : ""} block
+          items={[{ value: "", label: "Shown to everyone" },
+            ...CHARACTERISTICS.map(a => ({ value: a.key, label: a.label, lead: <Icon name="user" size={16} /> }))]}
+          onChange={(key) => setAudience(key ? { type: "attribute", attribute: key, op: (audience && audience.op) || "is", values: [] } : null)} />
+        {audience && attr && (
+          <div className="lgc-row">
+            <MiniSelect ariaLabel="Is or is not" value={audience.op || "is"} items={OP_ITEMS}
+              onChange={(op) => setAudience({ ...audience, op })} />
+            <LgcValues options={attr.values} picked={audience.values || []} placeholder="Choose values"
+              invalid={!!audienceErr} onToggle={(i) => {
+                const cur = audience.values || [];
+                setAudience({ ...audience, values: cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i].sort((a, b) => a - b) });
+              }} />
+          </div>
+        )}
+        {audienceErr && <span className="lgc-err">{audienceErr}</span>}
       </div>
+      {answer && audience && <span className="lgc-hint">Both must match for the question to show.</span>}
     </>
   );
 }
@@ -264,10 +270,10 @@ function LogicRulePane({ selected, logic, earlier, showErrors, onChange }) {
 // is. No rail: hopping questions belongs to the standalone dialog.
 function LogicEditor({ q, logic, onChange, earlier, onClose }) {
   const [showErrors, setShowErrors] = useState(false);
-  const conditions = (logic && logic.conditions) || [];
+  const incomplete = ((logic && logic.conditions) || []).some(c => !conditionOK(c, earlier));
   const done = () => {
-    if (!conditions.length) { if (logic) onChange(null); onClose(); return; }
-    if (conditions.every(c => conditionOK(c, earlier))) { setShowErrors(false); onClose(); } else setShowErrors(true);
+    if (incomplete) { setShowErrors(true); return; }
+    setShowErrors(false); onClose();
   };
   return (
     <>
@@ -275,15 +281,13 @@ function LogicEditor({ q, logic, onChange, earlier, onClose }) {
         <button type="button" className="lgc-back" onClick={done}><Icon name="arrow-left" size={16} />Back to question</button>
       </div>
       <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-        <h2 className="dialog-title">Question logic</h2>
+        <h2 className="dialog-title">Conditional logic</h2>
         <p className="dialog-subtitle">Decide who gets this question. Changes are saved with the question.</p>
       </div>
       <div className="lgc-main scroll-y">
         <LogicRulePane selected={q} logic={logic} earlier={earlier} showErrors={showErrors} onChange={onChange} />
       </div>
       <div className="dialog-footer">
-        {conditions.length > 0 && !q.required &&
-          <button className="btn btn-secondary" onClick={() => onChange(null)}>Remove logic</button>}
         <div className="spacer" />
         <button className="btn btn-primary" onClick={done}>Done</button>
       </div>
@@ -291,12 +295,13 @@ function LogicEditor({ q, logic, onChange, earlier, onClose }) {
   );
 }
 
-// The DEFAULT logic surface: its own dialog, Typeform-style — every question
-// of the questionnaire on a rail (hop freely), the selected one's rule on the
-// right. It owns its commit: Save applies every touched question's rule
-// immediately, Cancel discards them all — independent of the question
-// dialog's own staging, so there is never a nested-save puzzle.
-export function QuestionLogicDialog({ questions, initialId, logicByQuestion = {}, onApply, onClose, zIndex }) {
+// The DEFAULT logic surface (Figma 6316:27977): its own dialog — the
+// questionnaire's questions on a rail, grouped by topic, the selected one's
+// rule on the right. It owns its commit: Save applies every touched
+// question's rule immediately, Cancel discards them all — independent of the
+// question dialog's staging, so there is never a nested-save puzzle.
+export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion = {}, onApply, onClose, zIndex }) {
+  const questions = sections.flatMap(s => s.items);
   const [selectedId, setSelectedId] = useState(initialId || (questions[0] || {}).id);
   const [logicMap, setLogicMap] = useState({});
   const [showErrors, setShowErrors] = useState(false);
@@ -307,12 +312,11 @@ export function QuestionLogicDialog({ questions, initialId, logicByQuestion = {}
   const earlierFor = (id) => questions.slice(0, orderIndex[id] ?? 0).filter(x => answerOptionsOf(x).length > 0);
   const selected = questions.find(x => x.id === selectedId) || questions[0];
   const logic = logicOf(selected.id);
-  const conditions = (logic && logic.conditions) || [];
   const update = (next) => setLogicMap(m => ({ ...m, [selected.id]: next }));
   // Leaving the selected question — a rail hop, Save or the close paths —
   // holds one bar: no half-finished condition may be left behind anywhere.
   const canLeave = () => {
-    if (!conditions.length) { if (logic) update(null); return true; }
+    const conditions = (logic && logic.conditions) || [];
     if (conditions.every(c => conditionOK(c, earlierFor(selected.id)))) { setShowErrors(false); return true; }
     setShowErrors(true); return false;
   };
@@ -326,31 +330,83 @@ export function QuestionLogicDialog({ questions, initialId, logicByQuestion = {}
     if (Object.keys(patches).length) onApply(patches);
     onClose();
   };
+  const hasRule = (id) => { const l = logicOf(id); return !!(l && (l.conditions || []).length); };
+  // The rail must show WHOSE logic is open: keep the selected question in
+  // view (centered on open, nudged on hops). Positioned via layout offsets —
+  // scrollIntoView would drag every ancestor, and rects lie during the
+  // dialog's rise animation — and re-run once after it, because scroll
+  // anchoring can pin a freshly rendered rail to its bottom.
+  const selRef = useRef(null);
+  const railRef = useRef(null);
+  const firstScroll = useRef(true);
+  useEffect(() => {
+    const rail = railRef.current;
+    const place = () => {
+      const sel = selRef.current;
+      if (!rail || !sel) return;
+      if (firstScroll.current) {
+        rail.scrollTop = Math.max(0, sel.offsetTop - (rail.clientHeight - sel.offsetHeight) / 2);
+        return;
+      }
+      const top = sel.offsetTop - rail.scrollTop;
+      if (top < 8) rail.scrollTop = sel.offsetTop - 8;
+      else if (top + sel.offsetHeight > rail.clientHeight - 8) rail.scrollTop = sel.offsetTop + sel.offsetHeight - rail.clientHeight + 8;
+    };
+    // Guard the position for as long as the dialog lives: the host page's
+    // deferred smooth-scrolls (queued while the pane is hidden, resumed when
+    // it shows) can throw the rail, so any scroll that was not the user's and
+    // loses the selected row gets corrected on the next frame.
+    let touched = false;
+    const mark = () => { touched = true; };
+    const onScroll = () => {
+      if (touched) return;
+      const sel = selRef.current;
+      if (!rail || !sel) return;
+      const top = sel.offsetTop - rail.scrollTop;
+      if (top + sel.offsetHeight < 0 || top > rail.clientHeight) requestAnimationFrame(place);
+    };
+    rail && rail.addEventListener("wheel", mark, { passive: true });
+    rail && rail.addEventListener("pointerdown", mark);
+    rail && rail.addEventListener("scroll", onScroll, { passive: true });
+    place();
+    const t = setTimeout(() => { place(); firstScroll.current = false; }, 320);
+    return () => {
+      clearTimeout(t);
+      rail && rail.removeEventListener("wheel", mark);
+      rail && rail.removeEventListener("pointerdown", mark);
+      rail && rail.removeEventListener("scroll", onScroll);
+    };
+  }, [selected.id]);
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: zIndex || 70 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="dialog dialog-worksurface bmq-dialog" role="dialog" aria-modal="true" aria-labelledby="lgc-title">
+      <div className="dialog dialog-worksurface bmq-dialog lgc-dialog" role="dialog" aria-modal="true" aria-labelledby="lgc-title">
         <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
           <button className="dialog-close" aria-label="Close" onClick={onClose}><Icon name="cross" /></button>
         </Tooltip>
-        <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-          <h2 className="dialog-title" id="lgc-title">Question logic</h2>
-          <p className="dialog-subtitle">Decide who gets a question. Rules are set per question — pick one on the left.</p>
-        </div>
         <div className="lgc-layout">
-          <div className="lgc-rail scroll-y" role="listbox" aria-label="Questions in this survey">
-            {questions.map((x, i) => {
-              const lg = logicOf(x.id);
-              const n = lg && lg.conditions ? lg.conditions.length : 0;
+          <div className="lgc-rail scroll-y" ref={railRef}>
+            <h2 className="lgc-title" id="lgc-title">Conditional logic</h2>
+            {sections.map(s => {
+              const eligible = s.items.filter(x => !x.required);
+              const allRuled = eligible.length > 0 && eligible.every(x => hasRule(x.id));
               return (
-                <button key={x.id} type="button" role="option" aria-selected={x.id === selected.id}
-                  className={"lgc-q" + (x.id === selected.id ? " is-selected" : "")} onClick={() => hop(x.id)}>
-                  <span className="lgc-q-n">{i + 1}</span>
-                  <span className="lgc-q-text">{x.text}</span>
-                  {x.required
-                    ? <span className="lgc-q-mark"><Icon name="asterisk" size={12} /></span>
-                    : n > 0 ? <span className="lgc-q-mark is-some"><Icon name="eye" size={12} />{n}</span> : null}
-                </button>
+                <div key={s.key} className="lgc-group" role="listbox" aria-label={s.label}>
+                  <div className="lgc-group-head">
+                    <span className="lgc-group-lbl">{s.label}</span>
+                    {allRuled && <span className="lgc-q-mark is-some"><Icon name="split" size={12} /></span>}
+                  </div>
+                  {s.items.map(x => (
+                    <button key={x.id} type="button" role="option" aria-selected={x.id === selected.id}
+                      ref={x.id === selected.id ? selRef : undefined}
+                      className={"lgc-q" + (x.id === selected.id ? " is-selected" : "")} onClick={() => hop(x.id)}>
+                      <span className="lgc-q-text">{x.text}</span>
+                      {x.required
+                        ? <span className="lgc-q-mark"><Icon name="asterisk" size={12} /></span>
+                        : hasRule(x.id) ? <span className="lgc-q-mark is-some"><Icon name="split" size={12} /></span> : null}
+                    </button>
+                  ))}
+                </div>
               );
             })}
           </div>
@@ -360,8 +416,6 @@ export function QuestionLogicDialog({ questions, initialId, logicByQuestion = {}
           </div>
         </div>
         <div className="dialog-footer">
-          {conditions.length > 0 && !selected.required &&
-            <button className="btn btn-secondary" onClick={() => update(null)}>Remove logic</button>}
           <div className="spacer" />
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={save}>Save</button>
@@ -472,7 +526,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below"
               onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />}
             {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
-            {hasLogic && <span className="infotag is-logic"><Icon name="eye" size={12} />Conditional</span>}
+            {hasLogic && <span className="infotag is-logic"><Icon name="split" size={12} />Conditional</span>}
           </div>
           <h2 className="dialog-title" id="bmq-title">{title}</h2>
           <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
@@ -513,7 +567,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               <Tooltip label={hasLogic ? logicLine : "Show this question only after a chosen answer, or only to some employees"} wrapClass="bmq-who-tt">
                 <button type="button" className={"sel-btn bmq-who" + (hasLogic ? " is-some" : "")} aria-haspopup="dialog"
                   onClick={() => (logicInPlace ? setLogicFor(q.id) : onOpenLogic && onOpenLogic(q.id))}>
-                  {hasLogic && <span className="bmq-who-ic"><Icon name="eye" size={16} /></span>}
+                  {hasLogic && <span className="bmq-who-ic"><Icon name="split" size={16} /></span>}
                   <span className="sel-btn-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {hasLogic ? `Some · ${ownLogic.conditions.length} ${ownLogic.conditions.length === 1 ? "condition" : "conditions"}` : "Everyone"}
                   </span>

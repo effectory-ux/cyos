@@ -2301,28 +2301,40 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .lgc-back { display: inline-flex; align-items: center; gap: 6px; height: 28px; border: none; background: none;
   padding: 0; font: inherit; font-size: 14px; font-weight: 500; color: var(--content-brand-base); cursor: pointer; }
 .lgc-back:hover { text-decoration: underline; }
-/* Two panes: the questionnaire's questions on a rail, the selected one's
-   rule on the right — hop freely, rules stay per question. */
-.lgc-layout { flex: 1; min-height: 0; display: flex; gap: 24px; }
-.lgc-rail { flex: none; width: 260px; display: flex; flex-direction: column; gap: 2px;
-  padding: 2px 12px 2px 2px; border-right: 1px solid var(--border-base); }
+/* Conditional logic dialog (Figma 6316:27977): the rail carries the dialog
+   title and the questions grouped by topic; the pane carries the selected
+   question's rule as two grey condition cards with white selects. */
+.lgc-layout { flex: 1; min-height: 0; display: flex; gap: 24px; margin-top: -8px; }
+.lgc-title { position: sticky; top: -2px; z-index: 1; background: var(--bg-base);
+  font-size: 20px; font-weight: 700; line-height: 28px; color: var(--content-primary);
+  margin: -2px 0 4px; padding: 2px 0 8px; }
+.lgc-rail { flex: none; width: 270px; display: flex; flex-direction: column; gap: 2px;
+  padding: 2px 16px 2px 2px; border-right: 1px solid var(--border-base);
+  position: relative; overflow-anchor: none; }
+.lgc-group { display: flex; flex-direction: column; gap: 2px; }
+.lgc-group-head { display: flex; align-items: center; gap: 8px; padding: 14px 8px 6px; }
+.lgc-group-lbl { font-size: 14px; font-weight: 600; line-height: 20px; color: var(--content-primary); }
 .lgc-q { display: flex; align-items: center; gap: 8px; border: none; background: none; text-align: left;
   padding: 8px; border-radius: var(--radius-base); font: inherit; font-size: 13px; line-height: 20px;
   color: var(--content-primary); cursor: pointer; }
 .lgc-q:hover { background: var(--bg-secondary); }
 .lgc-q.is-selected { background: var(--bg-brand-subtle-selected); }
-.lgc-q-n { flex: none; min-width: 22px; height: 22px; border-radius: var(--radius-base);
-  background: var(--bg-tertiary); color: var(--content-secondary); font-size: 11px; font-weight: 600;
-  display: grid; place-items: center; }
-.lgc-q.is-selected .lgc-q-n { background: var(--bg-base); }
 .lgc-q-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lgc-q-mark { flex: none; display: inline-flex; align-items: center; gap: 3px;
-  color: var(--content-secondary); font-size: 11px; font-weight: 600; }
+.lgc-q-mark { flex: none; display: inline-flex; align-items: center; color: var(--content-secondary); }
 .lgc-q-mark.is-some { color: var(--content-warning); background: var(--bg-warning-subtle);
-  border-radius: 999px; padding: 1px 7px; }
+  border-radius: 999px; padding: 3px; }
+.lgc-q-mark.is-some svg, .lgc-q-mark svg { display: block; }
 .lgc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--spacing-base); padding: 2px; }
-.lgc-lead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  font-size: 14px; line-height: 22.4px; color: var(--content-secondary); }
+.lgc-subject { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-primary); margin: 0 0 4px; }
+.lgc-card { background: var(--bg-secondary); border: 1px solid transparent; border-radius: var(--radius-lg);
+  padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.lgc-card.is-invalid { border-color: var(--border-negative); }
+.lgc-card .sel-btn, .lgc-card .cq-sel { background: var(--bg-base); }
+.lgc-row { display: flex; gap: 8px; }
+.lgc-row > .cq-menu-wrap:first-child { flex: none; width: 96px; }
+.lgc-row > .cq-menu-wrap.is-block { flex: 1; min-width: 0; }
+.lgc-hint { font-size: 12px; line-height: 18px; color: var(--content-secondary); }
+.lgc-err { font-size: 12px; line-height: 18px; color: var(--content-negative); }
 .lgc-locked { font-size: 14px; line-height: 22.4px; color: var(--content-secondary); padding: 8px 0; }
 .lgc-locked b { color: var(--content-primary); font-weight: 600; }
 .lgc-card { border: 1px solid var(--border-base); border-radius: var(--radius-lg); padding: 12px 16px 14px;

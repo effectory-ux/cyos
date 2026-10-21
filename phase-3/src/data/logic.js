@@ -1,16 +1,21 @@
-// logic.js — question logic (conditional visibility / masking).
+// logic.js — conditional logic (who gets a question).
 //
-// A question's rule lives in qMeta[id].logic:
-//   { match: "all" | "any", conditions: [
-//       { type: "answer",    trigger: <qId>, answers: [<index>…] },
-//       { type: "attribute", attribute: <key>, values: [<index>…] } ] }
+// A question's rule lives in qMeta[id].logic, deliberately small (Jamal:
+// "nothing more, nothing less"): at most ONE condition of each kind —
+//   { conditions: [
+//       { type: "answer",    trigger: <qId>, op: "is"|"not", answers: [<index>…] },
+//       { type: "attribute", attribute: <key>, op: "is"|"not", values: [<index>…] } ] }
 // An answer condition points BACKWARDS only — its trigger must be an earlier
 // question in the questionnaire (a participant answers it first). An
 // attribute condition reads the employee data (characteristics.js). Within a
-// condition the chosen answers/values are OR; across conditions `match`
-// decides all/any. One rule per question.
+// condition the chosen answers/values are OR ("is" any of them, or "is not"
+// any of them); when both conditions exist, both must hold. One rule per
+// question.
 import { answerOptionsOf } from "./data.js";
 import { characteristicOf } from "./characteristics.js";
+
+export const conditionOfType = (logic, type) =>
+  ((logic && logic.conditions) || []).find(c => c && c.type === type) || null;
 
 // `earlier` = the questions BEFORE the rule's own question, in questionnaire
 // order — the only valid triggers. A condition whose trigger left the survey
@@ -26,28 +31,27 @@ export const conditionOK = (c, earlier) => {
 };
 
 export const conditionPhrase = (c, earlier) => {
+  const opWord = c.op === "not" ? "is not" : "is";
   if (c.type === "answer") {
     const t = (earlier || []).find(x => x.id === c.trigger);
     if (!t) return null;
     const opts = answerOptionsOf(t);
     const picked = (c.answers || []).map(i => opts[i]).filter(Boolean);
-    return picked.length ? `“${t.text}” is ${picked.join(" or ")}` : null;
+    return picked.length ? `“${t.text}” ${opWord} ${picked.join(" or ")}` : null;
   }
   const a = characteristicOf(c.attribute);
   if (!a) return null;
   const picked = (c.values || []).map(i => a.values[i]).filter(Boolean);
-  return picked.length ? `${a.label.toLowerCase()} is ${picked.join(" or ")}` : null;
+  return picked.length ? `${a.label.toLowerCase()} ${opWord} ${picked.join(" or ")}` : null;
 };
 
-// One readable sentence for the summary row and the builder tag's tooltip.
+// One readable sentence for the Who-gets-it tooltip and the builder tag.
 export const logicSummary = (logic, earlier) => {
   const phrases = (logic && logic.conditions ? logic.conditions : [])
     .map(c => conditionPhrase(c, earlier)).filter(Boolean);
   if (!phrases.length) return "";
   if (phrases.length === 1) return `Only when ${phrases[0]}`;
-  const lead = logic.match === "any" ? "When one matches:"
-    : phrases.length === 2 ? "When both match:" : "When all match:";
-  return `${lead} ${phrases.join("; ")}`;
+  return `When both match: ${phrases.join("; ")}`;
 };
 
 export const activeConditions = (logic, earlier) =>
