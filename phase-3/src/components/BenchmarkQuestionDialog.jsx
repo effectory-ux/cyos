@@ -200,18 +200,18 @@ const OP_ITEMS = [{ value: "is", label: "Is" }, { value: "not", label: "Is not" 
 // copy honest). `onChange` gets the whole normalized logic (or null when both
 // cards sit on their neutral option).
 function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, locked, about, onChange }) {
-  // What you're editing, right under the heading: a topic says how many
-  // questions ride on its rule, a question says its answer type and home.
+  // The heading: a topic carries its question count as a tag (how much the
+  // rule touches); the description, when there is one, sits under the title.
+  // Questions get no metadata here — the title and description identify them.
   const head = (
     <div className="lgc-head">
-      <h3 className="lgc-subject">{selected.text}</h3>
-      {about && (
-        <div className="lgc-about">
-          {about.kind === "topic"
-            ? <>Topic · {about.count} {about.count === 1 ? "question" : "questions"}</>
-            : <><QTypeIcon type={about.type} size={20} /> {QTYPES[about.type].label}{about.topic ? <> · {about.topic}</> : null}</>}
-        </div>
-      )}
+      <div className="lgc-head-row">
+        <h3 className="lgc-subject">{selected.text}</h3>
+        {about && about.kind === "topic" && (
+          <span className="infotag is-alt lgc-count">{about.count} {about.count === 1 ? "question" : "questions"}</span>
+        )}
+      </div>
+      {about && about.desc && <p className="lgc-desc">{about.desc}</p>}
     </div>
   );
   const answer = conditionOfType(logic, "answer");
@@ -569,8 +569,8 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
             <LogicRulePane selected={selected} logic={logic} earlier={earlierFor(selKey)}
               noun={section ? "topic" : "question"} inherited={inheritedFor()} locked={lockedFor()}
               about={section
-                ? { kind: "topic", count: section.items.length }
-                : { kind: "question", type: selected.type, topic: (sections.find(s => s.items.some(i => i.id === selKey)) || {}).label }}
+                ? { kind: "topic", count: section.items.length, desc: section.desc }
+                : { kind: "question", desc: selected._desc }}
               showErrors={showErrors} onChange={update} />
           </div>
         </div>
@@ -682,7 +682,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
         </Tooltip>
         {logicInPlace && logicFor ? (
           <LogicEditor q={q} logic={logicOf(q.id)} earlier={earlierFor(q.id)} inherited={topicLogic}
-            about={{ kind: "question", type: q.type, topic: (topicOptions.find(o => o.value === topic) || {}).label }}
+            about={{ kind: "question", desc: desc || undefined }}
             onChange={(next) => setLogicMap(m => ({ ...m, [q.id]: next }))}
             onClose={() => setLogicFor(null)} />
         ) : (<>

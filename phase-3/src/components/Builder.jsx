@@ -1864,7 +1864,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           opened it and commits itself — its Save applies, Cancel discards. */}
       {logicQId && (
         <QuestionLogicDialog initialId={logicQId}
-          sections={visibleSections.map(x => ({ key: x.key, label: topicName(x.key), items: x.items }))}
+          sections={visibleSections.map(x => ({ key: x.key, label: topicName(x.key), desc: (topicMeta[x.key] || {}).desc,
+            items: x.items.map(q2 => ({ ...q2, _desc: (qMeta[q2.id] || {}).desc ?? q2.desc })) }))}
           logicByQuestion={Object.fromEntries(flatOrder.map(x => [x.id, (qMeta[x.id] || {}).logic || null]))}
           logicByTopic={Object.fromEntries(visibleSections.map(x => [x.key, (topicMeta[x.key] || {}).logic || null]))}
           zIndex={settingsQId || topicDialog ? 80 : undefined}

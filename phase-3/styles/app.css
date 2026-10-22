@@ -2353,11 +2353,12 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
    the same visual line as "Logic". */
 .lgc-dialog .lgc-main { padding: 28px 32px 36px; gap: 32px; }
 .lgc-head { display: flex; flex-direction: column; gap: 2px; }
+.lgc-head-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .lgc-subject { font-size: 20px; font-weight: 600; line-height: 28px; color: var(--content-primary); margin: 0; }
+.lgc-count { flex: none; }
 .lgc-dialog .lgc-head { padding-right: 48px; }
-/* What the rule is attached to: a topic's size, a question's type and home. */
-.lgc-about { display: flex; align-items: center; gap: 6px;
-  font-size: 14px; line-height: 22.4px; color: var(--content-secondary); }
+/* The topic's or question's description, when there is one. */
+.lgc-desc { margin: 0; font-size: 14px; line-height: 22.4px; color: var(--content-secondary); }
 .lgc-card { background: var(--bg-tertiary); border: 1px solid transparent; border-radius: 12px;
   padding: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
 .lgc-card.is-invalid { border-color: var(--border-negative); }
