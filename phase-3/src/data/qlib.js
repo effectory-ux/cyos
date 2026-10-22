@@ -9,7 +9,7 @@
 export const TEMPLATE_PREVIEWS = {
   sos: [
     { topic: "Job satisfaction", questions: [
-      { text: "Day to day, I find my work enjoyable", type: "scale5", theme: "Engagement" },
+      { text: "Day to day, I find my work enjoyable", type: "scale5", theme: "Engagement", themes: ["Engagement", "Positive team experience", "High-performance climate"] },
     ]},
     { topic: "Tools & resources", questions: [
       { text: "I'm kitted out with the tools and systems my job calls for", type: "scale5", theme: "Systems & structure" },

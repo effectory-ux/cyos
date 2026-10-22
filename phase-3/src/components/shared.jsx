@@ -210,6 +210,64 @@ export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", float = 
   );
 }
 
+// A question's themes in one slot: its main theme's tag (`q.theme`, so it never
+// jumps around) and, when it's in more themes, a "+N" chip. The chip opens a
+// small popover with every theme, each tag keeping its own status and opening
+// its theme. `infoFor(name)` gives a theme's { kept, total }.
+export function ThemeTags({ q, infoFor, pos = "is-left", float = false, hl, onOpen }) {
+  const names = themesOf(q);
+  const main = q.theme || names[0];
+  const rest = names.filter(n => n !== main);
+  const chip = useRef(null), pop = useRef(null);
+  const [at, setAt] = useState(null);
+  useEffect(() => {
+    if (!at) return;
+    const away = (e) => { if (!pop.current?.contains(e.target) && !chip.current?.contains(e.target)) setAt(null); };
+    const esc = (e) => { if (e.key === "Escape") { e.stopPropagation(); setAt(null); chip.current?.focus(); } };
+    const shut = () => setAt(null);
+    document.addEventListener("mousedown", away, true);
+    document.addEventListener("keydown", esc, true);
+    window.addEventListener("scroll", shut, true);
+    return () => { document.removeEventListener("mousedown", away, true); document.removeEventListener("keydown", esc, true); window.removeEventListener("scroll", shut, true); };
+  }, [at]);
+  if (!main) return null;
+  const tag = (n, p) => {
+    const i = infoFor ? infoFor(n) : null;
+    return <ThemeTag key={n} theme={n} kept={i ? i.kept : 0} total={i ? i.total : 0} pos={p} float={float} hl={hl}
+      onOpen={onOpen ? () => { setAt(null); onOpen(n); } : undefined} />;
+  };
+  // The chip speaks for the other themes (Figma 6578:4330): complete when all
+  // of them are, in progress when any has questions in, else neutral.
+  const restInfo = rest.map(n => (infoFor ? infoFor(n) : null) || { kept: 0, total: 0 });
+  const restState = restInfo.every(i => i.total > 0 && i.kept >= i.total) ? "is-complete"
+    : restInfo.some(i => i.kept > 0) ? "is-progress" : "is-neutral";
+  const toggle = (e) => {
+    e.stopPropagation();
+    if (at) { setAt(null); return; }
+    const r = chip.current.getBoundingClientRect();
+    setAt({ top: r.bottom + 4, right: window.innerWidth - r.right });
+  };
+  return (
+    <span className={"thm-tags" + (rest.length ? " has-more" : "")}>
+      {tag(main, pos)}
+      {rest.length > 0 && (
+        <>
+          <Tooltip label={at ? null : `Also in ${rest.length} more ${rest.length === 1 ? "theme" : "themes"}`} pos={pos} float={float}>
+            <button ref={chip} type="button" className={"tag tag-thm tag-thm-more is-interactive " + restState} aria-haspopup="dialog" aria-expanded={!!at}
+              aria-label={`Show all ${names.length} themes`} onClick={toggle}>+{rest.length}</button>
+          </Tooltip>
+          {at && createPortal(
+            <div ref={pop} className="menu thm-tags-pop" role="dialog" aria-label="Themes of this question"
+              style={{ position: "fixed", top: at.top, right: at.right, zIndex: 1300 }} onClick={e => e.stopPropagation()}>
+              <div className="thm-tags-pop-title">In {names.length} themes</div>
+              {names.map(n => tag(n, "is-left"))}
+            </div>, document.body)}
+        </>
+      )}
+    </span>
+  );
+}
+
 // Custom-question tag. Interactive (with an edit tooltip) when `onOpen` is given.
 export function CustomTag({ label = "Custom", pos = "is-left", float = false, onOpen }) {
   return (

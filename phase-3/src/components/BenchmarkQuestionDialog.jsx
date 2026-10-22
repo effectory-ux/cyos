@@ -9,7 +9,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, Tooltip, ThemeTag, useMediaQuery, MiniSelect } from "./shared.jsx";
+import { QTypeIcon, Tooltip, ThemeTag, themesOf, useMediaQuery, MiniSelect } from "./shared.jsx";
 import { LANG_STATUS, LangPanel, AutoTextarea } from "./CustomQuestionDialog.jsx";
 import { QTYPES, SCALE_LABELS, answerOptionsOf } from "../data/data.js";
 import { CHARACTERISTICS, characteristicOf } from "../data/characteristics.js";
@@ -199,25 +199,25 @@ const OP_ITEMS = [{ value: "is", label: "Is" }, { value: "not", label: "Is not" 
 // since topics became selectable in the rail — a whole topic (`noun` keeps the
 // copy honest). `onChange` gets the whole normalized logic (or null when both
 // cards sit on their neutral option).
-function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, locked, about, followUps, canFollowUp, followUpBlocked, onAddFollowUp, onOpenFollowUp, onChange }) {
+function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, locked, about, followUps, canFollowUp, followUpBlocked, onStartFollowUp, onOpenFollowUp, onChange }) {
   // The FORWARD flow (Jamal's tester feedback): from this question, add a
-  // direct follow-up — "when the answer is X, ask …". It creates a real
-  // question right after this one, carrying the matching answer condition;
-  // the backward view on that question edits the same fact.
+  // direct follow-up — "when the answer is X, ask …". Only the answer is
+  // chosen here; the question itself comes through the EXISTING flows — the
+  // question library, or the custom question dialog with its guidelines and
+  // its similar-question check — so no question skips those checks. The new
+  // question lands right after this one, carrying the answer condition.
   const [fuOpen, setFuOpen] = useState(false);
-  const [fuText, setFuText] = useState("");
   const [fuOp, setFuOp] = useState("is");
   const [fuPicked, setFuPicked] = useState([]);
   const [fuErr, setFuErr] = useState(null);
   const myOpts = answerOptionsOf(selected);
-  const closeFu = () => { setFuOpen(false); setFuText(""); setFuOp("is"); setFuPicked([]); setFuErr(null); };
-  const addFu = () => {
+  const closeFu = () => { setFuOpen(false); setFuOp("is"); setFuPicked([]); setFuErr(null); };
+  const startFu = (source) => {
     if (!fuPicked.length) { setFuErr("Choose at least one answer"); return; }
-    if (!fuText.trim()) { setFuErr("Write the follow-up question"); return; }
-    onAddFollowUp({ text: fuText.trim(), op: fuOp, answers: fuPicked });
+    onStartFollowUp({ op: fuOp, answers: fuPicked }, source);
     closeFu();
   };
-  const followUpBlock = onAddFollowUp ? (
+  const followUpBlock = onStartFollowUp ? (
     <div className="lgc-fu">
       <div className="lgc-fu-title">Follow-up questions</div>
       {(followUps || []).map(f => (
@@ -234,20 +234,22 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
         <span className="lgc-hint">{followUpBlocked}</span>
       ) : fuOpen ? (
         <div className="lgc-card">
-          <div className="lgc-card-lbl">New follow-up question</div>
+          <div className="lgc-card-lbl">Ask a follow-up question when the answer</div>
           <div className="lgc-row">
             <MiniSelect ariaLabel="Is or is not" value={fuOp} items={OP_ITEMS} onChange={setFuOp} />
             <LgcValues options={myOpts} picked={fuPicked} placeholder="Choose answers"
-              invalid={!!fuErr && !fuPicked.length}
-              onToggle={(i) => setFuPicked(cur => (cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i].sort((a, b) => a - b)))} />
+              invalid={!!fuErr}
+              onToggle={(i) => { setFuErr(null); setFuPicked(cur => (cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i].sort((a, b) => a - b))); }} />
           </div>
-          <input className="tf lgc-fu-input" value={fuText} placeholder="Write the follow-up question"
-            onChange={e => setFuText(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") addFu(); }} />
           {fuErr && <span className="lgc-err">{fuErr}</span>}
+          <span className="lgc-hint">The follow-up question comes right after this one. Choose it from the question library, or write your own.</span>
           <div className="lgc-fu-actions">
-            <button type="button" className="btn btn-secondary" onClick={closeFu}>Cancel</button>
-            <button type="button" className="btn btn-primary" onClick={addFu}>Add question</button>
+            <button type="button" className="btn btn-tertiary" onClick={closeFu}>Cancel</button>
+            <span className="spacer" />
+            <button type="button" className="btn btn-secondary" onClick={() => startFu("library")}>
+              <Icon name="book-open" size={16} />Choose from library</button>
+            <button type="button" className="btn btn-secondary" onClick={() => startFu("custom")}>
+              <Icon name="edit-inline" size={16} />Write your own</button>
           </div>
         </div>
       ) : (
@@ -432,7 +434,7 @@ function LogicEditor({ q, logic, onChange, earlier, inherited, about, onClose })
 // rule on the right. It owns its commit: Save applies every touched
 // question's rule immediately, Cancel discards them all — independent of the
 // question dialog's staging, so there is never a nested-save puzzle.
-export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion = {}, logicByTopic = {}, onApply, onAddFollowUp, onClose, zIndex }) {
+export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion = {}, logicByTopic = {}, onApply, onStartFollowUp, onClose, zIndex }) {
   // `_group` rides along for the earlier-question menu's topic headers.
   const questions = sections.flatMap(s => s.items.map(x => ({ ...x, _group: s.label })));
   // The rail selects questions AND topics (a topic's rule gates its whole
@@ -487,8 +489,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
     setShowErrors(true); return false;
   };
   const hop = (key) => { if (key !== selKey && canLeave()) { setShowErrors(false); setSelectedKey(key); } };
-  const save = () => {
-    if (!canLeave()) return;
+  const commit = () => {
     const qPatches = {}, tPatches = {};
     Object.keys(logicMap).forEach(key => {
       if (JSON.stringify(normLogic(logicMap[key])) === JSON.stringify(baseOf(key))) return;
@@ -496,7 +497,19 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
       else qPatches[key] = normLogic(logicMap[key]);
     });
     if (Object.keys(qPatches).length + Object.keys(tPatches).length) onApply({ questions: qPatches, topics: tPatches });
+  };
+  const save = () => {
+    if (!canLeave()) return;
+    commit();
     onClose();
+  };
+  // A follow-up leaves this dialog for the library or the custom question
+  // dialog, so what was edited here is saved first — nothing is lost on the
+  // way out, and the dialog reopens on this question when the flow is done.
+  const launchFollowUp = (fu, source) => {
+    if (!canLeave()) return;
+    commit();
+    onStartFollowUp(selected, fu, source);
   };
   // hasAny sees every condition (the Remove-all sweep must catch half-made
   // and broken ones too); hasRule is what earns a BADGE — at least one
@@ -654,7 +667,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
                 ? { kind: "topic", count: section.items.length, desc: section.desc }
                 : { kind: "question", desc: selected._desc }}
               followUps={followUpsFor()} canFollowUp={!followUpBlockedWhy()} followUpBlocked={followUpBlockedWhy()}
-              onAddFollowUp={!section && onAddFollowUp ? (fu) => onAddFollowUp(selected, fu) : undefined}
+              onStartFollowUp={!section && onStartFollowUp ? launchFollowUp : undefined}
               onOpenFollowUp={hop}
               showErrors={showErrors} onChange={update} />
           </div>
@@ -674,7 +687,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
   );
 }
 
-export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, allVariants = false, allQuestions = [], logicByQuestion = {}, logicInPlace = false, topicLogic = null, onOpenLogic, onCancel, onSave, onDetach, onOpenTheme }) {
+export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, themeInfoFor, design, allVariants = false, allQuestions = [], logicByQuestion = {}, logicInPlace = false, topicLogic = null, onOpenLogic, onCancel, onSave, onDetach, onOpenTheme }) {
   const [infoOpen, setInfoOpen] = useState(false);
   // Staged edits — committed on Save only.
   const [variant, setVariant] = useState(meta.variant);
@@ -780,8 +793,13 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                 <Icon name="barchart-2" size={12} />Benchmarked
               </button>
             </Tooltip>
-            {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below"
-              onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />}
+            {/* Every theme the question counts for: the dialog has the room the
+                row doesn't. */}
+            {themesOf(q).map(n => {
+              const i = themeInfoFor ? themeInfoFor(n) : (n === q.theme ? themeInfo : null);
+              return <ThemeTag key={n} theme={n} kept={i ? i.kept : 0} total={i ? i.total : 0} pos="is-below"
+                onOpen={onOpenTheme ? () => onOpenTheme(n) : undefined} />;
+            })}
             {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
             {hasLogic && <span className="infotag is-logic"><Icon name="split" size={12} />Logic</span>}
           </div>

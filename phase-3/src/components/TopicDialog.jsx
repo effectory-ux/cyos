@@ -11,7 +11,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { Icon } from "./Icon.jsx";
 import { Tooltip } from "./shared.jsx";
-import { LangPanel, RetranslateAction } from "./CustomQuestionDialog.jsx";
+import { LangPanel, RetranslateAction, AutoTranslatedTag } from "./CustomQuestionDialog.jsx";
 import { LANGUAGES, PRIMARY_LANGUAGE, autoTranslation } from "../data/i18n.js";
 import { introSurface, designWash, textLook, boxFill, DEFAULT_BOX } from "../data/designs.js";
 import { IntroTextPicker } from "./IntroTextPicker.jsx";
@@ -220,9 +220,11 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
                   the screen itself, not next to the translations. */}
               {/* Editor controls, top right of the stage as in every dialog:
                   the way back from a hand-made translation. */}
-              {!primary && !loadingHere && name.trim() && handEdited(lang) && (
+              {!primary && !loadingHere && name.trim() && (handEdited(lang) ? (
                 <div className="cq-stage-tools"><RetranslateAction onClick={retranslate} /></div>
-              )}
+              ) : statusOf(lang) === "auto" && (
+                <div className="cq-stage-tools"><AutoTranslatedTag /></div>
+              ))}
               {/* What participants see, in one block — the text box (when on)
                   goes behind all of it. */}
               <div className="tpd-content" style={isIntro && boxFill(look.box, look.color) ? { "--box-fill": boxFill(look.box, look.color) } : undefined}>
@@ -269,16 +271,14 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
                   <span className="tpd-cta is-preview" aria-hidden="true">
                     Get started!<Icon name="play" size={14} /></span>
                 </>
-              ) : (
-                <span className="tpd-next" aria-hidden="true"><Icon name="arrow-down" size={18} /></span>
-              )}
+              ) : null}
               </div>
             </div>
             )}
           </div>
           {/* The same language panel as the question dialogs. */}
           <LangPanel active={lang} onSelect={code => (code === "en" ? setLang(code) : openLang(code))}
-            statusOf={statusOf} source={{ icon: "featured", label: "Automatically translated", tone: "ai" }} />
+            statusOf={statusOf} />
         </div>
 
         <div className="dialog-footer">

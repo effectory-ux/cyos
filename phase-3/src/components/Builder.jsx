@@ -2,13 +2,13 @@
 import { useState, useEffect, useLayoutEffect, useRef, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, Tooltip, RequiredMarker, themeQuestions, useMediaQuery } from "./shared.jsx";
+import { groupQuestions, QTypeIcon, ThemeTags, CustomTag, Tooltip, RequiredMarker, themeQuestions, useMediaQuery } from "./shared.jsx";
 import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { BenchmarkQuestionDialog, QuestionLogicDialog } from "./BenchmarkQuestionDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
 import { TranslationsDialog } from "./TranslationsDialog.jsx";
 import { THEMES, CUSTOM_GROUP, answerOptionsOf } from "../data/data.js";
-import { activeConditions, logicBroken, logicSummary } from "../data/logic.js";
+import { activeConditions, conditionOfType, logicBroken, logicSummary } from "../data/logic.js";
 import { DESIGNS, DEFAULT_DESIGN, designById, designWash, introSurface, textLook, boxFill } from "../data/designs.js";
 import { autoTranslation } from "../data/i18n.js";
 
@@ -183,7 +183,7 @@ function TopNav({ name, onRename, compact, mobile }) {
   );
 }
 
-function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, pulsing, onSeen, themeInfo, onOpenTheme, onDragStart, onDragEnd, logic, onOpenLogic }) {
+function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, pulsing, onSeen, themeInfo, themeInfoFor, onOpenTheme, onDragStart, onDragEnd, logic, onOpenLogic }) {
   const [menu, setMenu] = useState(false);
   // "Move to topic" opens a nested submenu BESIDE the menu (DS pattern: a
   // trailing .menu-chevron item flying out a second .menu) instead of swapping
@@ -233,8 +233,8 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
       </div>
       <div className="qrow-meta">
         {q.theme
-          ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-left"
-              onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
+          ? <ThemeTags q={q} infoFor={themeInfoFor || ((n) => (n === q.theme ? themeInfo : null))} pos="is-left"
+              onOpen={onOpenTheme} />
           : q.custom ? <CustomTag pos="is-left" onOpen={() => onEdit && onEdit(q)} /> : null}
         {/* Question logic: an icon tile the size of the question type — the
             rule rides in its tooltip, clicking it opens this question's
@@ -409,7 +409,7 @@ const EMPTY_DRAG_IMG = typeof Image !== "undefined"
 // the topics only make their entrance the first time.
 const entranceSeen = new Set();
 
-export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onAddQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, onConfirmTranslation, edges = {}, openDialog, onDialogChange, addAtBottom = false, pagesRail = false, introTextColor = false, introTextBox = false, whiteTopics = false, logicInPlace = false, onAddCustomQuestion, focusQuestion }) {
+export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onAddQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, onConfirmTranslation, edges = {}, openDialog, onDialogChange, addAtBottom = false, pagesRail = false, introTextColor = false, introTextBox = false, whiteTopics = false, logicInPlace = false, onFollowUp, focusQuestion }) {
   const { name, design: designId, selectedIds, pool, topicMeta = {}, customTopics = [], keptTopics = [], qMeta = {}, i18nEdits = {}, i18nStale = {}, intro = {} } = survey;
   // Below this the questionnaire page tightens: step labels go, the page
   // padding and the gaps between cards shrink, "Edit name" becomes an icon.
@@ -493,6 +493,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     // The standalone logic dialog opens over the question's own dialog; the
     // in-place variant has no dialog of its own, so the settings dialog is
     // the honest restore there.
+    // Back from a follow-up flow: just the logic dialog, on the trigger.
+    else if (dialog === "logic-return" && arg) setLogicQId(arg);
     else if (dialog === "question-logic" && arg) {
       // A topic's logic ("t:<key>") has no question dialog underneath.
       if (arg.startsWith("t:")) setLogicQId(arg);
@@ -586,6 +588,26 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // in the topic it left.
   useLayoutEffect(() => { setLayout(prev => {
     let next = reconcileLayout(prev, groups);
+    // A follow-up question that just arrived (from the library or the custom
+    // question dialog) lands DIRECTLY after its trigger — after the trigger's
+    // earlier follow-ups, so they keep the order they were made in.
+    const had = new Set(prev.flatMap(x => x.items.map(i => i.id)));
+    next.forEach((sec, si) => {
+      sec.items.filter(i => !had.has(i.id)).forEach(item => {
+        const a = conditionOfType((qMeta[item.id] || {}).logic, "answer");
+        if (!a) return;
+        const items = next[si].items.filter(i => i.id !== item.id);
+        let at = items.findIndex(i => i.id === a.trigger);
+        if (at < 0) return;
+        while (at + 1 < items.length) {
+          const b = conditionOfType((qMeta[items[at + 1].id] || {}).logic, "answer");
+          if (!b || b.trigger !== a.trigger) break;
+          at++;
+        }
+        items.splice(at + 1, 0, item);
+        next = next.slice(); next[si] = { ...next[si], items };
+      });
+    });
     const pq = placeQuestion.current;
     if (pq) {
       const si = next.findIndex(x => x.key === pq.secKey);
@@ -1721,7 +1743,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     onMoveDown={() => { snapFirst(); reorderQuestion(s.key, qq.id, i + 1); }}
                     topics={visibleSections.map(x => ({ key: x.key, label: topicName(x.key) }))} onMoveTopic={(t) => onMoveTopic && onMoveTopic(qq.id, t)}
                     entering={enteringIds.has(qq.id) && !enteringSecs.has(s.key) ? { delay: enterDelay } : null}
-                    pulsing={pulseIds.has(qq.id)} onSeen={() => stopPulse(qq.id)} themeInfo={themeMap[qq.theme]}
+                    pulsing={pulseIds.has(qq.id)} onSeen={() => stopPulse(qq.id)} themeInfo={themeMap[qq.theme]} themeInfoFor={(n) => themeMap[n]}
                     onOpenTheme={setThemeDetail}
                     onDragStart={startQuestion(s.key, qq.id, i, qq.custom)} onDragEnd={clearDrag} />;
                 })}
@@ -1839,7 +1861,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
       {settingsQId && (() => {
         const q = pool.find(p => p.id === settingsQId);
         return q ? (
-          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]} design={design}
+          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]} themeInfoFor={(n) => themeMap[n]} design={design}
             topicLogic={topicLogicInfoFor(q)}
             allQuestions={flatOrder.map(x => ({ ...x, _condTopic: ((((topicMeta[effTopic(x)] || {}).logic || {}).conditions) || []).length > 0 }))}
             logicByQuestion={Object.fromEntries(flatOrder.map(x => [x.id, (qMeta[x.id] || {}).logic || null]))}
@@ -1873,21 +1895,17 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             Object.entries(questions).forEach(([id, lg]) => onUpdateQMeta && onUpdateQMeta(id, { logic: lg || undefined }));
             Object.entries(topics).forEach(([key, lg]) => onUpdateTopicMeta && onUpdateTopicMeta(key, { logic: lg || undefined }));
           }}
-          onAddFollowUp={(afterQ, fu) => {
-            // The forward flow: a real custom question (open text), placed
-            // DIRECTLY after its trigger, carrying the answer condition.
-            // Creating a question is an immediate act everywhere in the
-            // builder, so it is here too — the dialog's Cancel only covers
-            // staged rule edits.
-            const id = "c" + Date.now();
-            const topic = effTopic(afterQ);
-            const sec = visibleSections.find(s => s.items.some(i => i.id === afterQ.id));
-            const idx = sec ? sec.items.findIndex(i => i.id === afterQ.id) : -1;
-            placeQuestion.current = { secKey: sec ? sec.key : topic, id, index: idx + 1 };
-            onAddCustomQuestion && onAddCustomQuestion({ id, topic, theme: null, bench: false, type: "text", custom: true, text: fu.text });
-            onUpdateQMeta && onUpdateQMeta(id, { logic: { conditions: [
-              { type: "answer", trigger: afterQ.id, op: fu.op, answers: fu.answers },
-            ] } });
+          onStartFollowUp={(trigger, fu, source) => {
+            // The follow-up's question comes through an existing flow (the
+            // library, or the custom question dialog with its checks); the
+            // app runs it and gives the arrivals the answer condition. The
+            // logic dialog and the question dialog under it step aside.
+            const topic = effTopic(trigger);
+            const opts = answerOptionsOf(trigger);
+            const when = `${fu.op === "not" ? "isn't" : "is"} ${fu.answers.map(i => opts[i]).filter(Boolean).join(" or ")}`;
+            setLogicQId(null); setSettingsQId(null);
+            onFollowUp && onFollowUp({ trigger: trigger.id, triggerText: trigger.text, topic, topicLabel: topicName(topic),
+              op: fu.op, answers: fu.answers, when, source });
           }}
           onClose={() => setLogicQId(null)} />
       )}

@@ -5,6 +5,7 @@ import { Builder } from "./components/Builder.jsx";
 import { TemplateModal } from "./components/TemplateModal.jsx";
 import { EditQuestionsDialog, ThemeConfirm, AddedNotice } from "./components/EditQuestionsDialog.jsx";
 import { CustomQuestionDialog } from "./components/CustomQuestionDialog.jsx";
+import { setGuidelinesAck } from "./components/QuestionGuidelines.jsx";
 import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus, themesOf } from "./components/shared.jsx";
 import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
@@ -40,7 +41,28 @@ export function App() {
   // Where the Question library was opened from: a topic ({ key, label }: what
   // you add goes into it), or the bar (null: new topics at the end).
   const [editTarget, setEditTarget] = useState(null);
-  const [survey, setSurvey] = useState(null);
+  const [survey, setSurveyRaw] = useState(null);
+  // A follow-up question in the making (from the Logic dialog): while its flow
+  // runs — the question library or the custom question dialog — every
+  // question that arrives in the survey becomes a follow-up of the trigger:
+  // it gets the answer condition and the trigger's topic IN THE SAME UPDATE,
+  // so the builder can place it straight after the trigger. Whichever path
+  // adds it (library, a written question, the similar-question suggestion).
+  const followUp = useRef(null);
+  const setSurvey = (next) => setSurveyRaw(prev => {
+    const s = typeof next === "function" ? next(prev) : next;
+    const fu = followUp.current;
+    if (!fu || !s || !prev || s.id !== prev.id) return s;
+    const before = new Set(prev.selectedIds);
+    const fresh = s.selectedIds.filter(id => !before.has(id) && id !== fu.trigger);
+    if (!fresh.length) return s;
+    const qMeta = { ...(s.qMeta || {}) };
+    fresh.forEach(id => {
+      qMeta[id] = { ...(qMeta[id] || {}), topic: fu.topic,
+        logic: { conditions: [{ type: "answer", trigger: fu.trigger, op: fu.op, answers: fu.answers }] } };
+    });
+    return { ...s, qMeta };
+  });
   const [removeConfirm, setRemoveConfirm] = useState(null);
   const [editCustom, setEditCustom] = useState(null);
   // True when editCustom was opened by "Write your own wording": the title
@@ -96,6 +118,30 @@ export function App() {
 
   const initialHash = useRef(typeof window !== "undefined" ? window.location.hash : "");
   const [openInBuilder, setOpenInBuilder] = useState(null);
+
+  // Follow-up questions run through the EXISTING flows — the question library
+  // ("what you add goes to this topic") or the custom question dialog, with
+  // its guidelines and similar-question check — never a shortcut around them.
+  // `followUpInfo` is the flow's banner context; when its dialogs are all
+  // closed (and the questions have arrived), the Logic dialog comes back on
+  // the trigger so the new follow-up is right there in its list.
+  const [followUpInfo, setFollowUpInfo] = useState(null);
+  const startFollowUp = (fu) => {
+    followUp.current = fu;
+    setFollowUpInfo(fu);
+    if (fu.source === "custom") setNewCustom(fu.topic);
+    else { setEditTab("questions"); setEditTarget({ key: fu.topic, label: fu.topicLabel }); setEditing(true); }
+  };
+  useEffect(() => {
+    if (!followUpInfo || newCustom || editing || editCustom) return;
+    // After the dialogs' own half-second arrival (afterClose).
+    const t = setTimeout(() => {
+      followUp.current = null;
+      setFollowUpInfo(null);
+      setOpenInBuilder({ dialog: "logic-return", arg: followUpInfo.trigger });
+    }, 700);
+    return () => clearTimeout(t);
+  }, [followUpInfo, newCustom, editing, editCustom]);
 
   // Phase-2 customization state lives ON the survey, so it saves/reopens with
   // it and is always survey-scoped (the library is never written to):
@@ -626,7 +672,9 @@ export function App() {
           { dialog: "empty-warn" });
         break;
       }
-      case "new-custom-question": { const sv = draftSurvey(); if (sv) { openBuilder(sv); setNewCustom(true); } break; }
+      case "new-custom-question": { const sv = draftSurvey(); if (sv) { setGuidelinesAck(true); openBuilder(sv); setNewCustom(true); } break; }
+      // The first custom question: the guidelines come first.
+      case "question-guidelines": { const sv = draftSurvey(); if (sv) { setGuidelinesAck(false); openBuilder(sv); setNewCustom(true); } break; }
       case "edit-custom-question": {
         // A custom question open in its own dialog — also where editing a
         // follow-up question from the builder row lands.
@@ -687,7 +735,7 @@ export function App() {
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveQuestionTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions} onAddQuestions={addQuestionsToSurvey}
-            onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta} onUpdateIntro={updateIntro} onSetDesign={setDesign} onNewCustom={(topic) => setNewCustom(topic || true)} onAddCustomQuestion={addCustomKeepOpen}
+            onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta} onUpdateIntro={updateIntro} onSetDesign={setDesign} onNewCustom={(topic) => setNewCustom(topic || true)} onFollowUp={startFollowUp}
             onSaveTranslation={saveTranslation} onConfirmTranslation={confirmTranslation} edges={edges}
             openDialog={openInBuilder} onDialogChange={setBuilderDialog}
             onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }} />}
@@ -703,7 +751,7 @@ export function App() {
           tweaks={{ ...TWEAKS, orgCustoms: edges.orgCustoms, similarAlways: edges.similarAlways, altWordings: edges.altWordings, checkWarnsOnly: variantsOn.checkWarnsOnly }}
           qMeta={survey.qMeta} onUpdateQMeta={updateQMeta} onMoveTopic={moveQuestionTopic} onAddTopic={addTopic} translationsFor={questionI18n}
           initialTab={editTab} nav={variantsOn.dialogGrouped ? "group" : "sidebar"}
-          addToTopic={editTarget} topicOptions={surveyTopicOptions()}
+          addToTopic={editTarget} followUp={followUpInfo} topicOptions={surveyTopicOptions()}
           onCommitCustom={addCustomKeepOpen} onCommitCustomEdit={saveCustomEdit} autoTopic={OTHER_TOPIC}
           onClose={() => { setEditing(false); setEditTarget(null); }}
           onSave={(ids, pool, summary) => { saveQuestions(ids, pool, summary); setEditTarget(null); }} />
@@ -712,7 +760,7 @@ export function App() {
         onKeep={() => setRemoveConfirm(null)}
         onRemove={() => { removeFromSurvey(removeConfirm.q); setRemoveConfirm(null); }} />}
       {newCustom && survey && <CustomQuestionDialog topics={surveyTopicOptions()} design={designById(survey.design)} autoTopic={OTHER_TOPIC}
-        defaultTopic={typeof newCustom === "string" ? newCustom : undefined}
+        defaultTopic={typeof newCustom === "string" ? newCustom : undefined} followUp={followUpInfo}
         pool={[...survey.pool, ...ORG_CUSTOM.filter(o => !survey.pool.some(p => p.id === o.id))]} selectedIds={survey.selectedIds}
         onGoToQuestion={goToQuestion}
         onUseSuggestion={(q, t) => afterClose(() => addSuggested(q, t))} onMoveSuggestion={(q, t) => afterClose(() => moveQuestionTopic(q.id, t))} qMeta={survey.qMeta || {}}

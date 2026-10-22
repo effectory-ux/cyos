@@ -7,7 +7,7 @@
 import { useState, useMemo, useRef, useEffect, Fragment, createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { themeStatus, themeQuestions, themesOf, groupQuestions, QTypeIcon, Tooltip, ThemeTag, CustomTag, RequiredMarker, useMediaQuery, Highlight } from "./shared.jsx";
+import { themeStatus, themeQuestions, themesOf, groupQuestions, QTypeIcon, Tooltip, ThemeTags, CustomTag, RequiredMarker, useMediaQuery, Highlight } from "./shared.jsx";
 import { CustomQuestionDialog } from "./CustomQuestionDialog.jsx";
 import { useAnchorMenu, AnchorConfirm, CONFIRM_GAP } from "./AnchorMenu.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
@@ -257,7 +257,7 @@ function RowActions({ q, on, inQ, onToggle, onSettings, onEditCustom, onDelete }
   );
 }
 
-function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom, onSettings, onDeleteCustom, usedInTag, hl, plain, hideTheme, showTopic }) {
+function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, themeInfoFor, onOpenTheme, onEditCustom, onSettings, onDeleteCustom, usedInTag, hl, plain, hideTheme, showTopic }) {
   const ctxQ = useContext(AddCtx);
   const inQ = !!ctxQ?.initial.has(q.id);
   // The whole row is clicked the way its checkbox is.
@@ -289,8 +289,8 @@ function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, on
           ? (q.theme && !hideTheme ? <span className="tag aql-theme-plain">{hl ? <Highlight text={q.theme} q={hl} /> : q.theme}</span>
             : !q.theme && q.custom ? <span className="tag aql-theme-plain">{q.from ? q.from : "Custom question"}</span> : null)
           : q.theme
-          ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-above" float
-              hl={hl} onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
+          ? <ThemeTags q={q} infoFor={themeInfoFor || ((n) => (n === q.theme ? themeInfo : null))} pos="is-above" float
+              hl={hl} onOpen={onOpenTheme} />
           : usedInTag
             ? (q.from ? <UsedInTag survey={q.from} /> : null)
             : q.custom ? <CustomTag label="Custom question" pos="is-above" float onOpen={onEditCustom ? () => onEditCustom(q) : undefined} /> : null}
@@ -887,7 +887,7 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
 // "sidebar" — Miro/Qualtrics-style: a left rail to browse (with the topics as
 //             jump anchors) and ONE search on top that looks across questions,
 //             themes and templates, results grouped by where they came from.
-export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", qMeta = {}, addToTopic = null, topicOptions = [], onUpdateQMeta, onMoveTopic, onAddTopic, translationsFor, onCommitCustom, onCommitCustomEdit, autoTopic, onClose, onSave }) {
+export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", qMeta = {}, addToTopic = null, followUp = null, topicOptions = [], onUpdateQMeta, onMoveTopic, onAddTopic, translationsFor, onCommitCustom, onCommitCustomEdit, autoTopic, onClose, onSave }) {
   const compact = useMediaQuery(EQ_COMPACT);
   const narrow = compact;
   const [pool, setPool] = useState(initialPool);
@@ -1364,7 +1364,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     </div>
   ) : (
     <QRow key={r.q.id} q={r.q} on={sel.has(r.q.id)} hl={gqt2 || undefined} usedInTag={customOnly}
-      leaving={leaving.has(r.q.id)} themeInfo={r.q.theme ? themeCountFor(r.q.theme) : null}
+      leaving={leaving.has(r.q.id)} themeInfo={r.q.theme ? themeCountFor(r.q.theme) : null} themeInfoFor={themeCountFor}
       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
       onToggle={() => toggleRow(r)} onRequiredPress={showReqNotice} rowRef={r.q.id === justAdded ? addedRef : null} />
   );
@@ -1645,7 +1645,11 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
         {target ? (
           <div className="eq-target-note" role="status">
             <Icon name="info" size={16} />
-            <span className="eq-target-txt">Questions you add go to <b>{target.label}</b> in your questionnaire</span>
+            {/* Opened for a follow-up (Logic dialog): what's added follows up
+                on that question, in the same banner the topic target uses. */}
+            {followUp
+              ? <span className="eq-target-txt">Questions you add become follow-ups to <b>“{followUp.triggerText}”</b>, asked right after it when the answer {followUp.when}</span>
+              : <span className="eq-target-txt">Questions you add go to <b>{target.label}</b> in your questionnaire</span>}
           </div>
         ) : null}
 
@@ -1669,7 +1673,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                       {gRes.questions.length + gRes.orgQuestions.length
                         + gRes.indirect.reduce((n, g) => n + g.questions.length, 0)}</span></div>
                     {gRes.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} hl={gqt} showTopic
-                      leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
+                      leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null} themeInfoFor={themeCountFor}
                       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
                     {gRes.orgQuestions.map(oq => (
@@ -1704,7 +1708,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                             <SelectAllTopic allOn={allOn} total={ids.length} ids={ids} onToggle={() => setMany(ids, !allOn)} />
                           </div>
                           {open && g.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
-                            leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
+                            leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null} themeInfoFor={themeCountFor}
                             onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
                             onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
                         </section>
@@ -1867,7 +1871,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                       <SelectAllTopic allOn={allOn} total={ids.length} ids={ids} onToggle={() => setMany(ids, !allOn)} />
                     </div>
                     {!isColl && g.items.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
-                      leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
+                      leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null} themeInfoFor={themeCountFor}
                       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
                   </section>
