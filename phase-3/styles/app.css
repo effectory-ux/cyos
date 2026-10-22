@@ -2293,10 +2293,15 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .bmq-who-ic { display: flex; flex: none; color: var(--content-info-secondary); }
 .bmq-who.is-some .sel-btn-name { font-weight: 500; }
 .infotag.is-logic { background: var(--bg-info-subtle); color: var(--content-info); }
-.tag-logic { display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-base); max-width: 140px;
-  padding: 2px 8px; font-size: 12px; font-weight: 500; line-height: 18px;
+/* The builder-row logic indicator: an icon tile the size of the question
+   type (24px qtile). Clicking it opens that question's logic. */
+.tag-logic-tile { width: 24px; height: 24px; border-radius: var(--radius-sm); display: grid; place-items: center;
+  flex: none; border: none; padding: 0; cursor: pointer;
   background: var(--bg-info-subtle); color: var(--content-info); }
-.tag-logic.is-broken { background: var(--bg-negative-subtle); color: var(--content-negative); }
+.tag-logic-tile:hover { box-shadow: inset 0 0 0 1px var(--border-info-subtle); }
+.tag-logic-tile svg { display: block; }
+.tag-logic-tile.is-broken { background: var(--bg-negative-subtle); color: var(--content-negative); }
+.tag-logic-tile.is-broken:hover { box-shadow: inset 0 0 0 1px var(--border-negative-subtle); }
 
 /* The back link sits on the close button's line (dialog padding 32, X at
    top 15, 28px tall — the negative margin centers both on one row). */

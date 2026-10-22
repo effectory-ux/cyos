@@ -411,8 +411,13 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
     if (Object.keys(qPatches).length + Object.keys(tPatches).length) onApply({ questions: qPatches, topics: tPatches });
     onClose();
   };
-  const hasRule = (key) => { const l = logicOf(key); return !!(l && (l.conditions || []).length); };
+  // hasAny sees every condition (the Remove-all sweep must catch half-made
+  // and broken ones too); hasRule is what earns a BADGE — at least one
+  // COMPLETE condition (subject and value both chosen), or a broken one that
+  // needs the red flag. A half-picked condition is editing, not a rule.
+  const hasAny = (key) => { const l = logicOf(key); return !!(l && (l.conditions || []).length); };
   const isBroken = (key) => logicBroken(logicOf(key), earlierFor(key));
+  const hasRule = (key) => activeConditions(logicOf(key), earlierFor(key)).length > 0 || isBroken(key);
   // Locked subjects: a required question, or a topic holding only required
   // questions — logic can't hide any of it, and the pane says why.
   const lockedFor = () => {
@@ -427,11 +432,11 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
   };
   // Remove all logic: stage a null for every rule, questions and topics both.
   // Save commits it; Cancel still walks away from the whole sweep.
-  const anyRule = questions.some(x => hasRule(x.id)) || sections.some(s => hasRule(tKey(s.key)));
+  const anyRule = questions.some(x => hasAny(x.id)) || sections.some(s => hasAny(tKey(s.key)));
   const removeAll = () => {
     const sweep = {};
-    questions.forEach(x => { if (hasRule(x.id)) sweep[x.id] = null; });
-    sections.forEach(s => { if (hasRule(tKey(s.key))) sweep[tKey(s.key)] = null; });
+    questions.forEach(x => { if (hasAny(x.id)) sweep[x.id] = null; });
+    sections.forEach(s => { if (hasAny(tKey(s.key))) sweep[tKey(s.key)] = null; });
     setLogicMap(m => ({ ...m, ...sweep }));
     setShowErrors(false);
   };
@@ -569,9 +574,12 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   const earlierFor = (id) => allQuestions.slice(0, orderIndex[id] ?? 0).filter(x => answerOptionsOf(x).length > 0);
   const changedLogicIds = Object.keys(logicMap)
     .filter(id => JSON.stringify(normLogic(logicMap[id])) !== JSON.stringify(baseLogicOf(id)));
+  // The field and the header chip only count COMPLETE conditions — subject
+  // and value both chosen. A half-picked condition is editing, not a rule.
   const ownLogic = normLogic(logicOf(q.id));
-  const hasLogic = !!ownLogic;
-  const logicLine = hasLogic ? logicSummary(ownLogic, earlierFor(q.id)) : "";
+  const liveOwn = activeConditions(ownLogic, earlierFor(q.id));
+  const hasLogic = liveOwn.length > 0;
+  const logicLine = hasLogic ? logicSummary({ conditions: liveOwn }, earlierFor(q.id)) : "";
   const [lang, setLang] = useState("en");
   // Same breakpoint as the custom-question dialog: below it the language list
   // can't sit next to the preview, so it becomes a select above it.
@@ -693,7 +701,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                   onClick={() => (logicInPlace ? setLogicFor(q.id) : onOpenLogic && onOpenLogic(q.id))}>
                   <span className="bmq-who-ic"><Icon name="split" size={16} /></span>
                   <span className="sel-btn-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {hasLogic ? `Some · ${ownLogic.conditions.length} ${ownLogic.conditions.length === 1 ? "condition" : "conditions"}` : "Everyone"}
+                    {hasLogic ? `Some · ${liveOwn.length} ${liveOwn.length === 1 ? "condition" : "conditions"}` : "Everyone"}
                   </span>
                   <span className="spacer" />
                   <Icon name="chevron-right" size={16} />

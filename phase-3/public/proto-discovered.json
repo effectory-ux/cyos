@@ -1,6 +1,6 @@
 {
-  "version": 916,
-  "savedAt": "2026-10-22T10:02:45.167Z",
+  "version": 932,
+  "savedAt": "2026-10-22T10:09:15.494Z",
   "editor": "Jamal van Rooijen",
   "entries": {
     "/projects/:n/survey-list": {
@@ -18,7 +18,7 @@
       "route": "/surveys/:id/questionnaire",
       "example": "#/surveys/s3/questionnaire",
       "label": "questionnaire",
-      "count": 596,
+      "count": 601,
       "firstSeen": "2026-09-04T09:29:29.255Z",
       "via": {
         "builder": true,
@@ -27,13 +27,13 @@
         "surveys": true,
         "logic-broken": true
       },
-      "lastSeen": "2026-10-22T10:02:10.795Z"
+      "lastSeen": "2026-10-22T10:09:14.688Z"
     },
     "/surveys/:id/questionnaire(dialog:question-settings/:arg)": {
       "route": "/surveys/:id/questionnaire(dialog:question-settings/:arg)",
       "example": "#/surveys/s3/questionnaire(dialog:question-settings/sos-2-1)",
       "label": "questionnaire · question-settings",
-      "count": 116,
+      "count": 121,
       "firstSeen": "2026-09-04T09:29:33.255Z",
       "via": {
         "question-settings": true,
@@ -42,7 +42,7 @@
         "topic-dialog": true,
         "translations": true
       },
-      "lastSeen": "2026-10-22T10:02:38.111Z"
+      "lastSeen": "2026-10-22T10:06:24.525Z"
     },
     "/surveys/:id/questionnaire(dialog:select-questions)": {
       "route": "/surveys/:id/questionnaire(dialog:select-questions)",
@@ -194,12 +194,12 @@
       "route": "/surveys/:id/questionnaire(dialog:question-logic/:arg)",
       "example": "#/surveys/s3/questionnaire(dialog:question-logic/sos-2-1)",
       "label": "questionnaire · question-logic",
-      "count": 25,
+      "count": 32,
       "firstSeen": "2026-10-19T14:41:19.530Z",
       "via": {
         "question-logic": true
       },
-      "lastSeen": "2026-10-22T10:02:44.361Z"
+      "lastSeen": "2026-10-22T10:09:13.135Z"
     }
   }
 }

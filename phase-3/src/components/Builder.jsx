@@ -183,7 +183,7 @@ function TopNav({ name, onRename, compact, mobile }) {
   );
 }
 
-function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, pulsing, onSeen, themeInfo, onOpenTheme, onDragStart, onDragEnd, logic }) {
+function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, pulsing, onSeen, themeInfo, onOpenTheme, onDragStart, onDragEnd, logic, onOpenLogic }) {
   const [menu, setMenu] = useState(false);
   // "Move to topic" opens a nested submenu BESIDE the menu (DS pattern: a
   // trailing .menu-chevron item flying out a second .menu) instead of swapping
@@ -236,18 +236,22 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
           ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-left"
               onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
           : q.custom ? <CustomTag pos="is-left" onOpen={() => onEdit && onEdit(q)} /> : null}
-        {/* Question logic: this row shows only for some participants — say so
-            here, and state the rule on hover. The row click opens the dialog. */}
+        {/* Question logic: an icon tile the size of the question type — the
+            rule rides in its tooltip, clicking it opens this question's
+            logic. Red when the rule broke. */}
         {logic && (
           <Tooltip pos="is-left" float label={logic.broken ? <>
             <span className="tt-title">Broken logic</span>
-            It points to a question that was removed or now comes later. Open the question to fix it.
+            It points to a question that was removed or now comes later. Click to fix it.
           </> : <>
             <span className="tt-title">Shows conditionally</span>
             {logic.line}
           </>}>
-            <span className={"tag tag-logic" + (logic.broken ? " is-broken" : "")}>
-              <Icon name="split" size={12} /><span className="tag-ellip">Logic</span></span>
+            <button type="button" className={"tag-logic-tile" + (logic.broken ? " is-broken" : "")}
+              aria-label={"Logic: " + (logic.broken ? "broken" : logic.line)}
+              onClick={() => onOpenLogic && onOpenLogic(q)}>
+              <Icon name="split" size={16} />
+            </button>
           </Tooltip>
         )}
         {q.required && <RequiredMarker size={24} />}
@@ -1669,6 +1673,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                   const shown = previewItems(s);
                   const isDragged = !!drag && drag.kind === "q" && drag.id === qq.id;
                   return <BuilderRow key={qq.id} q={qq} logic={logicInfoFor(qq)} slotH={isDragged && liftSrc.current ? liftSrc.current.height : null}
+                    onOpenLogic={(qq2) => (logicInPlace ? setSettingsQId(qq2.id) : setLogicQId(qq2.id))}
                     order={slotAt != null ? (i >= slotAt ? i + 1 : i) : shown === s.items ? undefined : shown.indexOf(qq)}
                     away={isDragged && !!qHint && qHint.secKey !== s.key} meta={qMeta[qq.id]} tr={tr} showDesc={showDesc}
                     onRemove={onRemoveQuestion} onEdit={onEditCustom} dragging={!!drag && drag.kind === "q" && drag.id === qq.id}
