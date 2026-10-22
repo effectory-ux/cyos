@@ -2277,24 +2277,25 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 
 
 
-/* ---- Question logic (conditional visibility) ------------------------------
-   The dialog carries a one-line summary row with the other settings; editing
-   happens in a dialog takeover (.lgc-*) so stacked conditions get full room.
-   Amber = "some participants skip this", matching the builder row tag. */
-/* The "Who gets it" field: a door to the logic takeover. Set state shows the
-   amber eye + a condition count; the summary sentence rides in its tooltip.
-   The selects row may wrap so the third field never crushes the others. */
+/* ---- Logic (conditional visibility) ----------------------------------------
+   The question dialog carries a one-line summary field; editing happens in
+   the Logic dialog (.lgc-*) so stacked conditions get full room. */
+/* The Logic field: a door to the logic editor. The split icon is always
+   blue; a set rule shows a condition count, the summary sentence rides in
+   its tooltip. The selects row may wrap so the third field never crushes
+   the others. */
 .bmq-selects { flex-wrap: wrap; }
 .bmq-selects .bmq-field { flex: 1 1 0; min-width: 200px; }
 .bmq-who-tt { display: block; }
 .bmq-who { width: 100%; }
-.bmq-who-ic { display: flex; flex: none; color: var(--content-warning); }
-.bmq-who-ic.is-none { color: var(--content-secondary); }
+/* Logic is BLUE everywhere (Jamal: "just make the logic icon always blue");
+   broken logic is the one red exception. */
+.bmq-who-ic { display: flex; flex: none; color: var(--content-info-secondary); }
 .bmq-who.is-some .sel-btn-name { font-weight: 500; }
-.infotag.is-logic { background: var(--bg-warning-subtle); color: var(--content-warning); }
+.infotag.is-logic { background: var(--bg-info-subtle); color: var(--content-info); }
 .tag-logic { display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-base); max-width: 140px;
   padding: 2px 8px; font-size: 12px; font-weight: 500; line-height: 18px;
-  background: var(--bg-warning-subtle); color: var(--content-warning); }
+  background: var(--bg-info-subtle); color: var(--content-info); }
 .tag-logic.is-broken { background: var(--bg-negative-subtle); color: var(--content-negative); }
 
 /* The back link sits on the close button's line (dialog padding 32, X at
@@ -2311,7 +2312,7 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
    group. Badges: green = the question's own rule, blue = the topic's rule,
    pale blue = inherited from the topic. */
 .lgc-dialog { padding: 0; gap: 0; }
-.lgc-dialog .dialog-close-tt { top: 28px; right: 16px; }
+.lgc-dialog .dialog-close-tt { top: 36px; right: 24px; }
 .lgc-layout { flex: 1; min-height: 0; display: flex; }
 .lgc-rail { flex: none; width: 280px; display: flex; flex-direction: column; gap: 4px;
   padding: 0 24px 24px; border-right: 1px solid var(--border-base);
@@ -2331,7 +2332,7 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .lgc-q-mark { flex: none; display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 4px; color: var(--content-secondary); }
 .lgc-q-mark svg { display: block; }
-.lgc-q-mark.is-own { background: var(--content-positive-secondary); color: var(--content-on-brand-base); }
+.lgc-q-mark.is-own { background: var(--bg-info); color: var(--content-on-brand-base); }
 .lgc-q-mark.is-topic-rule { background: var(--bg-info); color: var(--content-on-brand-base);
   border: 1px solid var(--border-white); }
 .lgc-q-mark.is-inherit { background: var(--bg-info-subtle); color: var(--bg-info);
@@ -2340,8 +2341,8 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
   border: 1px solid var(--border-white); }
 .lgc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--spacing-base); padding: 2px; }
 .lgc-dialog .lgc-main { padding: 36px 32px; gap: 32px; }
-.lgc-subject { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-primary); margin: 0; }
-.lgc-dialog .lgc-subject { padding-right: 40px; }
+.lgc-subject { font-size: 20px; font-weight: 600; line-height: 28px; color: var(--content-primary); margin: 0; }
+.lgc-dialog .lgc-subject { padding-right: 48px; }
 .lgc-card { background: var(--bg-tertiary); border: 1px solid transparent; border-radius: 12px;
   padding: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
 .lgc-card.is-invalid { border-color: var(--border-negative); }
@@ -2361,15 +2362,7 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
    spread over the pane's 32px rhythm. */
 .lgc-main > .lgc-hint { margin-top: -16px; }
 .lgc-main > .lgc-reset { margin-top: -8px; }
-/* A question under a ruled topic says where its visibility comes from. */
-.lgc-inherit { display: flex; align-items: flex-start; gap: 8px;
-  font-size: 14px; line-height: 22.4px; color: var(--content-secondary); }
-.lgc-main > .lgc-inherit { margin-top: -20px; }
-.lgc-inherit .lgc-q-mark { margin-top: 1px; }
-.lgc-inherit b { color: var(--content-primary); font-weight: 600; }
-.lgc-inherit-edit { border: none; background: none; padding: 0; font: inherit; font-size: 14px;
-  font-weight: 500; color: var(--content-brand-base); cursor: pointer; }
-.lgc-inherit-edit:hover { text-decoration: underline; }
-.lgc-locked { font-size: 14px; line-height: 22.4px; color: var(--content-secondary); padding: 8px 0; }
-.lgc-locked b { color: var(--content-primary); font-weight: 600; }
+/* The inherited-from-the-topic note and the locked explanation are DS inline
+   notifications; in the big pane they sit close under the heading. */
+.lgc-dialog .lgc-main > .inline-notif { margin-top: -16px; }
 .lgc-dialog .dialog-footer { padding: 16px 24px; border-top: 1px solid var(--border-base); }

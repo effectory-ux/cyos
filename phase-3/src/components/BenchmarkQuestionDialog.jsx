@@ -199,7 +199,7 @@ const OP_ITEMS = [{ value: "is", label: "Is" }, { value: "not", label: "Is not" 
 // since topics became selectable in the rail — a whole topic (`noun` keeps the
 // copy honest). `onChange` gets the whole normalized logic (or null when both
 // cards sit on their neutral option).
-function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, onChange }) {
+function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, locked, onChange }) {
   const answer = conditionOfType(logic, "answer");
   const audience = conditionOfType(logic, "attribute");
   const emit = (a, b) => {
@@ -209,23 +209,38 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
   const setAnswer = (next) => emit(next, audience);
   const setAudience = (next) => emit(answer, next);
   // The topic's rule reaches every question under it — say so on the question
-  // itself, with where it comes from and a way to the topic's own pane.
+  // itself (a DS inline notification), with where it comes from and a way to
+  // the topic's own pane.
   const inheritNote = inherited && (
-    <div className="lgc-inherit">
-      <span className="lgc-q-mark is-inherit"><Icon name="split" size={14} /></span>
-      <span>
-        From the topic <b>“{inherited.name}”</b>: {inherited.line.charAt(0).toLowerCase() + inherited.line.slice(1)}.
-        {inherited.onEdit && <> <button type="button" className="lgc-inherit-edit" onClick={inherited.onEdit}>Edit topic logic</button></>}
-      </span>
+    <div className="inline-notif is-info is-one-liner">
+      <img className="inline-notif-icon" alt="" width="24" height="24" src="assets/icons/notification-information.svg" />
+      <div className="inline-notif-content">
+        <div className="inline-notif-text">
+          From the topic <b>“{inherited.name}”</b>: {inherited.line.charAt(0).toLowerCase() + inherited.line.slice(1)}.
+        </div>
+        {inherited.onEdit && (
+          <div className="inline-notif-actions">
+            <button type="button" className="link-inline" onClick={inherited.onEdit}>Edit topic logic</button>
+          </div>
+        )}
+      </div>
     </div>
   );
-  if (selected.required) {
+  // Locked subjects (a required question, a topic of only required questions)
+  // get the why as an inline notification instead of empty condition cards.
+  if (locked) {
     return (
       <>
         <h3 className="lgc-subject">{selected.text}</h3>
         {inheritNote}
-        <div className="lgc-locked">
-          <b>Everyone gets this question.</b> It's required by the organization, so logic can't hide it.
+        <div className="inline-notif is-info">
+          <img className="inline-notif-icon" alt="" width="24" height="24" src="assets/icons/notification-information.svg" />
+          <div className="inline-notif-content">
+            <div className="inline-notif-text">
+              <span className="inline-notif-title">{locked.title}</span>
+              <span className="inline-notif-msg">{locked.msg}</span>
+            </div>
+          </div>
         </div>
       </>
     );
@@ -324,7 +339,9 @@ function LogicEditor({ q, logic, onChange, earlier, inherited, onClose }) {
         <p className="dialog-subtitle">Decide who gets this question. Changes are saved with the question.</p>
       </div>
       <div className="lgc-main scroll-y">
-        <LogicRulePane selected={q} logic={logic} earlier={earlier} inherited={inherited} showErrors={showErrors} onChange={onChange} />
+        <LogicRulePane selected={q} logic={logic} earlier={earlier} inherited={inherited} showErrors={showErrors}
+          locked={q.required ? { title: "Everyone gets this question", msg: "It's required by the organization, so logic can't hide it." } : null}
+          onChange={onChange} />
       </div>
       <div className="dialog-footer">
         <div className="spacer" />
@@ -396,6 +413,28 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
   };
   const hasRule = (key) => { const l = logicOf(key); return !!(l && (l.conditions || []).length); };
   const isBroken = (key) => logicBroken(logicOf(key), earlierFor(key));
+  // Locked subjects: a required question, or a topic holding only required
+  // questions — logic can't hide any of it, and the pane says why.
+  const lockedFor = () => {
+    if (section) {
+      return section.items.length > 0 && section.items.every(x => x.required)
+        ? { title: "Everyone gets this topic", msg: "All its questions are required by the organization, so logic can't hide them." }
+        : null;
+    }
+    return selected.required
+      ? { title: "Everyone gets this question", msg: "It's required by the organization, so logic can't hide it." }
+      : null;
+  };
+  // Remove all logic: stage a null for every rule, questions and topics both.
+  // Save commits it; Cancel still walks away from the whole sweep.
+  const anyRule = questions.some(x => hasRule(x.id)) || sections.some(s => hasRule(tKey(s.key)));
+  const removeAll = () => {
+    const sweep = {};
+    questions.forEach(x => { if (hasRule(x.id)) sweep[x.id] = null; });
+    sections.forEach(s => { if (hasRule(tKey(s.key))) sweep[tKey(s.key)] = null; });
+    setLogicMap(m => ({ ...m, ...sweep }));
+    setShowErrors(false);
+  };
   // What the selected question inherits from its topic's rule, if any —
   // shown on the question's pane with a hop to the topic.
   const inheritedFor = () => {
@@ -495,10 +534,12 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
           </div>
           <div className="lgc-main scroll-y">
             <LogicRulePane selected={selected} logic={logic} earlier={earlierFor(selKey)}
-              noun={section ? "topic" : "question"} inherited={inheritedFor()} showErrors={showErrors} onChange={update} />
+              noun={section ? "topic" : "question"} inherited={inheritedFor()} locked={lockedFor()}
+              showErrors={showErrors} onChange={update} />
           </div>
         </div>
         <div className="dialog-footer">
+          {anyRule && <button className="btn btn-tertiary" onClick={removeAll}>Remove all logic</button>}
           <div className="spacer" />
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={save}>Save</button>
@@ -650,7 +691,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               <Tooltip label={hasLogic ? logicLine : "Show this question only after a chosen answer, or only to some employees"} wrapClass="bmq-who-tt">
                 <button type="button" className={"sel-btn bmq-who" + (hasLogic ? " is-some" : "")} aria-haspopup="dialog"
                   onClick={() => (logicInPlace ? setLogicFor(q.id) : onOpenLogic && onOpenLogic(q.id))}>
-                  <span className={"bmq-who-ic" + (hasLogic ? "" : " is-none")}><Icon name="split" size={16} /></span>
+                  <span className="bmq-who-ic"><Icon name="split" size={16} /></span>
                   <span className="sel-btn-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {hasLogic ? `Some · ${ownLogic.conditions.length} ${ownLogic.conditions.length === 1 ? "condition" : "conditions"}` : "Everyone"}
                   </span>
