@@ -1,6 +1,6 @@
 {
-  "version": 959,
-  "savedAt": "2026-10-22T10:53:13.867Z",
+  "version": 961,
+  "savedAt": "2026-10-22T11:43:32.413Z",
   "editor": "Jamal van Rooijen",
   "entries": {
     "/projects/:n/survey-list": {
@@ -18,7 +18,7 @@
       "route": "/surveys/:id/questionnaire",
       "example": "#/surveys/s3/questionnaire",
       "label": "questionnaire",
-      "count": 613,
+      "count": 614,
       "firstSeen": "2026-09-04T09:29:29.255Z",
       "via": {
         "builder": true,
@@ -27,7 +27,7 @@
         "surveys": true,
         "logic-broken": true
       },
-      "lastSeen": "2026-10-22T10:53:13.061Z"
+      "lastSeen": "2026-10-22T11:43:19.638Z"
     },
     "/surveys/:id/questionnaire(dialog:question-settings/:arg)": {
       "route": "/surveys/:id/questionnaire(dialog:question-settings/:arg)",
@@ -192,14 +192,14 @@
     },
     "/surveys/:id/questionnaire(dialog:question-logic/:arg)": {
       "route": "/surveys/:id/questionnaire(dialog:question-logic/:arg)",
-      "example": "#/surveys/s3/questionnaire(dialog:question-logic/t%3AJob%20satisfaction)",
+      "example": "#/surveys/s3/questionnaire(dialog:question-logic/sos-2-1)",
       "label": "questionnaire · question-logic",
-      "count": 48,
+      "count": 49,
       "firstSeen": "2026-10-19T14:41:19.530Z",
       "via": {
         "question-logic": true
       },
-      "lastSeen": "2026-10-22T10:52:56.649Z"
+      "lastSeen": "2026-10-22T11:43:31.607Z"
     }
   }
 }
