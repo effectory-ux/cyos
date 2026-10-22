@@ -409,7 +409,7 @@ const EMPTY_DRAG_IMG = typeof Image !== "undefined"
 // the topics only make their entrance the first time.
 const entranceSeen = new Set();
 
-export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onAddQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, onConfirmTranslation, edges = {}, openDialog, onDialogChange, addAtBottom = false, pagesRail = false, introTextColor = false, introTextBox = false, whiteTopics = false, logicInPlace = false, focusQuestion }) {
+export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onAddQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, onConfirmTranslation, edges = {}, openDialog, onDialogChange, addAtBottom = false, pagesRail = false, introTextColor = false, introTextBox = false, whiteTopics = false, logicInPlace = false, logicButton = false, focusQuestion }) {
   const { name, design: designId, selectedIds, pool, topicMeta = {}, customTopics = [], keptTopics = [], qMeta = {}, i18nEdits = {}, i18nStale = {}, intro = {} } = survey;
   // Below this the questionnaire page tightens: step labels go, the page
   // padding and the gaps between cards shrink, "Edit name" becomes an icon.
@@ -493,7 +493,11 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     // The standalone logic dialog opens over the question's own dialog; the
     // in-place variant has no dialog of its own, so the settings dialog is
     // the honest restore there.
-    else if (dialog === "question-logic" && arg) { setSettingsQId(arg); if (!logicInPlace) setLogicQId(arg); }
+    else if (dialog === "question-logic" && arg) {
+      // A topic's logic ("t:<key>") has no question dialog underneath.
+      if (arg.startsWith("t:")) setLogicQId(arg);
+      else { setSettingsQId(arg); if (!logicInPlace) setLogicQId(arg); }
+    }
     else if (dialog === "topic" && arg) setTopicDialog({ key: arg });
     else if (dialog === "add-topic") setTopicDialog({ creating: true });
     // Next step pressed with an empty topic (the toolbar's screen for it).
@@ -1131,10 +1135,9 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     if (!live.length && !broken) return null;
     return { count: live.length, broken, line: live.length ? logicSummary({ ...rule, conditions: live }, earlier) : "" };
   };
-  // What a question inherits from its topic's rule — the in-place logic
-  // editor shows it with the question, same note as the standalone dialog.
-  const topicLogicInfoFor = (qq) => {
-    const key = effTopic(qq);
+  // A topic's rule, summarized for its header tile and for the questions
+  // that inherit it (the in-place logic editor's origin note).
+  const topicLogicInfo = (key) => {
     const rule = (topicMeta[key] || {}).logic;
     if (!rule) return null;
     const sec = visibleSections.find(s => s.key === key);
@@ -1142,8 +1145,13 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     const earlier = (first ? flatOrder.slice(0, orderIndex[first.id] ?? 0) : flatOrder)
       .filter(x => answerOptionsOf(x).length > 0);
     const live = activeConditions(rule, earlier);
-    if (!live.length) return null;
-    return { name: topicName(key), line: logicSummary({ conditions: live }, earlier) };
+    const broken = logicBroken(rule, earlier);
+    if (!live.length && !broken) return null;
+    return { name: topicName(key), broken, line: live.length ? logicSummary({ conditions: live }, earlier) : "" };
+  };
+  const topicLogicInfoFor = (qq) => {
+    const i = topicLogicInfo(effTopic(qq));
+    return i && i.line ? { name: i.name, line: i.line } : null;
   };
   // A topic being dragged: the order the topics show in meanwhile (the
   // lifted one at its slot), as flex order on the list.
@@ -1411,6 +1419,14 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
               (compare designs in quick succession); it closes on outside
               click or the button itself. The Add menu stays an action menu —
               its items navigate, so it closes. */}
+          {/* Variant: a Logic button in the bar, next to Design — the other
+              way into the logic dialog (it opens on the first question). */}
+          {logicButton && (
+            <button className="btn btn-secondary" title={compact ? "Logic" : undefined} aria-label="Logic"
+              aria-haspopup="dialog" onClick={() => flatOrder.length && setLogicQId(flatOrder[0].id)}>
+              <Icon name="split" size={16} /><span className="ctxbar-btn-lbl">Logic</span>
+            </button>
+          )}
           <div className="ctxbar-menu-wrap">
             <button className={"btn btn-secondary" + (barMenu === "design" ? " is-pressed" : "")}
               title={compact ? "Design" : undefined} aria-label="Design"
@@ -1608,6 +1624,29 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     <Icon name="plus" size={16} /><span className="qsec-head-add-lbl">Add questions</span>
                   </button>
                 ), true)}
+                {/* The topic's own logic, between Add questions and the topic
+                    menu — same tile as the question rows, opens the dialog on
+                    this topic. */}
+                {(() => {
+                  const tl = topicLogicInfo(s.key);
+                  return tl && (
+                    <span className="qsec-logic-wrap">
+                      <Tooltip pos="is-left" float label={tl.broken ? <>
+                        <span className="tt-title">Broken logic</span>
+                        It points to a question that was removed or now comes later. Click to fix it.
+                      </> : <>
+                        <span className="tt-title">Shows conditionally</span>
+                        {tl.line}
+                      </>}>
+                        <button type="button" className={"tag-logic-tile" + (tl.broken ? " is-broken" : "")}
+                          aria-label={"Topic logic: " + (tl.broken ? "broken" : tl.line)}
+                          onClick={() => setLogicQId("t:" + s.key)}>
+                          <Icon name="split" size={16} />
+                        </button>
+                      </Tooltip>
+                    </span>
+                  );
+                })()}
                 <div className="qsec-menu-wrap">
                   <Tooltip label="Topic actions" pos="is-right"><button className="ib ib-36 ib-tertiary" aria-label="Topic actions" aria-haspopup="menu" aria-expanded={menuKey === s.key}
                     draggable={false} onDragStart={e => e.preventDefault()}

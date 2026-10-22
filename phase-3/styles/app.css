@@ -2250,8 +2250,8 @@ html[data-theme="dark"] .col.has-topic-tint { --topic-wash-hover: rgba(255,255,2
    on the lifted copy), and they come back once it is dropped. */
 .qsec-drag-count { display: none; font-size: 14px; font-weight: 500; color: var(--content-secondary); white-space: nowrap; padding-right: var(--spacing-tight); }
 .qsec.is-dragging .qsec-drag-count, .drag-lift.is-topic .qsec-drag-count { display: inline; }
-.qsec.is-dragging .qsec-head-add-wrap, .qsec.is-dragging .qsec-menu-wrap,
-.drag-lift.is-topic .qsec-head-add-wrap, .drag-lift.is-topic .qsec-menu-wrap { display: none; }
+.qsec.is-dragging .qsec-head-add-wrap, .qsec.is-dragging .qsec-menu-wrap, .qsec.is-dragging .qsec-logic-wrap,
+.drag-lift.is-topic .qsec-head-add-wrap, .drag-lift.is-topic .qsec-menu-wrap, .drag-lift.is-topic .qsec-logic-wrap { display: none; }
 
 
 /* The question dialog's tags are buttons: Benchmarked explains itself. */
@@ -2293,15 +2293,17 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .bmq-who-ic { display: flex; flex: none; color: var(--content-info-secondary); }
 .bmq-who.is-some .sel-btn-name { font-weight: 500; }
 .infotag.is-logic { background: var(--bg-info-subtle); color: var(--content-info); }
-/* The builder-row logic indicator: an icon tile the size of the question
-   type (24px qtile). Clicking it opens that question's logic. */
+/* The builder logic indicator (question rows and topic headers): an icon
+   tile the size of the question type (24px qtile), in the SAME filled blue
+   as the dialog's rail badge. Clicking it opens that subject's logic. */
 .tag-logic-tile { width: 24px; height: 24px; border-radius: var(--radius-sm); display: grid; place-items: center;
   flex: none; border: none; padding: 0; cursor: pointer;
-  background: var(--bg-info-subtle); color: var(--content-info); }
-.tag-logic-tile:hover { box-shadow: inset 0 0 0 1px var(--border-info-subtle); }
+  background: var(--bg-info); color: var(--content-on-brand-base); }
+.tag-logic-tile:hover { background: var(--bg-info-hover); }
 .tag-logic-tile svg { display: block; }
-.tag-logic-tile.is-broken { background: var(--bg-negative-subtle); color: var(--content-negative); }
-.tag-logic-tile.is-broken:hover { box-shadow: inset 0 0 0 1px var(--border-negative-subtle); }
+.tag-logic-tile.is-broken { background: var(--bg-negative); }
+.tag-logic-tile.is-broken:hover { background: var(--bg-negative-hover); }
+.qsec-logic-wrap { display: flex; flex: none; }
 
 /* The back link sits on the close button's line (dialog padding 32, X at
    top 15, 28px tall — the negative margin centers both on one row). */
@@ -2339,8 +2341,6 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .lgc-q-mark svg { display: block; }
 .lgc-q-mark.is-own { background: var(--bg-info); color: var(--content-on-brand-base); }
 .lgc-q-mark.is-topic-rule { background: var(--bg-info); color: var(--content-on-brand-base);
-  border: 1px solid var(--border-white); }
-.lgc-q-mark.is-inherit { background: var(--bg-info-subtle); color: var(--bg-info);
   border: 1px solid var(--border-white); }
 .lgc-q-mark.is-broken { background: var(--bg-negative); color: var(--content-on-brand-base);
   border: 1px solid var(--border-white); }

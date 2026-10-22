@@ -42,7 +42,9 @@ export const USE_CASES = [
 // wins, it becomes the default and leaves this list.
 export const VARIANTS = [
   { key: "logicInPlace", label: "Question logic inside the question dialog",
-    desc: "Off (default) = Who gets it opens its own Question logic dialog: every question on a rail, set logic for several in one visit, with its own Save. On = the question dialog flips in place to just this question's logic, saved with the question." },
+    desc: "Off (default) = the Logic field opens its own Logic dialog: every question on a rail, set logic for several in one visit, with its own Save. On = the question dialog flips in place to just this question's logic, saved with the question." },
+  { key: "logicButton", label: "Logic button in the questionnaire bar",
+    desc: "Off (default) = logic is reached from a question's dialog or its row tile. On = a Logic button next to Design opens the logic dialog directly." },
   { key: "addAtBottom", label: "Add questions at the bottom of each topic",
     desc: "Off (default) = an Add questions button in each topic's header. On = the previous design: an Add questions row as each topic's last row." },
   { key: "pagesRail", label: "Survey pages panel",

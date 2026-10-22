@@ -49,7 +49,7 @@ export function App() {
   // Design variants (toolbar): flip between candidate designs live.
   // The sidebar dialog (Figma 6316:27977) is the default now; flipping the
   // variant off brings the old tabbed dialog back for comparison.
-  const [variantsOn, setVariantsOn] = useState({ dialogGrouped: false, checkWarnsOnly: false, addAtBottom: false, pagesRail: false, introTextColor: false, introTextBox: false, whiteTopics: false, logicInPlace: false });
+  const [variantsOn, setVariantsOn] = useState({ dialogGrouped: false, checkWarnsOnly: false, addAtBottom: false, pagesRail: false, introTextColor: false, introTextBox: false, whiteTopics: false, logicInPlace: false, logicButton: false });
   const toggleVariant = (key) => setVariantsOn(v => ({ ...v, [key]: !v[key] }));
   const [newCustom, setNewCustom] = useState(false); // create-from-builder ("Add" menu)
   const [addNotice, setAddNotice] = useState(null); // what the last Add from the library put in
@@ -672,7 +672,7 @@ export function App() {
       {screen === "surveys" && <Sidebar />}
       {screen === "surveys"
         ? <SurveysPage rows={surveysList} onCreate={() => setModal(true)} onDeleteDraft={deleteSurvey} onOpen={openSurvey} />
-        : <Builder survey={survey} focusQuestion={focusQ} addAtBottom={variantsOn.addAtBottom} pagesRail={variantsOn.pagesRail} introTextColor={variantsOn.introTextColor} introTextBox={variantsOn.introTextBox} whiteTopics={variantsOn.whiteTopics} logicInPlace={variantsOn.logicInPlace} onDetachQuestion={detachQuestion} onEditQuestions={(tab, target) => { setEditTab(tab || "questions"); setEditTarget(target || null); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
+        : <Builder survey={survey} focusQuestion={focusQ} addAtBottom={variantsOn.addAtBottom} pagesRail={variantsOn.pagesRail} introTextColor={variantsOn.introTextColor} introTextBox={variantsOn.introTextBox} whiteTopics={variantsOn.whiteTopics} logicInPlace={variantsOn.logicInPlace} logicButton={variantsOn.logicButton} onDetachQuestion={detachQuestion} onEditQuestions={(tab, target) => { setEditTab(tab || "questions"); setEditTarget(target || null); setEditing(true); }} onExit={() => { setScreen("surveys"); }}
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveQuestionTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions} onAddQuestions={addQuestionsToSurvey}
