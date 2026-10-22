@@ -219,7 +219,10 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
   };
   const followUpBlock = onStartFollowUp ? (
     <div className="lgc-fu">
-      <div className="lgc-fu-title">Follow-up questions</div>
+      <div className="lgc-sec-head">
+        <div className="lgc-sec-title">Trigger follow-up questions</div>
+        <p className="lgc-sec-desc">Follow-up questions are linked to this question and come right after it.</p>
+      </div>
       {(followUps || []).map(f => (
         <button key={f.id} type="button" className="lgc-fu-row" onClick={() => onOpenFollowUp && onOpenFollowUp(f.id)}>
           <span className="lgc-q-mark is-own"><Icon name="split" size={14} /></span>
@@ -242,7 +245,7 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
               onToggle={(i) => { setFuErr(null); setFuPicked(cur => (cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i].sort((a, b) => a - b))); }} />
           </div>
           {fuErr && <span className="lgc-err">{fuErr}</span>}
-          <span className="lgc-hint">The follow-up question comes right after this one. Choose it from the question library, or write your own.</span>
+          <span className="lgc-hint">Choose the follow-up question from the question library, or write your own.</span>
           <div className="lgc-fu-actions">
             <button type="button" className="btn btn-tertiary" onClick={closeFu}>Cancel</button>
             <span className="spacer" />
@@ -340,16 +343,28 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
     earlierItems.push({ value: x.id, label: x.text, lead: <QTypeIcon type={x.type} size={16} />,
       disabled: !!x._cond, sub: x._cond ? "Shown conditionally — remove its logic first" : undefined });
   });
+  // A follow-up's answer condition speaks the follow-up language (the same
+  // fact as the trigger's list): its question is fixed — it IS the link —
+  // only the answers can change. Reset logic unlinks it.
+  const isFollowUp = !!(answer && answer.followUp && trigger && !answerBroken);
   return (
     <>
       {head}
       {inheritNote}
+      <div className="lgc-sec">
+      <div className="lgc-sec-title">Conditions to show this {noun}</div>
       <div className={"lgc-card" + (answerErr ? " is-invalid" : "")}>
-        <div className="lgc-card-lbl">Answer to an earlier question</div>
-        <MiniSelect ariaLabel="Earlier question" value={answer ? answer.trigger : ""} block
-          placeholder={answerBroken ? "Question no longer available" : undefined}
-          items={earlierItems}
-          onChange={(id) => setAnswer(id ? { type: "answer", trigger: id, op: (answer && answer.op) || "is", answers: [] } : null)} />
+        {isFollowUp ? (
+          <div className="lgc-card-lbl is-followup"><Icon name="split" size={14} />Follow-up to “{trigger.text}”</div>
+        ) : (
+          <>
+            <div className="lgc-card-lbl">Answer to an earlier question</div>
+            <MiniSelect ariaLabel="Earlier question" value={answer ? answer.trigger : ""} block
+              placeholder={answerBroken ? "Question no longer available" : undefined}
+              items={earlierItems}
+              onChange={(id) => setAnswer(id ? { type: "answer", trigger: id, op: (answer && answer.op) || "is", answers: [] } : null)} />
+          </>
+        )}
         {answer && trigger && (
           <div className="lgc-row">
             <MiniSelect ariaLabel="Is or is not" value={answer.op || "is"} items={OP_ITEMS}
@@ -361,6 +376,9 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
               }} />
           </div>
         )}
+        {isFollowUp && <span className="lgc-hint">{(answer.answers || []).length
+          ? "It comes right after that question when the answer matches."
+          : "Choose the answers that trigger this follow-up question."}</span>}
         {earlier.length === 0 && !answer && (
           <span className="lgc-hint">Nothing comes before this {noun} yet, so there is no earlier answer to use.</span>
         )}
@@ -384,6 +402,7 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
           </div>
         )}
         {audienceErr && <span className="lgc-err">{audienceErr}</span>}
+      </div>
       </div>
       {answer && audience && <span className="lgc-hint">Both must match for the {noun} to show.</span>}
       {(answer || audience) && (
@@ -517,7 +536,8 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
   // needs the red flag. A half-picked condition is editing, not a rule.
   const hasAny = (key) => { const l = logicOf(key); return !!(l && (l.conditions || []).length); };
   const isBroken = (key) => logicBroken(logicOf(key), earlierFor(key));
-  const hasRule = (key) => activeConditions(logicOf(key), earlierFor(key)).length > 0 || isBroken(key);
+  const hasRule = (key) => activeConditions(logicOf(key), earlierFor(key)).length > 0 || isBroken(key)
+    || !!(conditionOfType(logicOf(key), "answer") || {}).followUp;
   // Locked subjects: a required question, or a topic holding only required
   // questions — logic can't hide any of it, and the pane says why.
   const lockedFor = () => {
@@ -530,14 +550,16 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
       ? { title: "Everyone gets this question", msg: "It's required by the organization, so logic can't hide it." }
       : null;
   };
-  // The selected question's follow-ups: every question whose answer condition
-  // points at it — the forward view of the same rules, hop-able.
+  // The selected question's follow-ups: the questions LINKED to it (made as
+  // its follow-ups) — the forward view of their rules, hop-able. A question
+  // that merely looks back at this one's answer, further on, is a condition
+  // of its own, not a follow-up.
   const followUpsFor = () => {
     if (section) return null;
     const opts = answerOptionsOf(selected);
     return questions.filter(x => {
       const a = conditionOfType(logicOf(x.id), "answer");
-      return a && a.trigger === selKey;
+      return a && a.followUp && a.trigger === selKey;
     }).map(x => {
       const a = conditionOfType(logicOf(x.id), "answer");
       const picked = (a.answers || []).map(i => opts[i]).filter(Boolean).join(" or ");
@@ -667,7 +689,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
                 ? { kind: "topic", count: section.items.length, desc: section.desc }
                 : { kind: "question", desc: selected._desc }}
               followUps={followUpsFor()} canFollowUp={!followUpBlockedWhy()} followUpBlocked={followUpBlockedWhy()}
-              onStartFollowUp={!section && onStartFollowUp ? launchFollowUp : undefined}
+              onStartFollowUp={!section && onStartFollowUp && !(conditionOfType(logic, "answer") || {}).followUp ? launchFollowUp : undefined}
               onOpenFollowUp={hop}
               showErrors={showErrors} onChange={update} />
           </div>

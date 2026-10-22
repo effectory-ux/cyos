@@ -3,14 +3,15 @@
 // A question's rule lives in qMeta[id].logic, deliberately small (Jamal:
 // "nothing more, nothing less"): at most ONE condition of each kind —
 //   { conditions: [
-//       { type: "answer",    trigger: <qId>, op: "is"|"not", answers: [<index>…] },
+//       { type: "answer",    trigger: <qId>, op: "is"|"not", answers: [<index>…], followUp?: true },
 //       { type: "attribute", attribute: <key>, op: "is"|"not", values: [<index>…] } ] }
 // An answer condition points BACKWARDS only — its trigger must be an earlier
 // question in the questionnaire (a participant answers it first). An
 // attribute condition reads the employee data (characteristics.js). Within a
 // condition the chosen answers/values are OR ("is" any of them, or "is not"
 // any of them); when both conditions exist, both must hold. One rule per
-// question.
+// question. `followUp` marks a FOLLOW-UP question: made from its trigger,
+// linked to it — it always comes right after the trigger, in its topic.
 import { answerOptionsOf } from "./data.js";
 import { characteristicOf } from "./characteristics.js";
 

@@ -2395,9 +2395,16 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .lgc-reset { align-self: flex-start; }
 /* Follow-up questions: the forward flow. Rows are doors to the follow-up's
    own pane; the add-form reuses the condition-card look. */
-.lgc-fu { display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
-  padding-top: 16px; border-top: 1px solid var(--border-base); }
-.lgc-fu-title { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-primary); }
+.lgc-fu { display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
+  padding-top: 24px; border-top: 1px solid var(--border-base); }
+/* The pane's two sections say what they DO: conditions to show this question,
+   and the follow-ups it triggers. */
+.lgc-sec { display: flex; flex-direction: column; gap: 12px; }
+.lgc-sec-head { display: flex; flex-direction: column; gap: 2px; }
+.lgc-sec-title { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--content-primary); }
+.lgc-sec-desc { margin: 0; font-size: 14px; line-height: 22.4px; color: var(--content-secondary); }
+.lgc-card-lbl.is-followup { display: flex; align-items: center; gap: 6px; color: var(--content-info); }
+.lgc-card-lbl.is-followup svg { flex: none; }
 .lgc-fu-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
   padding: 10px 12px; border: 1px solid var(--border-base); border-radius: var(--radius-md);
   background: var(--bg-base); font: inherit; cursor: pointer; color: var(--content-secondary); }

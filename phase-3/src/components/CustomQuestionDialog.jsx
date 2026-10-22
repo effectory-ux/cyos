@@ -1003,7 +1003,8 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
           {!editing && followUp ? (
             <div className="eq-target-note" role="status">
               <Icon name="split" size={16} />
-              <span className="eq-target-txt">Your question is a follow-up to <b>“{followUp.triggerText}”</b>, asked right after it when the answer {followUp.when}</span>
+              <span className="eq-target-txt">Your question is a follow-up to <b>“{followUp.triggerText}”</b>, asked right after it{followUp.when
+                ? <> when the answer {followUp.when}</> : <>. Next, you choose which answers trigger it</>}</span>
             </div>
           ) : !editing && defaultTopic && topic && (
             <div className="eq-target-note" role="status">

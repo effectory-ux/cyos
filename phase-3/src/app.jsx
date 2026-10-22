@@ -57,9 +57,10 @@ export function App() {
     const fresh = s.selectedIds.filter(id => !before.has(id) && id !== fu.trigger);
     if (!fresh.length) return s;
     const qMeta = { ...(s.qMeta || {}) };
+    fresh.forEach(id => { if (fu.created && !fu.created.includes(id)) fu.created.push(id); });
     fresh.forEach(id => {
       qMeta[id] = { ...(qMeta[id] || {}), topic: fu.topic,
-        logic: { conditions: [{ type: "answer", trigger: fu.trigger, op: fu.op, answers: fu.answers }] } };
+        logic: { conditions: [{ type: "answer", trigger: fu.trigger, op: fu.op, answers: fu.answers, followUp: true }] } };
     });
     return { ...s, qMeta };
   });
@@ -135,10 +136,13 @@ export function App() {
   useEffect(() => {
     if (!followUpInfo || newCustom || editing || editCustom) return;
     // After the dialogs' own half-second arrival (afterClose).
+    // From the row menu the answers are still to choose: the dialog opens on
+    // the new follow-up itself. Otherwise back on the trigger, list updated.
     const t = setTimeout(() => {
+      const made = followUpInfo.created || [];
       followUp.current = null;
       setFollowUpInfo(null);
-      setOpenInBuilder({ dialog: "logic-return", arg: followUpInfo.trigger });
+      setOpenInBuilder({ dialog: "logic-return", arg: followUpInfo.pickAnswers && made.length ? made[0] : followUpInfo.trigger });
     }, 700);
     return () => clearTimeout(t);
   }, [followUpInfo, newCustom, editing, editCustom]);

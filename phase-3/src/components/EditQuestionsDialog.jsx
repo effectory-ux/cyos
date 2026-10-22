@@ -1648,7 +1648,8 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
             {/* Opened for a follow-up (Logic dialog): what's added follows up
                 on that question, in the same banner the topic target uses. */}
             {followUp
-              ? <span className="eq-target-txt">Questions you add become follow-ups to <b>“{followUp.triggerText}”</b>, asked right after it when the answer {followUp.when}</span>
+              ? <span className="eq-target-txt">Questions you add become follow-ups to <b>“{followUp.triggerText}”</b>, asked right after it{followUp.when
+                  ? <> when the answer {followUp.when}</> : <>. Next, you choose which answers trigger them</>}</span>
               : <span className="eq-target-txt">Questions you add go to <b>{target.label}</b> in your questionnaire</span>}
           </div>
         ) : null}
