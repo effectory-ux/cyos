@@ -409,7 +409,7 @@ const EMPTY_DRAG_IMG = typeof Image !== "undefined"
 // the topics only make their entrance the first time.
 const entranceSeen = new Set();
 
-export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onAddQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, onConfirmTranslation, edges = {}, openDialog, onDialogChange, addAtBottom = false, pagesRail = false, introTextColor = false, introTextBox = false, whiteTopics = false, logicInPlace = false, focusQuestion }) {
+export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onAddQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, onConfirmTranslation, edges = {}, openDialog, onDialogChange, addAtBottom = false, pagesRail = false, introTextColor = false, introTextBox = false, whiteTopics = false, logicInPlace = false, onAddCustomQuestion, focusQuestion }) {
   const { name, design: designId, selectedIds, pool, topicMeta = {}, customTopics = [], keptTopics = [], qMeta = {}, i18nEdits = {}, i18nStale = {}, intro = {} } = survey;
   // Below this the questionnaire page tightens: step labels go, the page
   // padding and the gaps between cards shrink, "Edit name" becomes an icon.
@@ -1872,6 +1872,22 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           onApply={({ questions = {}, topics = {} }) => {
             Object.entries(questions).forEach(([id, lg]) => onUpdateQMeta && onUpdateQMeta(id, { logic: lg || undefined }));
             Object.entries(topics).forEach(([key, lg]) => onUpdateTopicMeta && onUpdateTopicMeta(key, { logic: lg || undefined }));
+          }}
+          onAddFollowUp={(afterQ, fu) => {
+            // The forward flow: a real custom question (open text), placed
+            // DIRECTLY after its trigger, carrying the answer condition.
+            // Creating a question is an immediate act everywhere in the
+            // builder, so it is here too — the dialog's Cancel only covers
+            // staged rule edits.
+            const id = "c" + Date.now();
+            const topic = effTopic(afterQ);
+            const sec = visibleSections.find(s => s.items.some(i => i.id === afterQ.id));
+            const idx = sec ? sec.items.findIndex(i => i.id === afterQ.id) : -1;
+            placeQuestion.current = { secKey: sec ? sec.key : topic, id, index: idx + 1 };
+            onAddCustomQuestion && onAddCustomQuestion({ id, topic, theme: null, bench: false, type: "text", custom: true, text: fu.text });
+            onUpdateQMeta && onUpdateQMeta(id, { logic: { conditions: [
+              { type: "answer", trigger: afterQ.id, op: fu.op, answers: fu.answers },
+            ] } });
           }}
           onClose={() => setLogicQId(null)} />
       )}

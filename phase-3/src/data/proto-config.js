@@ -32,6 +32,7 @@ export const USE_CASES = [
   { key: "empty-topics", label: "Next step with an empty topic", desc: "Add questions and Next step turn secondary; Next shows a notification and outlines the empty topic" },
   { key: "other-questions", label: "Other questions", desc: "A custom question added without a topic lands in this automatic topic" },
   { key: "new-custom-question", label: "New custom question", desc: "Question check, then the translations come in; no topic → Other questions" },
+  { key: "edit-custom-question", label: "Edit a custom question", desc: "A custom question's own dialog — also where editing a follow-up question lands" },
   { key: "theme-details", label: "Theme details", desc: "A theme's questions, from a question's tag" },
   { key: "intro-screen", label: "Welcome page editor", desc: "Title and welcome text on the survey design's own photo (the Welcome page text color variant adds a text color option)" },
   { key: "out-of-scope", label: "Live survey", desc: "Opens elsewhere: live monitoring is another prototype" },

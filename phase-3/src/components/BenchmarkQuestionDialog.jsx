@@ -199,7 +199,64 @@ const OP_ITEMS = [{ value: "is", label: "Is" }, { value: "not", label: "Is not" 
 // since topics became selectable in the rail — a whole topic (`noun` keeps the
 // copy honest). `onChange` gets the whole normalized logic (or null when both
 // cards sit on their neutral option).
-function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, locked, about, onChange }) {
+function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, locked, about, followUps, canFollowUp, followUpBlocked, onAddFollowUp, onOpenFollowUp, onChange }) {
+  // The FORWARD flow (Jamal's tester feedback): from this question, add a
+  // direct follow-up — "when the answer is X, ask …". It creates a real
+  // question right after this one, carrying the matching answer condition;
+  // the backward view on that question edits the same fact.
+  const [fuOpen, setFuOpen] = useState(false);
+  const [fuText, setFuText] = useState("");
+  const [fuOp, setFuOp] = useState("is");
+  const [fuPicked, setFuPicked] = useState([]);
+  const [fuErr, setFuErr] = useState(null);
+  const myOpts = answerOptionsOf(selected);
+  const closeFu = () => { setFuOpen(false); setFuText(""); setFuOp("is"); setFuPicked([]); setFuErr(null); };
+  const addFu = () => {
+    if (!fuPicked.length) { setFuErr("Choose at least one answer"); return; }
+    if (!fuText.trim()) { setFuErr("Write the follow-up question"); return; }
+    onAddFollowUp({ text: fuText.trim(), op: fuOp, answers: fuPicked });
+    closeFu();
+  };
+  const followUpBlock = onAddFollowUp ? (
+    <div className="lgc-fu">
+      <div className="lgc-fu-title">Follow-up questions</div>
+      {(followUps || []).map(f => (
+        <button key={f.id} type="button" className="lgc-fu-row" onClick={() => onOpenFollowUp && onOpenFollowUp(f.id)}>
+          <span className="lgc-q-mark is-own"><Icon name="split" size={14} /></span>
+          <span className="lgc-fu-body">
+            <span className="lgc-fu-text">{f.text}</span>
+            <span className="lgc-fu-sub">{f.line}</span>
+          </span>
+          <Icon name="chevron-right" size={16} />
+        </button>
+      ))}
+      {!canFollowUp ? (
+        <span className="lgc-hint">{followUpBlocked}</span>
+      ) : fuOpen ? (
+        <div className="lgc-card">
+          <div className="lgc-card-lbl">New follow-up question</div>
+          <div className="lgc-row">
+            <MiniSelect ariaLabel="Is or is not" value={fuOp} items={OP_ITEMS} onChange={setFuOp} />
+            <LgcValues options={myOpts} picked={fuPicked} placeholder="Choose answers"
+              invalid={!!fuErr && !fuPicked.length}
+              onToggle={(i) => setFuPicked(cur => (cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i].sort((a, b) => a - b)))} />
+          </div>
+          <input className="tf lgc-fu-input" value={fuText} placeholder="Write the follow-up question"
+            onChange={e => setFuText(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") addFu(); }} />
+          {fuErr && <span className="lgc-err">{fuErr}</span>}
+          <div className="lgc-fu-actions">
+            <button type="button" className="btn btn-secondary" onClick={closeFu}>Cancel</button>
+            <button type="button" className="btn btn-primary" onClick={addFu}>Add question</button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className="btn btn-secondary lgc-fu-add" onClick={() => setFuOpen(true)}>
+          <Icon name="plus" size={16} />Add follow-up question
+        </button>
+      )}
+    </div>
+  ) : null;
   // The heading: a topic carries its question count as a tag (how much the
   // rule touches); the description, when there is one, sits under the title.
   // Questions get no metadata here — the title and description identify them.
@@ -256,6 +313,9 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
             </div>
           </div>
         </div>
+        {/* A required question is everyone's — which makes it the safest
+            trigger there is, so follow-ups stay available. */}
+        {followUpBlock}
       </>
     );
   }
@@ -329,6 +389,7 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
           Reset logic
         </button>
       )}
+      {followUpBlock}
     </>
   );
 }
@@ -371,7 +432,7 @@ function LogicEditor({ q, logic, onChange, earlier, inherited, about, onClose })
 // rule on the right. It owns its commit: Save applies every touched
 // question's rule immediately, Cancel discards them all — independent of the
 // question dialog's staging, so there is never a nested-save puzzle.
-export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion = {}, logicByTopic = {}, onApply, onClose, zIndex }) {
+export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion = {}, logicByTopic = {}, onApply, onAddFollowUp, onClose, zIndex }) {
   // `_group` rides along for the earlier-question menu's topic headers.
   const questions = sections.flatMap(s => s.items.map(x => ({ ...x, _group: s.label })));
   // The rail selects questions AND topics (a topic's rule gates its whole
@@ -455,6 +516,27 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
     return selected.required
       ? { title: "Everyone gets this question", msg: "It's required by the organization, so logic can't hide it." }
       : null;
+  };
+  // The selected question's follow-ups: every question whose answer condition
+  // points at it — the forward view of the same rules, hop-able.
+  const followUpsFor = () => {
+    if (section) return null;
+    const opts = answerOptionsOf(selected);
+    return questions.filter(x => {
+      const a = conditionOfType(logicOf(x.id), "answer");
+      return a && a.trigger === selKey;
+    }).map(x => {
+      const a = conditionOfType(logicOf(x.id), "answer");
+      const picked = (a.answers || []).map(i => opts[i]).filter(Boolean).join(" or ");
+      return { id: x.id, text: x.text,
+        line: picked ? `When the answer ${a.op === "not" ? "is not" : "is"} ${picked}` : "Condition not finished yet" };
+    });
+  };
+  const followUpBlockedWhy = () => {
+    if (section) return null;
+    if (!answerOptionsOf(selected).length) return "A text answer has no fixed options, so it can't trigger a follow-up question.";
+    if (condShown(selected)) return "This question is shown conditionally, so it can't trigger follow-up questions. Remove its logic first.";
+    return null;
   };
   // Remove all logic: stage a null for every rule, questions and topics both.
   // Save commits it; Cancel still walks away from the whole sweep.
@@ -571,6 +653,9 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
               about={section
                 ? { kind: "topic", count: section.items.length, desc: section.desc }
                 : { kind: "question", desc: selected._desc }}
+              followUps={followUpsFor()} canFollowUp={!followUpBlockedWhy()} followUpBlocked={followUpBlockedWhy()}
+              onAddFollowUp={!section && onAddFollowUp ? (fu) => onAddFollowUp(selected, fu) : undefined}
+              onOpenFollowUp={hop}
               showErrors={showErrors} onChange={update} />
           </div>
         </div>

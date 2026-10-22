@@ -627,6 +627,17 @@ export function App() {
         break;
       }
       case "new-custom-question": { const sv = draftSurvey(); if (sv) { openBuilder(sv); setNewCustom(true); } break; }
+      case "edit-custom-question": {
+        // A custom question open in its own dialog — also where editing a
+        // follow-up question from the builder row lands.
+        const sv = draftSurvey(); if (!sv) break;
+        const key = "ct-other-demo", q = { id: "c-other-demo", topic: key, theme: null, bench: false, type: "scale5", custom: true, text: "I can switch off after work" };
+        openBuilder({ ...sv, customTopics: [...(sv.customTopics || []), key],
+          topicMeta: { ...sv.topicMeta, [key]: { name: OTHER_TOPIC, auto: true } },
+          pool: [...sv.pool, q], selectedIds: [...sv.selectedIds, q.id] });
+        setEditCustom(q);
+        break;
+      }
       case "theme-details": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "theme", arg: (sv.pool.find(q => sv.selectedIds.includes(q.id) && q.theme) || {}).theme }); break; }
       case "intro-screen": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "intro-screen" }); break; }
       case "out-of-scope": { setScreen("surveys"); setOutOfScope(surveysList.find(r => r.status === "Live") || null); break; }
@@ -676,7 +687,7 @@ export function App() {
             onSaveClose={saveAndClose} onRemoveQuestion={requestRemove} onEditCustom={setEditCustom}
             onRename={renameSurvey} onRemoveTopic={removeTopic} onMoveTopic={moveQuestionTopic}
             onToggleQuestion={toggleQuestion} onSetManyQuestions={setManyQuestions} onAddQuestions={addQuestionsToSurvey}
-            onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta} onUpdateIntro={updateIntro} onSetDesign={setDesign} onNewCustom={(topic) => setNewCustom(topic || true)}
+            onUpdateTopicMeta={updateTopicMeta} onAddTopic={addTopic} onUpdateQMeta={updateQMeta} onUpdateIntro={updateIntro} onSetDesign={setDesign} onNewCustom={(topic) => setNewCustom(topic || true)} onAddCustomQuestion={addCustomKeepOpen}
             onSaveTranslation={saveTranslation} onConfirmTranslation={confirmTranslation} edges={edges}
             openDialog={openInBuilder} onDialogChange={setBuilderDialog}
             onOpenTemplates={() => { setEditTab("templates"); setEditing(true); }} />}
