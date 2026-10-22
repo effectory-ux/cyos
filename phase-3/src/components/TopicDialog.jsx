@@ -19,7 +19,7 @@ import { IntroTextPicker } from "./IntroTextPicker.jsx";
 // The same surface serves the survey's intro screen: participants meet it the
 // same way (a themed screen with a title, a description and a next arrow), so
 // it is edited the same way. `variant="intro"` only changes the framing copy.
-export function TopicDialog({ creating, name: initialName, desc: initialDesc, originalName, isCustom, questionCount = 0, minutes = 0, i18nEdits = {}, stringKeyBase, variant, tidName, tidDesc, design, textColorOption = true, textBoxOption = false, textColor: initialTextColor, boxColor: initialBoxColor, onCancel, onSave }) {
+export function TopicDialog({ creating, name: initialName, desc: initialDesc, originalName, isCustom, questionCount = 0, minutes = 0, i18nEdits = {}, stringKeyBase, variant, tidName, tidDesc, design, textColorOption = true, textBoxOption = false, textColor: initialTextColor, boxColor: initialBoxColor, topicLogic = null, onOpenLogic, onCancel, onSave }) {
   const isIntro = variant === "intro";
   // The welcome screen is edited on its own background — the survey design's
   // photo, as participants see it first; a topic on the survey's design, the
@@ -171,6 +171,27 @@ export function TopicDialog({ creating, name: initialName, desc: initialDesc, or
             </div>
           )}
         </div>
+
+        {/* The topic's logic, same field as the question dialog's: a door to
+            the Logic dialog, opened on this topic. */}
+        {onOpenLogic && (
+          <div className="bmq-selects tpd-logic">
+            <div className="bmq-field">
+              <span className="bmq-lbl">Logic</span>
+              <Tooltip label={topicLogic && topicLogic.line ? topicLogic.line : "Show this whole topic only after a chosen answer, or only to some employees"} wrapClass="bmq-who-tt">
+                <button type="button" className={"sel-btn bmq-who" + (topicLogic && topicLogic.count ? " is-some" : "")} aria-haspopup="dialog"
+                  onClick={onOpenLogic}>
+                  <span className="bmq-who-ic"><Icon name="split" size={16} /></span>
+                  <span className="sel-btn-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {topicLogic && topicLogic.count ? `Some · ${topicLogic.count} ${topicLogic.count === 1 ? "condition" : "conditions"}` : "Everyone"}
+                  </span>
+                  <span className="spacer" />
+                  <Icon name="chevron-right" size={16} />
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+        )}
 
         <div className="bmq-stage">
           <div className="bmq-preview is-participant">

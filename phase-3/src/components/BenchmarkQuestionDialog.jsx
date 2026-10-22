@@ -220,7 +220,7 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
         </div>
         {inherited.onEdit && (
           <div className="inline-notif-actions">
-            <button type="button" className="link-inline" onClick={inherited.onEdit}>Edit topic logic</button>
+            <button type="button" className="btn btn-secondary" onClick={inherited.onEdit}>Edit</button>
           </div>
         )}
       </div>
@@ -261,7 +261,8 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
   let lastGroup = null;
   earlier.forEach(x => {
     if (x._group && x._group !== lastGroup) { earlierItems.push({ header: true, label: x._group }); lastGroup = x._group; }
-    earlierItems.push({ value: x.id, label: x.text, lead: <QTypeIcon type={x.type} size={16} /> });
+    earlierItems.push({ value: x.id, label: x.text, lead: <QTypeIcon type={x.type} size={16} />,
+      disabled: !!x._cond, sub: x._cond ? "Shown conditionally — remove its logic first" : undefined });
   });
   return (
     <>
@@ -380,7 +381,18 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
       const first = s && s.items[0];
       cut = first ? orderIndex[first.id] : questions.length;
     } else cut = orderIndex[key] ?? 0;
-    return questions.slice(0, cut).filter(x => answerOptionsOf(x).length > 0);
+    return questions.slice(0, cut).filter(x => answerOptionsOf(x).length > 0)
+      .map(x => ({ ...x, _cond: condShown(x) }));
+  };
+  // A question whose own visibility is conditional (its rule, or its topic's)
+  // can't be a TRIGGER: participants might never see it. Removing that logic
+  // frees it again. Raw presence counts — half-made logic blocks too.
+  const condShown = (q2) => {
+    const own = logicOf(q2.id);
+    if (own && (own.conditions || []).length) return true;
+    const s2 = sections.find(s3 => s3.items.some(i => i.id === q2.id));
+    const tl = s2 && logicOf(tKey(s2.key));
+    return !!(tl && (tl.conditions || []).length);
   };
   const section = isTopic(selectedKey) ? sections.find(x => tKey(x.key) === selectedKey) : null;
   const selected = section
@@ -573,7 +585,11 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   const baseLogicOf = (id) => normLogic(logicByQuestion[id] || (id === q.id ? meta.logic : null));
   const logicOf = (id) => (Object.prototype.hasOwnProperty.call(logicMap, id) ? logicMap[id] : baseLogicOf(id));
   const orderIndex = {}; allQuestions.forEach((x, i) => { orderIndex[x.id] = i; });
-  const earlierFor = (id) => allQuestions.slice(0, orderIndex[id] ?? 0).filter(x => answerOptionsOf(x).length > 0);
+  // Same trigger bar as the standalone dialog: a conditionally shown question
+  // (own staged rule, or `_condTopic` from the builder) can't be a trigger.
+  const earlierFor = (id) => allQuestions.slice(0, orderIndex[id] ?? 0)
+    .filter(x => answerOptionsOf(x).length > 0)
+    .map(x => { const l = logicOf(x.id); return { ...x, _cond: !!(l && (l.conditions || []).length) || !!x._condTopic }; });
   const changedLogicIds = Object.keys(logicMap)
     .filter(id => JSON.stringify(normLogic(logicMap[id])) !== JSON.stringify(baseLogicOf(id)));
   // The field and the header chip only count COMPLETE conditions — subject

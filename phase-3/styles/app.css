@@ -2286,6 +2286,9 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
    the others. */
 .bmq-selects { flex-wrap: wrap; }
 .bmq-selects .bmq-field { flex: 1 1 0; min-width: 200px; }
+/* The topic dialog's lone Logic field keeps the question dialog's field
+   width instead of stretching across the dialog. */
+.tpd-logic .bmq-field { flex: 0 1 320px; }
 .bmq-who-tt { display: block; }
 .bmq-who { width: 100%; }
 /* Logic is BLUE everywhere (Jamal: "just make the logic icon always blue");
@@ -2319,7 +2322,8 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
    group. Badges: green = the question's own rule, blue = the topic's rule,
    pale blue = inherited from the topic. */
 .lgc-dialog { padding: 0; gap: 0; }
-.lgc-dialog .dialog-close-tt { top: 36px; right: 24px; }
+/* The close button keeps the DS position (absolute, top 15 / right 15 in
+   the dialog corner) — no bespoke offsets here. */
 .lgc-layout { flex: 1; min-height: 0; display: flex; }
 .lgc-rail { flex: none; width: 280px; display: flex; flex-direction: column; gap: 4px;
   padding: 0 24px 24px; border-right: 1px solid var(--border-base);

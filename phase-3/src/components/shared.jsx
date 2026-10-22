@@ -326,8 +326,9 @@ export function MiniSelect({ value, placeholder, items, onChange, ariaLabel, blo
               <div key={"h" + i} className="menu-group-lbl" role="presentation">{it.label}</div>
             ) : (
               <div key={String(it.value)} role="option" aria-selected={it.value === value}
-                className={"menu-item" + (it.value === value ? " is-selected" : "") + (it.working ? " is-working" : "")}
-                onClick={() => { onChange(it.value); setOpen(false); }}>
+                aria-disabled={it.disabled || undefined}
+                className={"menu-item" + (it.value === value ? " is-selected" : "") + (it.working ? " is-working" : "") + (it.disabled ? " is-disabled" : "")}
+                onClick={() => { if (it.disabled) return; onChange(it.value); setOpen(false); }}>
                 {it.lead}
                 <span className="menu-item-body">
                   <span className="menu-item-title">{it.label}</span>

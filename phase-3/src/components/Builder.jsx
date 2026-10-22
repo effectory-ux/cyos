@@ -409,7 +409,7 @@ const EMPTY_DRAG_IMG = typeof Image !== "undefined"
 // the topics only make their entrance the first time.
 const entranceSeen = new Set();
 
-export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onAddQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, onConfirmTranslation, edges = {}, openDialog, onDialogChange, addAtBottom = false, pagesRail = false, introTextColor = false, introTextBox = false, whiteTopics = false, logicInPlace = false, logicButton = false, focusQuestion }) {
+export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onSaveClose, onRemoveQuestion, onEditCustom, onRename, onRemoveTopic, onMoveTopic, onToggleQuestion, onSetManyQuestions, onAddQuestions, onOpenTemplates, onUpdateTopicMeta, onAddTopic, onUpdateQMeta, onUpdateIntro, onSetDesign, onNewCustom, onSaveTranslation, onConfirmTranslation, edges = {}, openDialog, onDialogChange, addAtBottom = false, pagesRail = false, introTextColor = false, introTextBox = false, whiteTopics = false, logicInPlace = false, focusQuestion }) {
   const { name, design: designId, selectedIds, pool, topicMeta = {}, customTopics = [], keptTopics = [], qMeta = {}, i18nEdits = {}, i18nStale = {}, intro = {} } = survey;
   // Below this the questionnaire page tightens: step labels go, the page
   // padding and the gaps between cards shrink, "Edit name" becomes an icon.
@@ -1147,7 +1147,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     const live = activeConditions(rule, earlier);
     const broken = logicBroken(rule, earlier);
     if (!live.length && !broken) return null;
-    return { name: topicName(key), broken, line: live.length ? logicSummary({ conditions: live }, earlier) : "" };
+    return { name: topicName(key), broken, count: live.length, line: live.length ? logicSummary({ conditions: live }, earlier) : "" };
   };
   const topicLogicInfoFor = (qq) => {
     const i = topicLogicInfo(effTopic(qq));
@@ -1419,14 +1419,12 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
               (compare designs in quick succession); it closes on outside
               click or the button itself. The Add menu stays an action menu —
               its items navigate, so it closes. */}
-          {/* Variant: a Logic button in the bar, next to Design — the other
-              way into the logic dialog (it opens on the first question). */}
-          {logicButton && (
-            <button className="btn btn-secondary" title={compact ? "Logic" : undefined} aria-label="Logic"
-              aria-haspopup="dialog" onClick={() => flatOrder.length && setLogicQId(flatOrder[0].id)}>
-              <Icon name="split" size={16} /><span className="ctxbar-btn-lbl">Logic</span>
-            </button>
-          )}
+          {/* The Logic button, next to Design (the winning variant, now the
+              default): opens the logic dialog on the first question. */}
+          <button className="btn btn-secondary" title={compact ? "Logic" : undefined} aria-label="Logic"
+            aria-haspopup="dialog" onClick={() => flatOrder.length && setLogicQId(flatOrder[0].id)}>
+            <Icon name="split" size={16} /><span className="ctxbar-btn-lbl">Logic</span>
+          </button>
           <div className="ctxbar-menu-wrap">
             <button className={"btn btn-secondary" + (barMenu === "design" ? " is-pressed" : "")}
               title={compact ? "Design" : undefined} aria-label="Design"
@@ -1823,6 +1821,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         const isCustom = customTopicSet.has(key);
         return <TopicDialog design={design} name={topicName(key)} desc={(topicMeta[key] || {}).desc} tidName={"topic-" + key}
           originalName={key} isCustom={isCustom} questionCount={sec ? sec.items.length : 0}
+          topicLogic={topicLogicInfo(key)} onOpenLogic={() => setLogicQId("t:" + key)}
           i18nEdits={i18nEdits} stringKeyBase={"topic:" + key}
           onCancel={() => setTopicDialog(null)}
           onSave={({ name: nm, desc: ds, translations }) => {
@@ -1842,7 +1841,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         return q ? (
           <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]} design={design}
             topicLogic={topicLogicInfoFor(q)}
-            allQuestions={flatOrder}
+            allQuestions={flatOrder.map(x => ({ ...x, _condTopic: ((((topicMeta[effTopic(x)] || {}).logic || {}).conditions) || []).length > 0 }))}
             logicByQuestion={Object.fromEntries(flatOrder.map(x => [x.id, (qMeta[x.id] || {}).logic || null]))}
             logicInPlace={logicInPlace} onOpenLogic={setLogicQId}
             onOpenTheme={setThemeDetail}
@@ -1868,7 +1867,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           sections={visibleSections.map(x => ({ key: x.key, label: topicName(x.key), items: x.items }))}
           logicByQuestion={Object.fromEntries(flatOrder.map(x => [x.id, (qMeta[x.id] || {}).logic || null]))}
           logicByTopic={Object.fromEntries(visibleSections.map(x => [x.key, (topicMeta[x.key] || {}).logic || null]))}
-          zIndex={settingsQId ? 80 : undefined}
+          zIndex={settingsQId || topicDialog ? 80 : undefined}
           onApply={({ questions = {}, topics = {} }) => {
             Object.entries(questions).forEach(([id, lg]) => onUpdateQMeta && onUpdateQMeta(id, { logic: lg || undefined }));
             Object.entries(topics).forEach(([key, lg]) => onUpdateTopicMeta && onUpdateTopicMeta(key, { logic: lg || undefined }));
