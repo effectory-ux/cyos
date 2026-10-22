@@ -580,6 +580,22 @@ export function App() {
         }, { dialog: "question-logic", arg: target.id });
         break;
       }
+      case "logic-broken": {
+        // The guardrail state: a finished rule whose trigger question was
+        // removed afterwards — red Logic tag on the row, red badge and an
+        // always-on error in the dialog.
+        const sv = draftSurvey(); if (!sv) break;
+        const sel = new Set(sv.selectedIds);
+        const scales = sv.pool.filter(x => !x.custom && x.type === "scale5" && sel.has(x.id));
+        const trigger = scales.find(x => scales.some(y => y !== x && !y.required && y.topic === x.topic));
+        const target = trigger && scales.find(y => y !== trigger && !y.required && y.topic === trigger.topic);
+        if (!target) break;
+        openBuilder({ ...sv, selectedIds: sv.selectedIds.filter(id => id !== trigger.id),
+          qMeta: { ...sv.qMeta, [target.id]: { logic: { conditions: [
+            { type: "answer", trigger: trigger.id, op: "is", answers: [0, 1] },
+          ] } } } });
+        break;
+      }
       case "topic-dialog": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "topic", arg: (sv.pool.find(q => sv.selectedIds.includes(q.id)) || {}).topic }); break; }
       case "topic-custom": {
         const sv = draftSurvey(); if (!sv) break;

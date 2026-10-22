@@ -17,6 +17,19 @@ import { characteristicOf } from "./characteristics.js";
 export const conditionOfType = (logic, type) =>
   ((logic && logic.conditions) || []).find(c => c && c.type === type) || null;
 
+// BROKEN is different from incomplete: the creator finished the condition,
+// but the survey changed under it — its trigger question was removed or now
+// comes after the question. Still dormant for participants, but the creator
+// gets a guardrail: red tag/badge plus an always-on error in the pane.
+export const conditionBroken = (c, earlier) => {
+  if (!c) return false;
+  if (c.type === "answer") return !!c.trigger && !(earlier || []).some(x => x.id === c.trigger);
+  return !!c.attribute && !characteristicOf(c.attribute);
+};
+
+export const logicBroken = (logic, earlier) =>
+  (logic && logic.conditions ? logic.conditions : []).some(c => conditionBroken(c, earlier));
+
 // `earlier` = the questions BEFORE the rule's own question, in questionnaire
 // order — the only valid triggers. A condition whose trigger left the survey
 // or moved below the question is simply not OK (dormant), never an error the

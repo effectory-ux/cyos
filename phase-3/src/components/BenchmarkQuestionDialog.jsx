@@ -13,7 +13,7 @@ import { QTypeIcon, Tooltip, ThemeTag, useMediaQuery, MiniSelect } from "./share
 import { LANG_STATUS, LangPanel, AutoTextarea } from "./CustomQuestionDialog.jsx";
 import { QTYPES, SCALE_LABELS, answerOptionsOf } from "../data/data.js";
 import { CHARACTERISTICS, characteristicOf } from "../data/characteristics.js";
-import { conditionOK, conditionOfType, logicSummary } from "../data/logic.js";
+import { conditionOK, conditionOfType, conditionBroken, logicBroken, logicSummary, activeConditions } from "../data/logic.js";
 import { LANGUAGES, flagSrc, autoTranslation, scaleFor } from "../data/i18n.js";
 import { variantsOf } from "../data/variants.js";
 import { designWash } from "../data/designs.js";
@@ -199,7 +199,7 @@ const OP_ITEMS = [{ value: "is", label: "Is" }, { value: "not", label: "Is not" 
 // since topics became selectable in the rail — a whole topic (`noun` keeps the
 // copy honest). `onChange` gets the whole normalized logic (or null when both
 // cards sit on their neutral option).
-function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", onChange }) {
+function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, onChange }) {
   const answer = conditionOfType(logic, "answer");
   const audience = conditionOfType(logic, "attribute");
   const emit = (a, b) => {
@@ -208,25 +208,55 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
   };
   const setAnswer = (next) => emit(next, audience);
   const setAudience = (next) => emit(answer, next);
+  // The topic's rule reaches every question under it — say so on the question
+  // itself, with where it comes from and a way to the topic's own pane.
+  const inheritNote = inherited && (
+    <div className="lgc-inherit">
+      <span className="lgc-q-mark is-inherit"><Icon name="split" size={14} /></span>
+      <span>
+        From the topic <b>“{inherited.name}”</b>: {inherited.line.charAt(0).toLowerCase() + inherited.line.slice(1)}.
+        {inherited.onEdit && <> <button type="button" className="lgc-inherit-edit" onClick={inherited.onEdit}>Edit topic logic</button></>}
+      </span>
+    </div>
+  );
   if (selected.required) {
     return (
-      <div className="lgc-locked">
-        <b>Everyone gets this question.</b> It's required by the organization, so logic can't hide it.
-      </div>
+      <>
+        <h3 className="lgc-subject">{selected.text}</h3>
+        {inheritNote}
+        <div className="lgc-locked">
+          <b>Everyone gets this question.</b> It's required by the organization, so logic can't hide it.
+        </div>
+      </>
     );
   }
   const trigger = answer ? earlier.find(x => x.id === answer.trigger) : null;
   const triggerOpts = answerOptionsOf(trigger);
   const attr = audience ? characteristicOf(audience.attribute) : null;
-  const answerErr = showErrors && answer && (!trigger ? "Choose an earlier question" : !(answer.answers || []).length ? "Choose at least one answer" : null);
+  // A broken condition (its question left or moved below) warns right away —
+  // no showErrors needed: the creator should see it the moment the pane opens.
+  const answerBroken = conditionBroken(answer, earlier);
+  const answerErr = answerBroken
+    ? "This points to a question that was removed or now comes later. Choose another question, or reset the logic."
+    : showErrors && answer && (!trigger ? "Choose an earlier question" : !(answer.answers || []).length ? "Choose at least one answer" : null);
   const audienceErr = showErrors && audience && !(audience.values || []).length ? "Choose at least one value" : null;
+  // Typeform-style grouping: the earlier questions carry their topic as a
+  // menu header, so a long list stays scannable.
+  const earlierItems = [{ value: "", label: "No earlier answer — always asked" }];
+  let lastGroup = null;
+  earlier.forEach(x => {
+    if (x._group && x._group !== lastGroup) { earlierItems.push({ header: true, label: x._group }); lastGroup = x._group; }
+    earlierItems.push({ value: x.id, label: x.text, lead: <QTypeIcon type={x.type} size={16} /> });
+  });
   return (
     <>
       <h3 className="lgc-subject">{selected.text}</h3>
+      {inheritNote}
       <div className={"lgc-card" + (answerErr ? " is-invalid" : "")}>
+        <div className="lgc-card-lbl">Answer to an earlier question</div>
         <MiniSelect ariaLabel="Earlier question" value={answer ? answer.trigger : ""} block
-          items={[{ value: "", label: "No earlier answer — always asked" },
-            ...earlier.map(x => ({ value: x.id, label: x.text, lead: <QTypeIcon type={x.type} size={16} /> }))]}
+          placeholder={answerBroken ? "Question no longer available" : undefined}
+          items={earlierItems}
           onChange={(id) => setAnswer(id ? { type: "answer", trigger: id, op: (answer && answer.op) || "is", answers: [] } : null)} />
         {answer && trigger && (
           <div className="lgc-row">
@@ -245,6 +275,7 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
         {answerErr && <span className="lgc-err">{answerErr}</span>}
       </div>
       <div className={"lgc-card" + (audienceErr ? " is-invalid" : "")}>
+        <div className="lgc-card-lbl">Employee data</div>
         <MiniSelect ariaLabel="Who gets this question" value={audience ? audience.attribute : ""} block
           items={[{ value: "", label: "Shown to everyone" },
             ...CHARACTERISTICS.map(a => ({ value: a.key, label: a.label, lead: <Icon name="user" size={16} /> }))]}
@@ -276,7 +307,7 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
 // the question dialog flips in place to ONE question's rule — the back link
 // shares the close button's line, and the subject line says whose logic this
 // is. No rail: hopping questions belongs to the standalone dialog.
-function LogicEditor({ q, logic, onChange, earlier, onClose }) {
+function LogicEditor({ q, logic, onChange, earlier, inherited, onClose }) {
   const [showErrors, setShowErrors] = useState(false);
   const incomplete = ((logic && logic.conditions) || []).some(c => !conditionOK(c, earlier));
   const done = () => {
@@ -289,11 +320,11 @@ function LogicEditor({ q, logic, onChange, earlier, onClose }) {
         <button type="button" className="lgc-back" onClick={done}><Icon name="arrow-left" size={16} />Back to question</button>
       </div>
       <div className="dialog-header is-sm" style={{ paddingRight: 16 }}>
-        <h2 className="dialog-title">Conditional logic</h2>
+        <h2 className="dialog-title">Logic</h2>
         <p className="dialog-subtitle">Decide who gets this question. Changes are saved with the question.</p>
       </div>
       <div className="lgc-main scroll-y">
-        <LogicRulePane selected={q} logic={logic} earlier={earlier} showErrors={showErrors} onChange={onChange} />
+        <LogicRulePane selected={q} logic={logic} earlier={earlier} inherited={inherited} showErrors={showErrors} onChange={onChange} />
       </div>
       <div className="dialog-footer">
         <div className="spacer" />
@@ -309,7 +340,8 @@ function LogicEditor({ q, logic, onChange, earlier, onClose }) {
 // question's rule immediately, Cancel discards them all — independent of the
 // question dialog's staging, so there is never a nested-save puzzle.
 export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion = {}, logicByTopic = {}, onApply, onClose, zIndex }) {
-  const questions = sections.flatMap(s => s.items);
+  // `_group` rides along for the earlier-question menu's topic headers.
+  const questions = sections.flatMap(s => s.items.map(x => ({ ...x, _group: s.label })));
   // The rail selects questions AND topics (a topic's rule gates its whole
   // group). One key space: question ids as-is, topics as "t:<key>".
   const tKey = (k) => "t:" + k;
@@ -342,9 +374,12 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
   const update = (next) => setLogicMap(m => ({ ...m, [selKey]: next }));
   // Leaving the selected question or topic — a rail hop, Save or the close
   // paths — holds one bar: no half-finished condition may be left anywhere.
+  // Exception: a rule the user didn't touch may be left as it was found, so
+  // logic that BROKE while the dialog was closed never traps anyone here.
   const canLeave = () => {
+    const untouched = JSON.stringify(normLogic(logicOf(selKey))) === JSON.stringify(baseOf(selKey));
     const conditions = (logic && logic.conditions) || [];
-    if (conditions.every(c => conditionOK(c, earlierFor(selKey)))) { setShowErrors(false); return true; }
+    if (untouched || conditions.every(c => conditionOK(c, earlierFor(selKey)))) { setShowErrors(false); return true; }
     setShowErrors(true); return false;
   };
   const hop = (key) => { if (key !== selKey && canLeave()) { setShowErrors(false); setSelectedKey(key); } };
@@ -360,6 +395,18 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
     onClose();
   };
   const hasRule = (key) => { const l = logicOf(key); return !!(l && (l.conditions || []).length); };
+  const isBroken = (key) => logicBroken(logicOf(key), earlierFor(key));
+  // What the selected question inherits from its topic's rule, if any —
+  // shown on the question's pane with a hop to the topic.
+  const inheritedFor = () => {
+    if (section) return null;
+    const s = sections.find(x => x.items.some(i => i.id === selKey));
+    if (!s) return null;
+    const rule = logicOf(tKey(s.key));
+    const live = activeConditions(rule, earlierFor(tKey(s.key)));
+    if (!live.length) return null;
+    return { name: s.label, line: logicSummary({ conditions: live }, earlierFor(tKey(s.key))), onEdit: () => hop(tKey(s.key)) };
+  };
   // The rail must show WHOSE logic is open: keep the selected row in
   // view (centered on open, nudged on hops). Positioned via layout offsets —
   // scrollIntoView would drag every ancestor, and rects lie during the
@@ -373,12 +420,15 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
     const place = () => {
       const sel = selRef.current;
       if (!rail || !sel) return;
+      // The sticky title floats over the top rows: anything scrolled under it
+      // is invisible, so "in view" starts below it.
+      const headH = (rail.querySelector(".lgc-title") || {}).offsetHeight || 0;
       if (firstScroll.current) {
-        rail.scrollTop = Math.max(0, sel.offsetTop - (rail.clientHeight - sel.offsetHeight) / 2);
+        rail.scrollTop = Math.max(0, sel.offsetTop - headH - (rail.clientHeight - headH - sel.offsetHeight) / 2);
         return;
       }
       const top = sel.offsetTop - rail.scrollTop;
-      if (top < 8) rail.scrollTop = sel.offsetTop - 8;
+      if (top < headH + 8) rail.scrollTop = sel.offsetTop - headH - 8;
       else if (top + sel.offsetHeight > rail.clientHeight - 8) rail.scrollTop = sel.offsetTop + sel.offsetHeight - rail.clientHeight + 8;
     };
     // Guard the position for as long as the dialog lives: the host page's
@@ -391,8 +441,9 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
       if (touched) return;
       const sel = selRef.current;
       if (!rail || !sel) return;
+      const headH = (rail.querySelector(".lgc-title") || {}).offsetHeight || 0;
       const top = sel.offsetTop - rail.scrollTop;
-      if (top + sel.offsetHeight < 0 || top > rail.clientHeight) requestAnimationFrame(place);
+      if (top + sel.offsetHeight < headH || top > rail.clientHeight) requestAnimationFrame(place);
     };
     rail && rail.addEventListener("wheel", mark, { passive: true });
     rail && rail.addEventListener("pointerdown", mark);
@@ -415,16 +466,17 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
         </Tooltip>
         <div className="lgc-layout">
           <div className="lgc-rail scroll-y" ref={railRef}>
-            <h2 className="lgc-title" id="lgc-title">Conditional logic</h2>
+            <h2 className="lgc-title" id="lgc-title">Logic</h2>
             {sections.map(s => {
               const topicRuled = hasRule(tKey(s.key));
+              const topicBroken = topicRuled && isBroken(tKey(s.key));
               return (
                 <div key={s.key} className="lgc-group" role="listbox" aria-label={s.label}>
                   <button type="button" role="option" aria-selected={tKey(s.key) === selKey}
                     ref={tKey(s.key) === selKey ? selRef : undefined}
                     className={"lgc-q is-topic" + (tKey(s.key) === selKey ? " is-selected" : "")} onClick={() => hop(tKey(s.key))}>
                     <span className="lgc-q-text">{s.label}</span>
-                    {topicRuled && <span className="lgc-q-mark is-topic-rule"><Icon name="split" size={14} /></span>}
+                    {topicRuled && <span className={"lgc-q-mark " + (topicBroken ? "is-broken" : "is-topic-rule")}><Icon name="split" size={14} /></span>}
                   </button>
                   {s.items.map(x => (
                     <button key={x.id} type="button" role="option" aria-selected={x.id === selKey}
@@ -433,7 +485,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
                       <span className="lgc-q-text">{x.text}</span>
                       {x.required
                         ? <span className="lgc-q-mark"><Icon name="asterisk" size={12} /></span>
-                        : hasRule(x.id) ? <span className="lgc-q-mark is-own"><Icon name="split" size={14} /></span>
+                        : hasRule(x.id) ? <span className={"lgc-q-mark " + (isBroken(x.id) ? "is-broken" : "is-own")}><Icon name="split" size={14} /></span>
                         : topicRuled ? <span className="lgc-q-mark is-inherit"><Icon name="split" size={14} /></span> : null}
                     </button>
                   ))}
@@ -443,7 +495,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
           </div>
           <div className="lgc-main scroll-y">
             <LogicRulePane selected={selected} logic={logic} earlier={earlierFor(selKey)}
-              noun={section ? "topic" : "question"} showErrors={showErrors} onChange={update} />
+              noun={section ? "topic" : "question"} inherited={inheritedFor()} showErrors={showErrors} onChange={update} />
           </div>
         </div>
         <div className="dialog-footer">
@@ -456,7 +508,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
   );
 }
 
-export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, allVariants = false, allQuestions = [], logicByQuestion = {}, logicInPlace = false, onOpenLogic, onCancel, onSave, onDetach, onOpenTheme }) {
+export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, allVariants = false, allQuestions = [], logicByQuestion = {}, logicInPlace = false, topicLogic = null, onOpenLogic, onCancel, onSave, onDetach, onOpenTheme }) {
   const [infoOpen, setInfoOpen] = useState(false);
   // Staged edits — committed on Save only.
   const [variant, setVariant] = useState(meta.variant);
@@ -541,7 +593,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
           <button className="dialog-close" aria-label="Close" onClick={onCancel}><Icon name="cross" /></button>
         </Tooltip>
         {logicInPlace && logicFor ? (
-          <LogicEditor q={q} logic={logicOf(q.id)} earlier={earlierFor(q.id)}
+          <LogicEditor q={q} logic={logicOf(q.id)} earlier={earlierFor(q.id)} inherited={topicLogic}
             onChange={(next) => setLogicMap(m => ({ ...m, [q.id]: next }))}
             onClose={() => setLogicFor(null)} />
         ) : (<>
@@ -557,7 +609,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below"
               onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />}
             {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
-            {hasLogic && <span className="infotag is-logic"><Icon name="split" size={12} />Conditional</span>}
+            {hasLogic && <span className="infotag is-logic"><Icon name="split" size={12} />Logic</span>}
           </div>
           <h2 className="dialog-title" id="bmq-title">{title}</h2>
           <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
@@ -586,7 +638,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               is a DOOR (chevron right) — it opens the logic takeover, never a
               dropdown. Required questions are locked: everyone gets them. */}
           <div className="bmq-field">
-            <span className="bmq-lbl">Who gets it</span>
+            <span className="bmq-lbl">Logic</span>
             {q.required ? (
               <div className="bmq-type-disabled" aria-disabled="true" title="It's required, so everyone gets this question">
                 <Icon name="asterisk" size={14} />
@@ -598,7 +650,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
               <Tooltip label={hasLogic ? logicLine : "Show this question only after a chosen answer, or only to some employees"} wrapClass="bmq-who-tt">
                 <button type="button" className={"sel-btn bmq-who" + (hasLogic ? " is-some" : "")} aria-haspopup="dialog"
                   onClick={() => (logicInPlace ? setLogicFor(q.id) : onOpenLogic && onOpenLogic(q.id))}>
-                  {hasLogic && <span className="bmq-who-ic"><Icon name="split" size={16} /></span>}
+                  <span className={"bmq-who-ic" + (hasLogic ? "" : " is-none")}><Icon name="split" size={16} /></span>
                   <span className="sel-btn-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {hasLogic ? `Some · ${ownLogic.conditions.length} ${ownLogic.conditions.length === 1 ? "condition" : "conditions"}` : "Everyone"}
                   </span>

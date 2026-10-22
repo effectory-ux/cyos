@@ -1,38 +1,39 @@
 {
-  "version": 895,
-  "savedAt": "2026-10-21T14:19:58.854Z",
+  "version": 907,
+  "savedAt": "2026-10-22T09:48:47.313Z",
   "editor": "Jamal van Rooijen",
   "entries": {
     "/projects/:n/survey-list": {
       "route": "/projects/:n/survey-list",
       "example": "#/projects/31092/survey-list",
       "label": "survey-list",
-      "count": 14,
+      "count": 15,
       "firstSeen": "2026-09-04T09:28:45.257Z",
       "via": {
         "surveys": true
       },
-      "lastSeen": "2026-10-14T14:45:24.058Z"
+      "lastSeen": "2026-10-22T09:48:46.505Z"
     },
     "/surveys/:id/questionnaire": {
       "route": "/surveys/:id/questionnaire",
       "example": "#/surveys/s3/questionnaire",
       "label": "questionnaire",
-      "count": 587,
+      "count": 593,
       "firstSeen": "2026-09-04T09:29:29.255Z",
       "via": {
         "builder": true,
         "other-questions": true,
         "empty-topics": true,
-        "surveys": true
+        "surveys": true,
+        "logic-broken": true
       },
-      "lastSeen": "2026-10-21T14:19:46.341Z"
+      "lastSeen": "2026-10-22T09:47:41.086Z"
     },
     "/surveys/:id/questionnaire(dialog:question-settings/:arg)": {
       "route": "/surveys/:id/questionnaire(dialog:question-settings/:arg)",
-      "example": "#/surveys/s3/questionnaire(dialog:question-settings/sos-2-1)",
+      "example": "#/surveys/s3/questionnaire(dialog:question-settings/sos-0-0)",
       "label": "questionnaire · question-settings",
-      "count": 110,
+      "count": 113,
       "firstSeen": "2026-09-04T09:29:33.255Z",
       "via": {
         "question-settings": true,
@@ -41,7 +42,7 @@
         "topic-dialog": true,
         "translations": true
       },
-      "lastSeen": "2026-10-21T14:17:49.113Z"
+      "lastSeen": "2026-10-22T09:47:31.281Z"
     },
     "/surveys/:id/questionnaire(dialog:select-questions)": {
       "route": "/surveys/:id/questionnaire(dialog:select-questions)",
@@ -193,12 +194,12 @@
       "route": "/surveys/:id/questionnaire(dialog:question-logic/:arg)",
       "example": "#/surveys/s3/questionnaire(dialog:question-logic/sos-2-1)",
       "label": "questionnaire · question-logic",
-      "count": 19,
+      "count": 22,
       "firstSeen": "2026-10-19T14:41:19.530Z",
       "via": {
         "question-logic": true
       },
-      "lastSeen": "2026-10-21T14:19:58.051Z"
+      "lastSeen": "2026-10-22T09:46:17.268Z"
     }
   }
 }

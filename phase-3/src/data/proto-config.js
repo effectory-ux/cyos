@@ -25,6 +25,7 @@ export const USE_CASES = [
   { key: "question-settings", label: "Benchmarked question", desc: "Alternative wording + description" },
   { key: "question-edited", label: "Question with a variant", desc: "Alternative wording already applied" },
   { key: "question-logic", label: "Question with logic", desc: "Shows conditionally: a low earlier answer plus a manager-only rule, and one whole topic set to managers only" },
+  { key: "logic-broken", label: "Broken logic", desc: "A rule points to a removed question: red Logic tag on the row, red badge and an error in the dialog" },
   { key: "topic-dialog", label: "Topic settings", desc: "Participant intro screen" },
   { key: "topic-custom", label: "Custom topic", desc: "A topic added in this survey" },
   { key: "add-topic", label: "Add topic", desc: "Name a new topic where you clicked; it arrives empty, ready to fill" },

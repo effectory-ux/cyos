@@ -8,7 +8,7 @@ import { BenchmarkQuestionDialog, QuestionLogicDialog } from "./BenchmarkQuestio
 import { TopicDialog } from "./TopicDialog.jsx";
 import { TranslationsDialog } from "./TranslationsDialog.jsx";
 import { THEMES, CUSTOM_GROUP, answerOptionsOf } from "../data/data.js";
-import { activeConditions, logicSummary } from "../data/logic.js";
+import { activeConditions, logicBroken, logicSummary } from "../data/logic.js";
 import { DESIGNS, DEFAULT_DESIGN, designById, designWash, introSurface, textLook, boxFill } from "../data/designs.js";
 import { autoTranslation } from "../data/i18n.js";
 
@@ -239,11 +239,15 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
         {/* Question logic: this row shows only for some participants — say so
             here, and state the rule on hover. The row click opens the dialog. */}
         {logic && (
-          <Tooltip pos="is-left" float label={<>
+          <Tooltip pos="is-left" float label={logic.broken ? <>
+            <span className="tt-title">Broken logic</span>
+            It points to a question that was removed or now comes later. Open the question to fix it.
+          </> : <>
             <span className="tt-title">Shows conditionally</span>
             {logic.line}
           </>}>
-            <span className="tag tag-logic"><Icon name="split" size={12} /><span className="tag-ellip">Conditional</span></span>
+            <span className={"tag tag-logic" + (logic.broken ? " is-broken" : "")}>
+              <Icon name="split" size={12} /><span className="tag-ellip">Logic</span></span>
           </Tooltip>
         )}
         {q.required && <RequiredMarker size={24} />}
@@ -1117,8 +1121,25 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     if (!rule) return null;
     const earlier = earlierOf(qq);
     const live = activeConditions(rule, earlier);
+    // Broken beats dormant-and-silent: a rule whose question was removed or
+    // moved below gets a red tag so the creator finds it, instead of nothing.
+    const broken = logicBroken(rule, earlier);
+    if (!live.length && !broken) return null;
+    return { count: live.length, broken, line: live.length ? logicSummary({ ...rule, conditions: live }, earlier) : "" };
+  };
+  // What a question inherits from its topic's rule — the in-place logic
+  // editor shows it with the question, same note as the standalone dialog.
+  const topicLogicInfoFor = (qq) => {
+    const key = effTopic(qq);
+    const rule = (topicMeta[key] || {}).logic;
+    if (!rule) return null;
+    const sec = visibleSections.find(s => s.key === key);
+    const first = sec && sec.items[0];
+    const earlier = (first ? flatOrder.slice(0, orderIndex[first.id] ?? 0) : flatOrder)
+      .filter(x => answerOptionsOf(x).length > 0);
+    const live = activeConditions(rule, earlier);
     if (!live.length) return null;
-    return { count: live.length, line: logicSummary({ ...rule, conditions: live }, earlier) };
+    return { name: topicName(key), line: logicSummary({ conditions: live }, earlier) };
   };
   // A topic being dragged: the order the topics show in meanwhile (the
   // lifted one at its slot), as flex order on the list.
@@ -1776,6 +1797,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
         const q = pool.find(p => p.id === settingsQId);
         return q ? (
           <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]} design={design}
+            topicLogic={topicLogicInfoFor(q)}
             allQuestions={flatOrder}
             logicByQuestion={Object.fromEntries(flatOrder.map(x => [x.id, (qMeta[x.id] || {}).logic || null]))}
             logicInPlace={logicInPlace} onOpenLogic={setLogicQId}
