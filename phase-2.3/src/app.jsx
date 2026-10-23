@@ -5,6 +5,7 @@ import { Builder } from "./components/Builder.jsx";
 import { TemplateModal } from "./components/TemplateModal.jsx";
 import { EditQuestionsDialog, ThemeConfirm, AddedNotice } from "./components/EditQuestionsDialog.jsx";
 import { CustomQuestionDialog } from "./components/CustomQuestionDialog.jsx";
+import { setGuidelinesAck } from "./components/QuestionGuidelines.jsx";
 import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus, themesOf } from "./components/shared.jsx";
 import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
@@ -586,7 +587,9 @@ export function App() {
           { dialog: "empty-warn" });
         break;
       }
-      case "new-custom-question": { const sv = draftSurvey(); if (sv) { openBuilder(sv); setNewCustom(true); } break; }
+      case "new-custom-question": { const sv = draftSurvey(); if (sv) { setGuidelinesAck(true); openBuilder(sv); setNewCustom(true); } break; }
+      // The first custom question: the guidelines come first.
+      case "question-guidelines": { const sv = draftSurvey(); if (sv) { setGuidelinesAck(false); openBuilder(sv); setNewCustom(true); } break; }
       case "theme-details": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "theme", arg: (sv.pool.find(q => sv.selectedIds.includes(q.id) && q.theme) || {}).theme }); break; }
       case "intro-screen": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "intro-screen" }); break; }
       case "out-of-scope": { setScreen("surveys"); setOutOfScope(surveysList.find(r => r.status === "Live") || null); break; }

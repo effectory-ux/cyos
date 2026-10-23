@@ -132,6 +132,9 @@ button.sel-btn.cq-sel { font-size: 14px; }
    everything AI here), your own work in the regular secondary grey. */
 .cq-lang-status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 400; line-height: 19.2px; color: var(--content-secondary); }
 .cq-lang-status.is-auto { color: var(--content-info); }
+/* On the stage, top right: this translation was made automatically (AI blue). */
+.cq-auto-tag { background: var(--bg-info-subtle); color: var(--content-info); border: 1px solid var(--border-white); border-radius: var(--radius-base); }
+.cq-auto-tag i[data-icon] { color: inherit; }
 .cq-star-pulse { animation: cq-star 1.2s var(--ease-standard) infinite; }
 @keyframes cq-star { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.8); } }
 @media (prefers-reduced-motion: reduce) { .cq-star-pulse { animation: none; } }
@@ -191,8 +194,8 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .cq-bench-note { display: inline-flex; align-items: center; gap: 6px; margin-right: var(--spacing-tight);
   font-size: 14px; font-weight: 400; line-height: 22.4px; color: var(--content-secondary); }
 .cq-bench-note i { color: var(--content-secondary); }
-.cq-bench-note .btn-link-inline { border: 0; background: none; padding: 0; font: inherit; color: var(--content-action); text-decoration: underline; cursor: pointer; }
-.cq-bench-note .btn-link-inline:hover { color: var(--content-action-hover, var(--content-action)); }
+.cq-bench-note .btn-link-inline, .dialog-subtitle .btn-link-inline { border: 0; background: none; padding: 0; font: inherit; color: var(--content-action); text-decoration: underline; cursor: pointer; }
+.cq-bench-note .btn-link-inline:hover, .dialog-subtitle .btn-link-inline:hover { color: var(--content-action-hover, var(--content-action)); }
 
 /* Compact (< ~1160px): the side list becomes a "Languages" dropdown on top.
    The dialog sizes to its content here instead of holding a fixed height —
@@ -518,6 +521,22 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .qrow-meta { flex: 0 1 auto; min-width: 0; }
 .qrow-meta > *, .aql-meta > * { flex: none; }
 .qrow-meta > .tt-demo:has(> .tag-thm), .aql-meta > .tt-demo:has(> .tag) { flex: 0 1 auto; min-width: 0; display: flex; }
+/* A question's themes (Figma 6578:4330): the main tag and a "+N" chip, 2px
+   apart, as one pill — 4px corners outside, 2px where they meet. The chip
+   takes the status colors of the other themes. The main tag shrinks; the
+   chip never does. */
+.thm-tags { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 2px; }
+.thm-tags > .tt-demo:has(> .tag-thm) { flex: 0 1 auto; min-width: 0; display: flex; }
+.thm-tags > .tt-demo:has(> .tag-thm-more) { flex: none; }
+/* The tags' 1px white border sits on top of the fill, so the colored shape's
+   corners are 1px tighter than the border-radius: 5/3 here reads as 4/2. */
+.thm-tags.has-more > .tt-demo:first-child > .tag-thm { border-radius: 5px 3px 3px 5px; max-width: 120px; }
+.tag-thm.tag-thm-more { border-radius: 3px 5px 5px 3px; max-width: none; font: inherit; font-size: 12px; font-weight: 600; line-height: 16px; cursor: pointer; }
+.tag-thm-more:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 1px; }
+.tag-thm-more[aria-expanded="true"] { filter: brightness(0.88); }
+.thm-tags-pop { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; min-width: 200px; max-width: 280px; }
+.thm-tags-pop .tag-thm { max-width: 100%; }
+.thm-tags-pop-title { font-size: 12px; font-weight: 600; color: var(--content-secondary); margin-bottom: 2px; }
 .qrow-meta .tag-thm, .aql-meta .tag { max-width: 100%; min-width: 0; }
 /* ---- Add-question-from-library dialog (Unified-survey-page frame) ----
    Plain white rows divided by full-width borders; the selection state lives in
@@ -876,7 +895,9 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .sgp-empty-sub { font-size: 13px; line-height: 20px; color: var(--content-secondary); max-width: 260px; }
 /* Empty / start-from-scratch placeholder (Figma 6165:15267): a grey panel with a
    heading, hint, and three greyed-out sample question rows. */
-.qb-empty { margin-top: var(--spacing-base); background: var(--bg-secondary); border: 1px solid var(--border-base); border-radius: 16px;
+/* The empty questionnaire card takes the floating bar's wash over the page
+   (--bar-wash, set on .col), so it reads as part of the design. */
+.qb-empty { margin-top: var(--spacing-base); background: var(--bar-wash, var(--bg-secondary)); border: 1px solid var(--border-base); border-radius: 16px;
   min-height: 486px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: var(--spacing-loose); text-align: center; }
 .qb-empty-title { font-size: 14px; font-weight: 600; line-height: 22.4px; color: var(--content-base); }
 .qb-empty-sub { font-size: 14px; font-weight: 400; line-height: 1.6; color: var(--content-secondary); }
@@ -1488,8 +1509,6 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .tpd-desc-input:focus { background: var(--bg-base); border-color: var(--border-brand); border-style: solid; color: var(--content-base); }
 .tpd-desc-input:focus::placeholder { color: var(--content-placeholder); }
 .tpd-desc-input:disabled { background: transparent; border-color: rgba(25,39,67,.18); cursor: not-allowed; }
-.tpd-next { width: 48px; height: 48px; border-radius: 50%; flex: none; margin-top: 20px;
-  background: #17171b; color: #fff; display: grid; place-items: center; }
 .qsec-title.is-clickable { cursor: pointer; border-radius: var(--radius-base); padding: 2px 6px; margin-left: -6px; }
 .qsec-title.is-clickable:hover { background: var(--bg-base-hover); }
 
@@ -2264,6 +2283,9 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .bi-dialog { gap: 12px; }
 .bi-dialog .dialog-header-top { margin-bottom: 12px; }
 .bi-dialog .dialog-footer { margin-top: 12px; }
+/* The guidelines' one confirmation, set apart from the text above it. */
+.qg-agree { display: flex; align-items: flex-start; gap: var(--spacing-tight); margin-top: 4px; padding-top: 12px;
+  border-top: 1px solid var(--border-base); cursor: pointer; font-size: 14px; line-height: 20px; }
 .bi-body { display: flex; flex-direction: column; gap: var(--spacing-tight); font-size: 14px; line-height: 1.6; color: var(--content-base); }
 .bi-body p, .bi-body ul { margin: 0; }
 .bi-body ul { padding-left: 20px; }

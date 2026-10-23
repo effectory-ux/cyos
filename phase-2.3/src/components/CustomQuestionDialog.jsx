@@ -18,6 +18,7 @@ import { Icon } from "./Icon.jsx";
 import { designWash } from "../data/designs.js";
 import { QTypeIcon, Tooltip, useMediaQuery, MiniSelect } from "./shared.jsx";
 import { BenchmarkInfo } from "./BenchmarkInfo.jsx";
+import { QuestionGuidelinesDialog, useGuidelinesAck } from "./QuestionGuidelines.jsx";
 import { useAnchorMenu, AnchorConfirm, CONFIRM_GAP } from "./AnchorMenu.jsx";
 import { QTYPES, TOPICS } from "../data/data.js";
 import { similarQuestions } from "../data/similar.js";
@@ -327,6 +328,13 @@ function LangRow({ lang, isActive, status, stale, onSelect }) {
   );
 }
 
+// ---- an automatic translation, said on the stage ---------------------------
+// Top right of the preview, where "Auto-translate again" sits for a hand-made
+// one: the translation shown was made automatically.
+export function AutoTranslatedTag() {
+  return <span className="tag cq-auto-tag"><Icon name="featured" size={12} />Auto-translated</span>;
+}
+
 // ---- back to the automatic translation -----------------------------------
 // Top right of the preview while a hand-made translation is shown: the one way back.
 export function RetranslateAction({ onClick }) {
@@ -352,7 +360,7 @@ export function LangPanel({ active, onSelect, source, statusOf = () => null, sta
       <LangRow lang={PRIMARY_LANGUAGE} isActive={active === PRIMARY_LANGUAGE.code} status="source"
         onSelect={() => onSelect(PRIMARY_LANGUAGE.code)} />
       <h3 className="cq-langs-head is-count">Translations ({OTHER_LANGUAGES.length})</h3>
-      <span className={"cq-langs-sub" + (source.tone ? " is-" + source.tone : "")}>{source.icon && <Icon name={source.icon} size={12} />}{source.label}</span>
+      {source && <span className={"cq-langs-sub" + (source.tone ? " is-" + source.tone : "")}>{source.icon && <Icon name={source.icon} size={12} />}{source.label}</span>}
       <div className="cq-langs-scroll scroll-y">
         {OTHER_LANGUAGES.map(l => (
           <LangRow key={l.code} lang={l} isActive={active === l.code}
@@ -841,13 +849,19 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
   // "benchmark" opens what a benchmarked question is — the same explainer as
   // a library question's Benchmarked tag.
   const [benchInfo, setBenchInfo] = useState(false);
+  // The question guidelines (privacy): confirmed once before the first custom
+  // question; after that, a link in the subtitle reads them again.
+  const guidelinesOk = useGuidelinesAck();
+  const [guideOpen, setGuideOpen] = useState(false);
   const benchNote = (
     <span className="cq-bench-note">
       <Icon name="info" size={16} />
-      <span>Custom questions do not have a <button type="button" className="btn-link-inline" aria-haspopup="dialog"
+      <span>Custom questions don't have a <button type="button" className="btn-link-inline" aria-haspopup="dialog"
         onClick={() => setBenchInfo(true)}>benchmark</button> comparison in the results</span>
     </span>
   );
+
+  if (!editing && !guidelinesOk) return <QuestionGuidelinesDialog confirm onClose={onCancel} />;
 
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: 60 }}
@@ -912,7 +926,7 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
               <>
                 <div className="cq-step-head">
                   <h3 className="cq-step-title">We found similar existing questions</h3>
-                  <p className="cq-step-sub is-wide">Reusing an existing question keeps your results comparable with the rest of the organisation and with earlier surveys. Keeping your own wording is fine too: it just won't have a benchmark to compare against.</p>
+                  <p className="cq-step-sub is-wide">Reusing an existing question keeps your results comparable with the rest of the organization and with earlier surveys. Keeping your own wording is fine too: it just won't have a benchmark to compare against.</p>
                 </div>
                 {/* Two named sections, so the choice reads as "mine or one of
                     theirs" instead of one list where your question happens to
@@ -978,7 +992,9 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
           )}
           <h2 className="dialog-title" id="cq-title">
             {editing ? (text.trim() || "Custom question") : "Create custom question"}</h2>
-          <p className="dialog-subtitle">Write your own question and choose how people answer it. Use this for specific questions that are only valid for your context.</p>
+          <p className="dialog-subtitle">Write your own question and choose how people answer it.
+            Every custom question must follow the <button type="button" className="btn-link-inline" aria-haspopup="dialog"
+              onClick={() => setGuideOpen(true)}>question guidelines</button>.</p>
         </div>
 
         <div className="dialog-body cq-body">
@@ -1016,8 +1032,10 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
                   every dialog (the welcome page adds Background beside it).
                   The card is what participants see; where a translation came
                   from is said in the language list. */}
-              {(showManual || stale) && (
+              {(showManual || stale) ? (
                 <div className="cq-stage-tools"><RetranslateAction onClick={() => retranslateOne(activeLang)} /></div>
+              ) : !isPrimary && !working && statusOf(active) === "auto" && (
+                <div className="cq-stage-tools"><AutoTranslatedTag /></div>
               )}
               {compact && (
                 <div className="cq-field cq-langsel">
@@ -1135,8 +1153,7 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
             {/* ---- languages (right, wide only): while creating too, so the
                  translations are reviewed in the same step as the question. ---- */}
             {!compact && (
-              <LangPanel active={active} onSelect={selectLanguage} statusOf={statusOf} staleOf={isStale}
-                source={{ icon: "featured", label: "Automatically translated", tone: "ai" }} />
+              <LangPanel active={active} onSelect={selectLanguage} statusOf={statusOf} staleOf={isStale} />
             )}
           </div>
 
@@ -1165,6 +1182,7 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
         <ManualConflictDialog langs={conflict.langs} onKeep={keepManual} onOverwrite={overwriteManual} />
       )}
       {benchInfo && <BenchmarkInfo onClose={() => setBenchInfo(false)} />}
+      {guideOpen && <QuestionGuidelinesDialog onClose={() => setGuideOpen(false)} />}
     </div>
   );
 }

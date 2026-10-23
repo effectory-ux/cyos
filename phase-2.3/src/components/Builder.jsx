@@ -2,7 +2,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { groupQuestions, QTypeIcon, ThemeTag, CustomTag, Tooltip, RequiredMarker, themeQuestions, useMediaQuery } from "./shared.jsx";
+import { groupQuestions, QTypeIcon, ThemeTags, CustomTag, Tooltip, RequiredMarker, themeQuestions, useMediaQuery } from "./shared.jsx";
 import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
@@ -182,7 +182,7 @@ function TopNav({ name, onRename, compact, mobile }) {
   );
 }
 
-function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, pulsing, onSeen, themeInfo, onOpenTheme, onDragStart, onDragEnd }) {
+function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, pulsing, onSeen, themeInfo, themeInfoFor, onOpenTheme, onDragStart, onDragEnd }) {
   const [menu, setMenu] = useState(false);
   // "Move to topic" opens a nested submenu BESIDE the menu (DS pattern: a
   // trailing .menu-chevron item flying out a second .menu) instead of swapping
@@ -232,8 +232,8 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
       </div>
       <div className="qrow-meta">
         {q.theme
-          ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-left"
-              onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
+          ? <ThemeTags q={q} infoFor={themeInfoFor || ((n) => (n === q.theme ? themeInfo : null))} pos="is-left"
+              onOpen={onOpenTheme} />
           : q.custom ? <CustomTag pos="is-left" onOpen={() => onEdit && onEdit(q)} /> : null}
         {q.required && <RequiredMarker size={24} />}
         {/* The question type is metadata like the tags, so it sits in their
@@ -1622,7 +1622,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     onMoveDown={() => { snapFirst(); reorderQuestion(s.key, qq.id, i + 1); }}
                     topics={visibleSections.map(x => ({ key: x.key, label: topicName(x.key) }))} onMoveTopic={(t) => onMoveTopic && onMoveTopic(qq.id, t)}
                     entering={enteringIds.has(qq.id) && !enteringSecs.has(s.key) ? { delay: enterDelay } : null}
-                    pulsing={pulseIds.has(qq.id)} onSeen={() => stopPulse(qq.id)} themeInfo={themeMap[qq.theme]}
+                    pulsing={pulseIds.has(qq.id)} onSeen={() => stopPulse(qq.id)} themeInfo={themeMap[qq.theme]} themeInfoFor={(n) => themeMap[n]}
                     onOpenTheme={setThemeDetail}
                     onDragStart={startQuestion(s.key, qq.id, i, qq.custom)} onDragEnd={clearDrag} />;
                 })}
@@ -1739,7 +1739,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
       {settingsQId && (() => {
         const q = pool.find(p => p.id === settingsQId);
         return q ? (
-          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]} design={design}
+          <BenchmarkQuestionDialog q={q} meta={qMeta[q.id]} topicKey={effTopic(q)} themeInfo={themeMap[q.theme]} themeInfoFor={(n) => themeMap[n]} design={design}
             onOpenTheme={setThemeDetail}
             allVariants={edges.altWordings}
             topicOptions={visibleSections.map(x => ({ value: x.key, label: topicName(x.key) }))}

@@ -7,7 +7,7 @@
 import { useState, useMemo, useRef, useEffect, Fragment, createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { themeStatus, themeQuestions, themesOf, groupQuestions, QTypeIcon, Tooltip, ThemeTag, CustomTag, RequiredMarker, useMediaQuery, Highlight } from "./shared.jsx";
+import { themeStatus, themeQuestions, themesOf, groupQuestions, QTypeIcon, Tooltip, ThemeTags, CustomTag, RequiredMarker, useMediaQuery, Highlight } from "./shared.jsx";
 import { CustomQuestionDialog } from "./CustomQuestionDialog.jsx";
 import { useAnchorMenu, AnchorConfirm, CONFIRM_GAP } from "./AnchorMenu.jsx";
 import { BenchmarkQuestionDialog } from "./BenchmarkQuestionDialog.jsx";
@@ -102,11 +102,11 @@ function QCheck({ q, on, onClick }) {
     return (
       <>
         <CheckBtn btnRef={confirm.btn} on={moved} elsewhere={!moved} label={label}
-          tip={confirm.at ? null : moved ? "Don't move" : `Already in ${from}. Move to ${qt(ctx.target.label)}`}
+          tip={confirm.at ? null : moved ? "Don't move" : `Already in ${from}. Move to ${qt(ctx.target.label)}.`}
           aria-haspopup={moved ? undefined : "dialog"} aria-expanded={moved ? undefined : !!confirm.at}
           onClick={() => (moved ? ctx.undoMove(q.id) : confirm.toggle())} />
         {confirm.at && <AnchorConfirm at={confirm.at} anchor={confirm.btn} onClose={confirm.close}
-          text={`This question is already in your questionnaire, under ${from}`}
+          text={`This question is already in ${from}`}
           actions={[{ label: `Move to ${qt(ctx.target.label)}`, primary: true, onPick: () => { confirm.close(); ctx.move(q.id); } }]} />}
       </>
     );
@@ -257,7 +257,7 @@ function RowActions({ q, on, inQ, onToggle, onSettings, onEditCustom, onDelete }
   );
 }
 
-function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, onOpenTheme, onEditCustom, onSettings, onDeleteCustom, usedInTag, hl, plain, hideTheme, showTopic }) {
+function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, themeInfoFor, onOpenTheme, onEditCustom, onSettings, onDeleteCustom, usedInTag, hl, plain, hideTheme, showTopic }) {
   const ctxQ = useContext(AddCtx);
   const inQ = !!ctxQ?.initial.has(q.id);
   // The whole row is clicked the way its checkbox is.
@@ -289,8 +289,8 @@ function QRow({ q, on, onToggle, onRequiredPress, rowRef, leaving, themeInfo, on
           ? (q.theme && !hideTheme ? <span className="tag aql-theme-plain">{hl ? <Highlight text={q.theme} q={hl} /> : q.theme}</span>
             : !q.theme && q.custom ? <span className="tag aql-theme-plain">{q.from ? q.from : "Custom question"}</span> : null)
           : q.theme
-          ? <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-above" float
-              hl={hl} onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />
+          ? <ThemeTags q={q} infoFor={themeInfoFor || ((n) => (n === q.theme ? themeInfo : null))} pos="is-above" float
+              hl={hl} onOpen={onOpenTheme} />
           : usedInTag
             ? (q.from ? <UsedInTag survey={q.from} /> : null)
             : q.custom ? <CustomTag label="Custom question" pos="is-above" float onOpen={onEditCustom ? () => onEditCustom(q) : undefined} /> : null}
@@ -1364,7 +1364,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     </div>
   ) : (
     <QRow key={r.q.id} q={r.q} on={sel.has(r.q.id)} hl={gqt2 || undefined} usedInTag={customOnly}
-      leaving={leaving.has(r.q.id)} themeInfo={r.q.theme ? themeCountFor(r.q.theme) : null}
+      leaving={leaving.has(r.q.id)} themeInfo={r.q.theme ? themeCountFor(r.q.theme) : null} themeInfoFor={themeCountFor}
       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
       onToggle={() => toggleRow(r)} onRequiredPress={showReqNotice} rowRef={r.q.id === justAdded ? addedRef : null} />
   );
@@ -1669,7 +1669,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                       {gRes.questions.length + gRes.orgQuestions.length
                         + gRes.indirect.reduce((n, g) => n + g.questions.length, 0)}</span></div>
                     {gRes.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)} hl={gqt} showTopic
-                      leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
+                      leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null} themeInfoFor={themeCountFor}
                       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
                     {gRes.orgQuestions.map(oq => (
@@ -1704,7 +1704,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                             <SelectAllTopic allOn={allOn} total={ids.length} ids={ids} onToggle={() => setMany(ids, !allOn)} />
                           </div>
                           {open && g.questions.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
-                            leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
+                            leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null} themeInfoFor={themeCountFor}
                             onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
                             onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={null} />)}
                         </section>
@@ -1867,7 +1867,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                       <SelectAllTopic allOn={allOn} total={ids.length} ids={ids} onToggle={() => setMany(ids, !allOn)} />
                     </div>
                     {!isColl && g.items.map(qq => <QRow key={qq.id} q={qq} on={sel.has(qq.id)}
-                      leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null}
+                      leaving={leaving.has(qq.id)} themeInfo={qq.theme ? themeCountFor(qq.theme) : null} themeInfoFor={themeCountFor}
                       onOpenTheme={setThemeDetails} onEditCustom={setEditCustomQ} onSettings={setSettingsQ} onDeleteCustom={deleteCustomQ}
                       onToggle={() => toggle(qq)} onRequiredPress={showReqNotice} rowRef={qq.id === justAdded ? addedRef : null} />)}
                   </section>

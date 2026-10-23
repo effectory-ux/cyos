@@ -9,7 +9,7 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, Tooltip, ThemeTag, useMediaQuery, MiniSelect } from "./shared.jsx";
+import { QTypeIcon, Tooltip, ThemeTag, themesOf, useMediaQuery, MiniSelect } from "./shared.jsx";
 import { LANG_STATUS, LangPanel, AutoTextarea } from "./CustomQuestionDialog.jsx";
 import { QTYPES, SCALE_LABELS } from "../data/data.js";
 import { LANGUAGES, flagSrc, autoTranslation, scaleFor } from "../data/i18n.js";
@@ -138,7 +138,7 @@ function DetachWarning({ theme, completes, themeCount, onCancel, onConfirm }) {
   );
 }
 
-export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, design, allVariants = false, onCancel, onSave, onDetach, onOpenTheme }) {
+export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions = [], themeInfo, themeInfoFor, design, allVariants = false, onCancel, onSave, onDetach, onOpenTheme }) {
   const [infoOpen, setInfoOpen] = useState(false);
   // Staged edits — committed on Save only.
   const [variant, setVariant] = useState(meta.variant);
@@ -210,8 +210,13 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                 <Icon name="barchart-2" size={12} />Benchmarked
               </button>
             </Tooltip>
-            {q.theme && <ThemeTag theme={q.theme} kept={themeInfo ? themeInfo.kept : 0} total={themeInfo ? themeInfo.total : 0} pos="is-below"
-              onOpen={onOpenTheme ? () => onOpenTheme(q.theme) : undefined} />}
+            {/* Every theme the question counts for: the dialog has the room the
+                row doesn't. */}
+            {themesOf(q).map(n => {
+              const i = themeInfoFor ? themeInfoFor(n) : (n === q.theme ? themeInfo : null);
+              return <ThemeTag key={n} theme={n} kept={i ? i.kept : 0} total={i ? i.total : 0} pos="is-below"
+                onOpen={onOpenTheme ? () => onOpenTheme(n) : undefined} />;
+            })}
             {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
           </div>
           <h2 className="dialog-title" id="bmq-title">{title}</h2>
