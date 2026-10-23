@@ -9,7 +9,7 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, Tooltip, ThemeTag, themesOf, useMediaQuery, MiniSelect } from "./shared.jsx";
+import { QTypeIcon, Tooltip, ThemeTag, themesOf, byCompleteFirst, useMediaQuery, MiniSelect } from "./shared.jsx";
 import { LANG_STATUS, LangPanel, AutoTextarea } from "./CustomQuestionDialog.jsx";
 import { QTYPES, SCALE_LABELS } from "../data/data.js";
 import { LANGUAGES, flagSrc, autoTranslation, scaleFor } from "../data/i18n.js";
@@ -212,7 +212,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             </Tooltip>
             {/* Every theme the question counts for: the dialog has the room the
                 row doesn't. */}
-            {themesOf(q).map(n => {
+            {byCompleteFirst(themesOf(q), themeInfoFor || ((n) => (n === q.theme ? themeInfo : null))).map(n => {
               const i = themeInfoFor ? themeInfoFor(n) : (n === q.theme ? themeInfo : null);
               return <ThemeTag key={n} theme={n} kept={i ? i.kept : 0} total={i ? i.total : 0} pos="is-below"
                 onOpen={onOpenTheme ? () => onOpenTheme(n) : undefined} />;
@@ -220,7 +220,6 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
           </div>
           <h2 className="dialog-title" id="bmq-title">{title}</h2>
-          <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
         </div>
 
         <div className="bmq-selects">

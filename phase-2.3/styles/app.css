@@ -1412,6 +1412,15 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .dialog.has-corner-tags .dialog-header { gap: 0; }
 .dialog.has-corner-tags .dialog-title { line-height: 24px; }
 .dialog.has-corner-tags .dialog-subtitle { line-height: 20px; }
+/* By default the tags sit in the header's flow, under the title (and its
+   subtitle, when there is one); the "Question tags in the corner" variant
+   keeps the corner placement above. */
+html:not(.has-tags-in-corner) .dialog.has-corner-tags { padding-top: 24px; }
+html:not(.has-tags-in-corner) .dialog.has-corner-tags .dialog-header .bmq-kind { position: static; order: 2; margin-top: 12px; }
+/* Question dialogs (standard and custom): a 26px title on desktop. */
+@media (min-width: 761px) {
+  .dialog:is(.cq-dialog, .bmq-dialog) .dialog-title { font-size: 26px; line-height: 34px; }
+}
 .dialog.has-corner-tags .dialog-header .bmq-kind { position: absolute; top: 16px; left: 24px; right: 64px; }
 .bmq-card { background: var(--bg-base); border: 1px solid var(--border-base); border-radius: var(--radius-xl);
   box-shadow: 0 4px 6px rgba(25,39,67,.08); padding: 24px; width: 100%; max-width: 694px;

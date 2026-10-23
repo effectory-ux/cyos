@@ -50,8 +50,11 @@ export function App() {
   // Design variants (toolbar): flip between candidate designs live.
   // The sidebar dialog (Figma 6316:27977) is the default now; flipping the
   // variant off brings the old tabbed dialog back for comparison.
-  const [variantsOn, setVariantsOn] = useState({ dialogGrouped: false, checkWarnsOnly: false, addAtBottom: false, pagesRail: false, introTextColor: false, introTextBox: false, whiteTopics: false });
+  const [variantsOn, setVariantsOn] = useState({ dialogGrouped: false, checkWarnsOnly: false, addAtBottom: false, pagesRail: false, introTextColor: false, introTextBox: false, whiteTopics: false, tagsInCorner: false });
   const toggleVariant = (key) => setVariantsOn(v => ({ ...v, [key]: !v[key] }));
+  // "Question tags in the corner": a layout-only variant of every question
+  // dialog, so it rides on a class on <html> instead of props through each one.
+  useEffect(() => { document.documentElement.classList.toggle("has-tags-in-corner", !!variantsOn.tagsInCorner); }, [variantsOn.tagsInCorner]);
   const [newCustom, setNewCustom] = useState(false); // create-from-builder ("Add" menu)
   const [addNotice, setAddNotice] = useState(null); // what the last Add from the library put in
   // A survey-in-progress awaiting its name. Set after a template is chosen or
@@ -574,6 +577,16 @@ export function App() {
         openBuilder({ ...sv, customTopics: [...(sv.customTopics || []), key],
           topicMeta: { ...sv.topicMeta, [key]: { name: OTHER_TOPIC, auto: true } },
           pool: [...sv.pool, q], selectedIds: [...sv.selectedIds, q.id] });
+        break;
+      }
+      // An existing custom question, opened to edit: tags under the title, no subtitle.
+      case "edit-custom-question": {
+        const sv = draftSurvey(); if (!sv) break;
+        const key = "ct-other-demo", q = { id: "c-other-demo", topic: key, theme: null, bench: false, type: "scale5", custom: true, text: "I can switch off after work" };
+        openBuilder({ ...sv, customTopics: [...(sv.customTopics || []), key],
+          topicMeta: { ...sv.topicMeta, [key]: { name: OTHER_TOPIC, auto: true } },
+          pool: [...sv.pool, q], selectedIds: [...sv.selectedIds, q.id] });
+        setEditCustom(q);
         break;
       }
       case "add-topic": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "add-topic" }); break; }

@@ -98,6 +98,9 @@ const Flag = ({ lang }) => (
 );
 
 const MANUAL_LABEL = "Manually translated";
+// What an automatic translation is called, on the stage tag and on the
+// language list's star alike.
+const AUTO_LABEL = "Auto-translated";
 const joinNames = (langs) => {
   const names = langs.map(l => `${l.label} (${l.country})`);
   return names.length < 2 ? names[0] : names.slice(0, -1).join(", ") + " and " + names.at(-1);
@@ -312,17 +315,18 @@ function LangRow({ lang, isActive, status, stale, onSelect }) {
         <span className="cq-lang-name">{lang.label}</span>
         {status === "loading" ? <span className="cq-lang-line is-ai" role="status">Translating…</span>
           : status === "edited" && stale ? <span className="cq-lang-line is-stale">Check again</span>
-          : status === "edited" ? <span className="cq-lang-line is-manual">{MANUAL_LABEL}</span>
           : <span className="cq-lang-country">{lang.country}</span>}
       </span>
       {/* The panel's "✦ Automatically translated" is the legend; this is its
           mark per row, in a status column on the right — pulsing while the
           translation loads. No mark always comes with words saying why. */}
       {(status === "auto" || status === "loading") && (
-        <span className="cq-lang-mark" title="Translated automatically">
-          <Icon name="featured" size={16} className={status === "loading" ? "cq-star-pulse" : undefined} />
-          <span className="eq-sr-only">Translated automatically</span>
-        </span>
+        <Tooltip label={status === "loading" ? "Translating…" : AUTO_LABEL} pos="is-left" float>
+          <span className="cq-lang-mark">
+            <Icon name="featured" size={16} className={status === "loading" ? "cq-star-pulse" : undefined} />
+            <span className="eq-sr-only">{AUTO_LABEL}</span>
+          </span>
+        </Tooltip>
       )}
     </button>
   );
@@ -332,7 +336,7 @@ function LangRow({ lang, isActive, status, stale, onSelect }) {
 // Top right of the preview, where "Auto-translate again" sits for a hand-made
 // one: the translation shown was made automatically.
 export function AutoTranslatedTag() {
-  return <span className="tag cq-auto-tag"><Icon name="featured" size={12} />Auto-translated</span>;
+  return <span className="tag cq-auto-tag"><Icon name="featured" size={12} />{AUTO_LABEL}</span>;
 }
 
 // ---- back to the automatic translation -----------------------------------
@@ -409,11 +413,20 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
   // value is the stable key, label the survey-scoped display name); fall back
   // to the library topics if none were passed.
   const topicList = (topics && topics.length) ? topics : TOPICS.map(t => ({ value: t, label: t }));
-  const topicLabel = (v) => ((topicList.find(o => o.value === v) || {}).label || v);
+  // Writing a new question, "Other questions" (autoTopic) is picked unless you
+  // pick another topic: the one in this survey by that name, or — when there
+  // is none (or it was renamed) — one that is made when the question goes in
+  // (the app files a question without a topic there).
+  const AUTO = "__auto";
+  const autoExisting = !editing && autoTopic ? topicList.find(o => o.label === autoTopic) || null : null;
+  const topicItems = !editing && autoTopic && !autoExisting ? [...topicList, { value: AUTO, label: autoTopic }] : topicList;
+  const topicLabel = (v) => ((topicItems.find(o => o.value === v) || {}).label || v);
   const [text, setText] = useState(question ? question.text : "");
   const [desc, setDesc] = useState(question && question.desc ? question.desc : "");
   const [type, setType] = useState(question ? question.type : "scale5");
-  const [topic, setTopic] = useState(question && question.topic ? question.topic : (defaultTopic || ""));
+  const [topic, setTopic] = useState(question && question.topic ? question.topic
+    : defaultTopic || (!editing && autoTopic ? (autoExisting ? autoExisting.value : AUTO) : ""));
+  const topicKey = topic === AUTO ? undefined : topic; // what the question is filed under
   // Custom answer options (multiple choice only) — custom questions are the ONE
   // place answers are editable; standard questions stay standard from A to Z.
   const [opts, setOpts] = useState(question && question.options && question.options.length ? question.options : ["", ""]);
@@ -522,7 +535,7 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
   // Using an existing question puts it in the topic it already belongs to; one
   // reused from another survey has none here, so it takes the topic chosen
   // above, or "Other questions".
-  const pickExisting = (m) => { onUseSuggestion && onUseSuggestion(m, m.from ? (topic || undefined) : undefined); onCancel(); };
+  const pickExisting = (m) => { onUseSuggestion && onUseSuggestion(m, m.from ? (topicKey || undefined) : undefined); onCancel(); };
   const goesToOf = (m) => (m.from ? (topic ? topicLabel(topic) : autoTopic) : (m.topic ? topicLabel(m.topic) : autoTopic));
   // The question check, live while you write: the writing rules, and whether
   // the question already exists (the closest match you haven't kept yours
@@ -540,7 +553,7 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
     const keys = [...new Set(pool.filter(x => selectedIds.includes(x.id) && (x.id === m.id || x.dupOf === m.id)).map(eff))];
     return keys.length ? { keys, label: keys.map(k => `“${topicLabel(k)}”`).join(" and ") } : null;
   };
-  const target = topic ? { value: topic, label: topicLabel(topic) } : null;
+  const target = topicKey ? { value: topicKey, label: topicLabel(topicKey) } : null;
   const isInTopic = (m) => { const w = whereOf(m); return !!w && !!target && w.keys.includes(target.value); };
   // Only the SAME wording is the same question. A similar one in this topic
   // still lets you keep yours: it may ask something the other doesn't.
@@ -747,7 +760,7 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
   const buildQ = () => ({
     ...(question || {}),
     id: question ? question.id : "c" + Date.now(),
-    topic, theme: question ? question.theme : null, bench: false, type, custom: true,
+    topic: topicKey, theme: question ? question.theme : null, bench: false, type, custom: true,
     text: text.trim(), desc: desc.trim() || undefined,
     options: hasOpts ? cleanOpts : undefined,
     // The translations edited by hand ride along to be saved with it; the
@@ -805,9 +818,8 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
     { header: true, label: "Custom" },
     ...["multiple", "single"].filter(k => QTYPES[k] && QTYPES[k].creatable).map(typeItem),
   ];
-  const topicItems = topicList;
   const langOption = l => ({
-    value: l.code, label: `${l.label} (${l.country})`, sub: l.primary ? LANG_STATUS.source.label : statusOf(l.code) === "loading" ? "Translating…" : LANG_STATUS[statusOf(l.code)].label, lead: <Flag lang={l} />,
+    value: l.code, label: `${l.label} (${l.country})`, sub: l.primary ? LANG_STATUS.source.label : statusOf(l.code) === "loading" ? "Translating…" : statusOf(l.code) === "edited" ? undefined : LANG_STATUS[statusOf(l.code)].label, lead: <Flag lang={l} />,
   });
   // Mirrors the side list so the compact menu reads the same way: no headings,
   // each language says what it is on its own second line.
@@ -992,9 +1004,10 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
           )}
           <h2 className="dialog-title" id="cq-title">
             {editing ? (text.trim() || "Custom question") : "Create custom question"}</h2>
-          <p className="dialog-subtitle">Write your own question and choose how people answer it.
+          {/* Only while writing a new one: an existing question's title is its wording. */}
+          {!editing && <p className="dialog-subtitle">Write your own question and choose how people answer it.
             Every custom question must follow the <button type="button" className="btn-link-inline" aria-haspopup="dialog"
-              onClick={() => setGuideOpen(true)}>question guidelines</button>.</p>
+              onClick={() => setGuideOpen(true)}>question guidelines</button>.</p>}
         </div>
 
         <div className="dialog-body cq-body">
@@ -1009,7 +1022,7 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
           <div className="cq-selects">
             <div className="cq-field">
               <span className="cq-lbl">Add to topic
-                <Tooltip label={"Topics organise questions in your questionnaire. They don't affect benchmarks." + (autoTopic && !editing ? ` No topic chosen? It goes to “${autoTopic}”.` : "")} pos="is-above" float>
+                <Tooltip label="Topics organize questions in your questionnaire. They don't affect benchmarks." pos="is-above" float>
                   <button type="button" className="cq-info" aria-label="About topics"><Icon name="info" size={16} /></button>
                 </Tooltip>
               </span>
