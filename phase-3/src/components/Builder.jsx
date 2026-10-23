@@ -183,7 +183,7 @@ function TopNav({ name, onRename, compact, mobile }) {
   );
 }
 
-function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, pulsing, onSeen, themeInfo, themeInfoFor, onOpenTheme, onDragStart, onDragEnd, logic, onOpenLogic, followUpBlocked, onFollowUp, linked = false }) {
+function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdit, onSettings, onResetDesc, onMoveUp, onMoveDown, canUp, canDown, topics, onMoveTopic, dragging, entering, pulsing, onSeen, themeInfo, themeInfoFor, onOpenTheme, onDragStart, onDragEnd, logic, onOpenLogic, followUpBlocked, onFollowUp, linked = false, followDepth = 0 }) {
   const [menu, setMenu] = useState(false);
   // "Move to topic" and "Add follow-up question" open a nested submenu BESIDE
   // the menu (DS pattern: a trailing .menu-chevron item flying out a second
@@ -220,8 +220,8 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
   // this question actually has one — added here or shipped with a custom one.
   const desc = meta && meta.descHidden ? undefined : ((meta && meta.desc) || q.desc);
   return (
-    <div className={"qrow" + (dragging ? " is-dragging" : "") + (away ? " is-away" : "") + (entering ? " is-entering" : "") + (pulsing ? " is-fresh" : "")} data-qid={q.id}
-      style={entering || order != null || slotH ? { ...(entering ? { "--enter-delay": entering.delay + "ms" } : {}), ...(order != null ? { order } : {}), ...(slotH ? { "--row-h": slotH + "px" } : {}) } : undefined}
+    <div className={"qrow" + (dragging ? " is-dragging" : "") + (away ? " is-away" : "") + (entering ? " is-entering" : "") + (pulsing ? " is-fresh" : "") + (followDepth ? " is-followup" : "")} data-qid={q.id}
+      style={entering || order != null || slotH || followDepth ? { ...(entering ? { "--enter-delay": entering.delay + "ms" } : {}), ...(order != null ? { order } : {}), ...(slotH ? { "--row-h": slotH + "px" } : {}), ...(followDepth ? { "--fu-depth": followDepth } : {}) } : undefined}
       onClick={rowClick} onMouseEnter={pulsing && onSeen ? onSeen : undefined}>
       <Tooltip label="Drag to reorder" pos="is-left">
         <button className="ib ib-36 ib-tertiary drag-ib" aria-label="Drag to reorder" draggable
@@ -1202,11 +1202,18 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // Can this question trigger follow-ups? Any question with fixed answer
   // options can — also one shown conditionally: its follow-ups then show only
   // to the people who got it and answered that way.
+  // How deep a follow-up sits in its chain (0 = not a follow-up): rows indent
+  // that far under their question, so "right after it" is something you see.
+  const fuDepth = (qq, n = 0) => {
+    const a = conditionOfType((qMeta[qq.id] || {}).logic, "answer");
+    if (!a || !a.followUp || !sel.has(a.trigger) || n > 6) return n;
+    const t = pool.find(p => p.id === a.trigger);
+    return t ? fuDepth(t, n + 1) : n;
+  };
   const followUpBlockFor = (qq) => (answerOptionsOf(qq).length ? null : "Text answers can't trigger follow-up questions");
   // Start a follow-up's flow (the library, or the custom question dialog with
-  // its checks); the app runs it and gives the arrivals the link. From the
-  // row menu no answers are chosen yet (`pickAnswers`): the Logic dialog
-  // opens on the new follow-up afterwards to choose them.
+  // its checks); the app runs it ON TOP of the open dialogs and gives the
+  // arrivals the link — nothing here closes.
   const startFollowUpFrom = (trigger, fu, source, pickAnswers = false) => {
     const topic = effTopic(trigger);
     const opts = answerOptionsOf(trigger);
@@ -1214,7 +1221,6 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     // sentences per case around it.
     const answersText = fu.answers.length
       ? new Intl.ListFormat("en", { type: "disjunction" }).format(fu.answers.map(i => opts[i]).filter(Boolean)) : null;
-    setLogicQId(null); setLogicDraft(false); setSettingsQId(null);
     onFollowUp && onFollowUp({ trigger: trigger.id, triggerText: trigger.text, topic, topicLabel: topicName(topic),
       op: fu.op, answers: fu.answers, answersText, source, pickAnswers, created: [] });
   };
@@ -1796,6 +1802,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     onOpenLogic={(qq2) => (logicInPlace ? setSettingsQId(qq2.id) : setLogicQId(qq2.id))}
                     followUpBlocked={followUpBlockFor(qq)}
                     linked={(() => { const a = conditionOfType((qMeta[qq.id] || {}).logic, "answer"); return !!(a && a.followUp && sel.has(a.trigger)); })()}
+                    followDepth={fuDepth(qq)}
                     onFollowUp={() => { setLogicDraft(true); setLogicQId(qq.id); }}
                     order={slotAt != null ? (i >= slotAt ? i + 1 : i) : shown === s.items ? undefined : shown.indexOf(qq)}
                     away={isDragged && !!qHint && qHint.secKey !== s.key} meta={qMeta[qq.id]} tr={tr} showDesc={showDesc}

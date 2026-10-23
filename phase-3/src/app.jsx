@@ -136,15 +136,10 @@ export function App() {
   };
   useEffect(() => {
     if (!followUpInfo || newCustom || editing || editCustom) return;
-    // After the dialogs' own half-second arrival (afterClose).
-    // From the row menu the answers are still to choose: the dialog opens on
-    // the new follow-up itself. Otherwise back on the trigger, list updated.
-    const t = setTimeout(() => {
-      const made = followUpInfo.created || [];
-      followUp.current = null;
-      setFollowUpInfo(null);
-      setOpenInBuilder({ dialog: "logic-return", arg: followUpInfo.pickAnswers && made.length ? made[0] : followUpInfo.trigger });
-    }, 700);
+    // The Logic dialog stayed open under the flow, so there is nothing to
+    // reopen: once the questions have arrived (after the dialogs' half-second
+    // afterClose), the follow-up context simply ends.
+    const t = setTimeout(() => { followUp.current = null; setFollowUpInfo(null); }, 700);
     return () => clearTimeout(t);
   }, [followUpInfo, newCustom, editing, editCustom]);
 
@@ -751,6 +746,10 @@ export function App() {
         templateName={pending.survey.templateName} changing={changing}
         needsProject={!pending.survey.proj} project={pending.survey.proj}
         onBack={cancelName} onConfirm={confirmName} />}
+      {/* A follow-up's flow opens ON TOP of the Logic dialog (and whatever is
+          under it) instead of closing it: this layer lifts the library and
+          the custom question dialog — guidelines and all — above it. */}
+      <div style={followUpInfo ? { position: "relative", zIndex: 95 } : undefined}>
       {editing && survey && (
         <EditQuestionsDialog initialPool={survey.pool} initialSelected={survey.selectedIds}
           tweaks={{ ...TWEAKS, orgCustoms: edges.orgCustoms, similarAlways: edges.similarAlways, altWordings: edges.altWordings, checkWarnsOnly: variantsOn.checkWarnsOnly }}
@@ -774,11 +773,12 @@ export function App() {
         onOpenCreated={(q) => { setNewCustom(false); setEditCustom(q); }} />}
       {editCustom && <CustomQuestionDialog question={editCustom} translations={questionI18n(editCustom)} design={survey ? designById(survey.design) : null}
         followUpLink={survey ? followUpOf(((survey.qMeta || {})[editCustom.id] || {}).logic, survey.pool.filter(p => survey.selectedIds.includes(p.id))) : null}
-        onEditLogic={() => { const id = editCustom.id; setEditCustom(null); setFocusTitle(false); setOpenInBuilder({ dialog: "logic-return", arg: id }); }}
+        onEditLogic={() => setOpenInBuilder({ dialog: "logic-return", arg: editCustom.id })}
         topics={surveyTopicOptions()} focusTitle={focusTitle}
         onCancel={() => { setEditCustom(null); setFocusTitle(false); }}
         onSubmit={(q) => { saveCustomEdit(q); setFocusTitle(false); }}
         onDelete={(q) => { removeFromSurvey(q); setEditCustom(null); setFocusTitle(false); }} />}
+      </div>
       {outOfScope && <OutOfScopeDialog row={outOfScope} onClose={() => setOutOfScope(null)} />}
       {addNotice && <AddedNotice key={addNotice.key} summary={addNotice.summary} onClose={() => setAddNotice(null)} />}
     </div>

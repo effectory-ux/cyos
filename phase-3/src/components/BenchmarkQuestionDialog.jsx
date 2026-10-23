@@ -556,20 +556,21 @@ export function QuestionLogicDialog({ sections = [], initialId, initialDraft = f
     commit();
     onClose();
   };
-  // A follow-up leaves this dialog for the library or the custom question
-  // dialog, so what was edited here is saved first — nothing is lost on the
-  // way out, and the dialog reopens on this question when the flow is done.
-  const launchFollowUp = (fu, source) => {
-    if (!canLeave()) return;
-    commit();
-    onStartFollowUp(selected, fu, source);
-  };
+  // A follow-up's question comes from the library or the custom question
+  // dialog, opened on top of this one — which stays open, edits and all.
+  const launchFollowUp = (fu, source) => onStartFollowUp(selected, fu, source);
   // hasAny sees every condition (the Remove-all sweep must catch half-made
   // and broken ones too); hasRule is what earns a BADGE — at least one
   // COMPLETE condition (subject and value both chosen), or a broken one that
   // needs the red flag. A half-picked condition is editing, not a rule.
   const hasAny = (key) => { const l = logicOf(key); return !!(l && (l.conditions || []).length); };
   const isBroken = (key) => logicBroken(logicOf(key), earlierFor(key));
+  // A follow-up's depth in its chain — the rail indents it under its question.
+  const fuDepthOf = (id, n = 0) => {
+    const a = conditionOfType(logicOf(id), "answer");
+    if (!a || !a.followUp || !questions.some(x => x.id === a.trigger) || n > 6) return n;
+    return fuDepthOf(a.trigger, n + 1);
+  };
   const hasRule = (key) => activeConditions(logicOf(key), earlierFor(key)).length > 0 || isBroken(key)
     || !!(conditionOfType(logicOf(key), "answer") || {}).followUp;
   // Locked subjects: a required question, or a topic holding only required
@@ -707,7 +708,8 @@ export function QuestionLogicDialog({ sections = [], initialId, initialDraft = f
                   {s.items.map(x => (
                     <button key={x.id} type="button" role="option" aria-selected={x.id === selKey}
                       ref={x.id === selKey ? selRef : undefined}
-                      className={"lgc-q" + (x.id === selKey ? " is-selected" : "")} onClick={() => hop(x.id)}>
+                      className={"lgc-q" + (x.id === selKey ? " is-selected" : "") + (fuDepthOf(x.id) ? " is-followup" : "")}
+                      style={fuDepthOf(x.id) ? { "--fu-depth": fuDepthOf(x.id) } : undefined} onClick={() => hop(x.id)}>
                       <span className="lgc-q-text">{x.text}</span>
                       {/* A ruled topic's badge is NOT repeated on its
                           questions (Jamal) — the pane's inherited note

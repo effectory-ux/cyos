@@ -508,6 +508,13 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .qrow { display: flex; align-items: center; gap: var(--spacing-base-tight); padding: var(--spacing-base-tight) var(--spacing-base);
   border-bottom: 1px solid var(--border-base); background: var(--bg-base); }
 .qrow:last-child { border-bottom: none; }
+/* A follow-up sits right under its question: indented one step per link in
+   its chain, with a connector from the row above — the link made visible. */
+.qrow.is-followup { position: relative; padding-left: calc(var(--spacing-base) + var(--fu-depth, 1) * 28px); }
+.qrow.is-followup::before { content: ""; position: absolute; top: 0; height: 50%; width: 14px;
+  left: calc(var(--spacing-base) + (var(--fu-depth, 1) - 1) * 28px + 8px);
+  border-left: 2px solid var(--border-info-subtle); border-bottom: 2px solid var(--border-info-subtle);
+  border-bottom-left-radius: 6px; pointer-events: none; }
 .qrow-main { flex: 1; min-width: 0; }
 .qrow-meta { display: flex; align-items: center; gap: var(--spacing-base-tight); flex: none; }
 /* Tags inside a question row carry a 1px surface-coloured ring so they read
@@ -2361,6 +2368,11 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
   font: inherit; font-size: 14px; font-weight: 500; line-height: 22.4px;
   color: var(--content-action); cursor: pointer; }
 .lgc-q.is-topic { font-size: 16px; font-weight: 600; line-height: 24px; }
+.lgc-q.is-followup { position: relative; padding-left: calc(12px + var(--fu-depth, 1) * 20px); }
+.lgc-q.is-followup::before { content: ""; position: absolute; top: -2px; height: calc(50% + 2px); width: 10px;
+  left: calc(12px + (var(--fu-depth, 1) - 1) * 20px + 2px);
+  border-left: 2px solid var(--border-info-subtle); border-bottom: 2px solid var(--border-info-subtle);
+  border-bottom-left-radius: 6px; pointer-events: none; }
 .lgc-q:hover { background: var(--bg-secondary); }
 .lgc-q.is-selected { background: var(--bg-brand-subtle-selected); color: var(--content-action-pressed); }
 .lgc-q-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2421,7 +2433,7 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lgc-fu-sub { font-size: 12px; line-height: 18px; color: var(--content-secondary); }
 .lgc-fu { align-items: stretch; }
-.lgc-fu .lgc-hint, .lgc-fu-add-wrap { align-self: flex-start; }
+.lgc-fu .lgc-hint, .lgc-fu-add-wrap, .lgc-fu-start { align-self: flex-start; }
 .lgc-fu-add-wrap { position: relative; }
 .lgc-fu-menu { position: absolute; top: calc(100% + 4px); left: 0; width: 300px; z-index: 40; }
 /* A condition card's head: what it is, and — once set — its own remove. */
