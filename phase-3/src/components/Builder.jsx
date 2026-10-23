@@ -2,7 +2,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { groupQuestions, QTypeIcon, ThemeTags, CustomTag, Tooltip, RequiredMarker, themeQuestions, useMediaQuery } from "./shared.jsx";
+import { groupQuestions, QTypeIcon, ThemeTags, CustomTag, Tooltip, RequiredMarker, themeQuestions, useMediaQuery, AddQuestionsMenu } from "./shared.jsx";
 import { ThemeDetailsDialog } from "./EditQuestionsDialog.jsx";
 import { BenchmarkQuestionDialog, QuestionLogicDialog } from "./BenchmarkQuestionDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
@@ -197,7 +197,7 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
   const openSub = (kind = "move") => {
     const el = (kind === "followup" ? fuRef : moveRef).current; if (!el) return;
     const r = el.getBoundingClientRect();
-    const W = 240, gap = 4;
+    const W = kind === "followup" ? 300 : 240, gap = 4;
     // Flyout to the left of the menu (it sits at the row's right edge); flip
     // right if there isn't room, and keep it inside the viewport vertically.
     const left = r.left - W - gap >= 8 ? r.left - W - gap : Math.min(r.right + gap, window.innerWidth - W - 8);
@@ -345,19 +345,10 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
                   </>
               </div>
               {subAt && subAt.kind === "followup" && createPortal(
-                <div className="menu qrow-submenu" role="menu" aria-label="Add follow-up question"
+                <AddQuestionsMenu className="qrow-submenu" title="Add follow-up question"
                   style={{ left: subAt.left, top: subAt.top, width: subAt.width }}
-                  onMouseLeave={() => setSubAt(null)}>
-                  <div className="menu-group-lbl">Add follow-up question</div>
-                  <div className="menu-item" role="menuitem" onClick={() => { close(); onFollowUp("library"); }}>
-                    <span className="menu-item-icon"><Icon name="book-open" size={16} /></span>
-                    <span className="menu-item-body"><span className="menu-item-title">Choose from library</span></span>
-                  </div>
-                  <div className="menu-item" role="menuitem" onClick={() => { close(); onFollowUp("custom"); }}>
-                    <span className="menu-item-icon"><Icon name="edit-inline" size={16} /></span>
-                    <span className="menu-item-body"><span className="menu-item-title">Write your own</span></span>
-                  </div>
-                </div>, document.body)}
+                  onMouseLeave={() => setSubAt(null)} onPick={close}
+                  onLibrary={() => onFollowUp("library")} onCustom={() => onFollowUp("custom")} />, document.body)}
               {subAt && subAt.kind === "move" && createPortal(
                 <div className="menu qrow-submenu" role="menu" aria-label="Move to topic"
                   style={{ left: subAt.left, top: subAt.top, width: subAt.width }}
@@ -404,11 +395,21 @@ function attachFollowUps(sections, qMeta) {
   let changed = false;
   const next = sections.map(sec => {
     const ids = new Set(sec.items.map(i => i.id));
-    const linked = sec.items.filter(i => { const t = fuOf(i.id); return t && t !== i.id && ids.has(t) && !fuOf(t); });
-    if (!linked.length) return sec;
-    const rest = sec.items.filter(i => !linked.includes(i));
-    const items = [];
-    rest.forEach(i => { items.push(i); linked.filter(f => fuOf(f.id) === i.id).forEach(f => items.push(f)); });
+    // Linked: a follow-up whose question is in this topic. Follow-ups can
+    // have follow-ups of their own, so each one is placed under its own
+    // question, recursively, keeping the order they were made in.
+    const isLinked = (i) => { const t = fuOf(i.id); return !!t && t !== i.id && ids.has(t); };
+    if (!sec.items.some(isLinked)) return sec;
+    const kids = {};
+    sec.items.filter(isLinked).forEach(i => { (kids[fuOf(i.id)] = kids[fuOf(i.id)] || []).push(i); });
+    const items = [], seen = new Set();
+    const place = (i) => {
+      if (seen.has(i.id)) return;
+      seen.add(i.id); items.push(i);
+      (kids[i.id] || []).forEach(place);
+    };
+    sec.items.filter(i => !isLinked(i)).forEach(place);
+    sec.items.forEach(place); // anything a cycle left out keeps its place
     if (items.some((x, k) => x.id !== sec.items[k].id)) { changed = true; return { ...sec, items }; }
     return sec;
   });
@@ -443,23 +444,6 @@ function twoSentences(text) {
 }
 
 // The two ways to add questions, wherever adding starts (the bar, or a topic).
-function AddQuestionsMenu({ className, onPick, onLibrary, onCustom }) {
-  const item = (icon, title, sub, act) => (
-    <div className="menu-item" role="menuitem" onClick={() => { onPick(); act(); }}>
-      <span className="menu-item-icon"><Icon name={icon} size={16} /></span>
-      <span className="menu-item-body">
-        <span className="menu-item-title">{title}</span>
-        <span className="menu-item-sub">{sub}</span>
-      </span>
-    </div>
-  );
-  return (
-    <div className={"menu " + className} role="menu">
-      {item("list-unordered", "Add from question library", "Validated questions with benchmarks", onLibrary)}
-      {item("edit", "Create custom question", "Your own wording, no benchmark", onCustom)}
-    </div>
-  );
-}
 
 // A transparent pixel as the browser's own drag image: its semi-transparent
 // snapshot is replaced by the lifted card the builder draws itself, so the
@@ -589,11 +573,12 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // A question's effective topic: survey-scoped move override, else its own.
   const ownTopic = (q) => (qMeta[q.id] && qMeta[q.id].topic) || q.topic;
   // A follow-up lives in its trigger's topic: move the trigger, it comes along.
-  const effTopic = (q) => {
+  // (Chains too: a follow-up's follow-up follows the whole chain's topic.)
+  const effTopic = (q, depth = 0) => {
     const a = conditionOfType((qMeta[q.id] || {}).logic, "answer");
-    if (a && a.followUp && sel.has(a.trigger)) {
+    if (a && a.followUp && sel.has(a.trigger) && depth < 8) {
       const t = pool.find(p => p.id === a.trigger);
-      if (t) return ownTopic(t);
+      if (t) return effTopic(t, depth + 1);
     }
     return ownTopic(q);
   };
@@ -1221,16 +1206,10 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     if (!live.length && !broken) return null;
     return { count: live.length, broken, line: live.length ? logicSummary({ ...rule, conditions: live }, earlier) : "" };
   };
-  // Can this question trigger follow-ups? Not when its answers aren't fixed
-  // options, and not when it's shown conditionally itself (its own rule, or
-  // its topic's) — participants might never see it.
-  const followUpBlockFor = (qq) => {
-    if (!answerOptionsOf(qq).length) return "A text answer can't trigger follow-ups";
-    const own = (qMeta[qq.id] || {}).logic;
-    const tl = (topicMeta[effTopic(qq)] || {}).logic;
-    if ((own && (own.conditions || []).length) || (tl && (tl.conditions || []).length)) return "It's shown conditionally itself";
-    return null;
-  };
+  // Can this question trigger follow-ups? Any question with fixed answer
+  // options can — also one shown conditionally: its follow-ups then show only
+  // to the people who got it and answered that way.
+  const followUpBlockFor = (qq) => (answerOptionsOf(qq).length ? null : "Text answers can't trigger follow-up questions");
   // Start a follow-up's flow (the library, or the custom question dialog with
   // its checks); the app runs it and gives the arrivals the link. From the
   // row menu no answers are chosen yet (`pickAnswers`): the Logic dialog
@@ -1238,11 +1217,13 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   const startFollowUpFrom = (trigger, fu, source, pickAnswers = false) => {
     const topic = effTopic(trigger);
     const opts = answerOptionsOf(trigger);
-    const when = fu.answers.length
-      ? `${fu.op === "not" ? "isn't" : "is"} ${fu.answers.map(i => opts[i]).filter(Boolean).join(" or ")}` : null;
+    // The answers as one locale-formatted value; the banners carry whole
+    // sentences per case around it.
+    const answersText = fu.answers.length
+      ? new Intl.ListFormat("en", { type: "disjunction" }).format(fu.answers.map(i => opts[i]).filter(Boolean)) : null;
     setLogicQId(null); setSettingsQId(null);
     onFollowUp && onFollowUp({ trigger: trigger.id, triggerText: trigger.text, topic, topicLabel: topicName(topic),
-      op: fu.op, answers: fu.answers, when, source, pickAnswers, created: [] });
+      op: fu.op, answers: fu.answers, answersText, source, pickAnswers, created: [] });
   };
   // A topic's rule, summarized for its header tile and for the questions
   // that inherit it (the in-place logic editor's origin note).
@@ -1985,7 +1966,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             Object.entries(questions).forEach(([id, lg]) => onUpdateQMeta && onUpdateQMeta(id, { logic: lg || undefined }));
             Object.entries(topics).forEach(([key, lg]) => onUpdateTopicMeta && onUpdateTopicMeta(key, { logic: lg || undefined }));
           }}
-          onStartFollowUp={(trigger, fu, source) => startFollowUpFrom(trigger, fu, source)}
+          onStartFollowUp={(trigger, fu, source) => startFollowUpFrom(trigger, fu, source, !fu.answers.length)}
           onClose={() => setLogicQId(null)} />
       )}
       {translationsOpen && <TranslationsDialog pool={pool} selectedIds={selectedIds}

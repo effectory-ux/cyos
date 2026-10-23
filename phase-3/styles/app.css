@@ -2356,8 +2356,6 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
   font-size: 20px; font-weight: 600; line-height: 28px; color: var(--content-primary);
   margin: 0 0 8px; padding: 28px 12px 12px; }
 .lgc-group { display: flex; flex-direction: column; gap: 2px; }
-/* The question dialog's Required tag, reused in the rail row. */
-.lgc-q-tag { flex: none; gap: 4px; padding: 2px 8px; line-height: 18px; }
 .lgc-q { display: flex; align-items: center; gap: 12px; min-height: 48px; width: 100%;
   border: none; background: none; text-align: left; padding: 12px; border-radius: 8px;
   font: inherit; font-size: 14px; font-weight: 500; line-height: 22.4px;
@@ -2397,8 +2395,7 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .lgc-row > .cq-menu-wrap:first-child { flex: none; }
 .lgc-row > .cq-menu-wrap.is-block { flex: 1; min-width: 0; }
 .lgc-reset { align-self: flex-start; }
-/* Follow-up questions: the forward flow. Rows are doors to the follow-up's
-   own pane; the add-form reuses the condition-card look. */
+/* Follow-up questions: the forward flow. */
 .lgc-fu { display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
   padding-top: 24px; border-top: 1px solid var(--border-base); }
 /* The pane's two sections say what they DO: conditions to show this question,
@@ -2409,17 +2406,27 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .lgc-sec-desc { margin: 0; font-size: 14px; line-height: 22.4px; color: var(--content-secondary); }
 .lgc-card-lbl.is-followup { display: flex; align-items: center; gap: 6px; color: var(--content-info); }
 .lgc-card-lbl.is-followup svg { flex: none; }
-.lgc-fu-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
-  padding: 10px 12px; border: 1px solid var(--border-base); border-radius: var(--radius-md);
+/* The follow-up list speaks the questionnaire's language: a card of white
+   rows divided by borders (like a topic's questions), each with its answer
+   type and a door to its own logic. Adding one is the Add questions menu. */
+.lgc-fu-list { display: flex; flex-direction: column; background: var(--bg-base);
+  border: 1px solid var(--border-base); border-radius: var(--radius-lg); box-shadow: var(--sh-card); overflow: hidden; }
+.lgc-fu-row { display: flex; align-items: center; gap: var(--spacing-base-tight); width: 100%; text-align: left;
+  padding: var(--spacing-base-tight) var(--spacing-base); border: none; border-bottom: 1px solid var(--border-base);
   background: var(--bg-base); font: inherit; cursor: pointer; color: var(--content-secondary); }
+.lgc-fu-row:last-child { border-bottom: none; }
 .lgc-fu-row:hover { background: var(--bg-base-hover); }
 .lgc-fu-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .lgc-fu-text { font-size: 14px; font-weight: 500; line-height: 22.4px; color: var(--content-primary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lgc-fu-sub { font-size: 12px; line-height: 18px; color: var(--content-secondary); }
 .lgc-fu { align-items: stretch; }
-.lgc-fu .lgc-fu-add, .lgc-fu .lgc-hint { align-self: flex-start; }
-.lgc-fu-actions { display: flex; gap: 8px; align-items: center; flex: 1 1 100%; flex-wrap: wrap; }
+.lgc-fu .lgc-hint, .lgc-fu-add-wrap { align-self: flex-start; }
+.lgc-fu-add-wrap { position: relative; }
+.lgc-fu-menu { position: absolute; top: calc(100% + 4px); left: 0; width: 300px; z-index: 40; }
+/* A condition card's head: what it is, and — once set — its own remove. */
+.lgc-card-head { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; min-height: 24px; }
+.lgc-card-head .lgc-card-lbl { flex: 1; min-width: 0; }
 .lgc-hint { font-size: 12px; line-height: 18px; color: var(--content-secondary); }
 .lgc-err { font-size: 12px; line-height: 18px; color: var(--content-negative); }
 .lgc-card .lgc-hint, .lgc-card .lgc-err { flex: 1 1 100%; }

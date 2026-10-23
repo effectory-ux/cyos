@@ -9,7 +9,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, Tooltip, ThemeTag, themesOf, useMediaQuery, MiniSelect } from "./shared.jsx";
+import { QTypeIcon, Tooltip, ThemeTag, themesOf, useMediaQuery, MiniSelect, AddQuestionsMenu, RequiredMarker } from "./shared.jsx";
 import { LANG_STATUS, LangPanel, AutoTextarea } from "./CustomQuestionDialog.jsx";
 import { QTYPES, SCALE_LABELS, answerOptionsOf } from "../data/data.js";
 import { CHARACTERISTICS, characteristicOf } from "../data/characteristics.js";
@@ -201,64 +201,49 @@ const OP_ITEMS = [{ value: "is", label: "Is" }, { value: "not", label: "Is not" 
 // cards sit on their neutral option).
 function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, locked, about, followUps, canFollowUp, followUpBlocked, onStartFollowUp, onOpenFollowUp, onChange }) {
   // The FORWARD flow (Jamal's tester feedback): from this question, add a
-  // direct follow-up — "when the answer is X, ask …". Only the answer is
-  // chosen here; the question itself comes through the EXISTING flows — the
-  // question library, or the custom question dialog with its guidelines and
-  // its similar-question check — so no question skips those checks. The new
-  // question lands right after this one, carrying the answer condition.
-  const [fuOpen, setFuOpen] = useState(false);
-  const [fuOp, setFuOp] = useState("is");
-  const [fuPicked, setFuPicked] = useState([]);
-  const [fuErr, setFuErr] = useState(null);
-  const myOpts = answerOptionsOf(selected);
-  const closeFu = () => { setFuOpen(false); setFuOp("is"); setFuPicked([]); setFuErr(null); };
-  const startFu = (source) => {
-    if (!fuPicked.length) { setFuErr("Choose at least one answer"); return; }
-    onStartFollowUp({ op: fuOp, answers: fuPicked }, source);
-    closeFu();
-  };
+  // direct follow-up. It is added the way every question is — the Add
+  // questions menu: the question library, or a custom question with its
+  // guidelines and similar-question check — and arrives right after this
+  // question, linked to it; the Logic dialog then opens on it to choose the
+  // answers that trigger it.
+  const [fuMenu, setFuMenu] = useState(false);
   const followUpBlock = onStartFollowUp ? (
     <div className="lgc-fu">
       <div className="lgc-sec-head">
         <div className="lgc-sec-title">Trigger follow-up questions</div>
         <p className="lgc-sec-desc">Follow-up questions are linked to this question and come right after it.</p>
       </div>
-      {(followUps || []).map(f => (
-        <button key={f.id} type="button" className="lgc-fu-row" onClick={() => onOpenFollowUp && onOpenFollowUp(f.id)}>
-          <span className="lgc-q-mark is-own"><Icon name="split" size={14} /></span>
-          <span className="lgc-fu-body">
-            <span className="lgc-fu-text">{f.text}</span>
-            <span className="lgc-fu-sub">{f.line}</span>
-          </span>
-          <Icon name="chevron-right" size={16} />
-        </button>
-      ))}
+      {(followUps || []).length > 0 && (
+        <div className="lgc-fu-list">
+          {followUps.map(f => (
+            <button key={f.id} type="button" className="lgc-fu-row" onClick={() => onOpenFollowUp && onOpenFollowUp(f.id)}>
+              <span className="lgc-fu-body">
+                <span className="lgc-fu-text">{f.text}</span>
+                <span className="lgc-fu-sub">{f.line}</span>
+              </span>
+              <QTypeIcon type={f.type} size={24} />
+              <Icon name="chevron-right" size={16} />
+            </button>
+          ))}
+        </div>
+      )}
       {!canFollowUp ? (
         <span className="lgc-hint">{followUpBlocked}</span>
-      ) : fuOpen ? (
-        <div className="lgc-card">
-          <div className="lgc-card-lbl">Ask a follow-up question when the answer</div>
-          <div className="lgc-row">
-            <MiniSelect ariaLabel="Is or is not" value={fuOp} items={OP_ITEMS} onChange={setFuOp} />
-            <LgcValues options={myOpts} picked={fuPicked} placeholder="Choose answers"
-              invalid={!!fuErr}
-              onToggle={(i) => { setFuErr(null); setFuPicked(cur => (cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i].sort((a, b) => a - b))); }} />
-          </div>
-          {fuErr && <span className="lgc-err">{fuErr}</span>}
-          <span className="lgc-hint">Choose the follow-up question from the question library, or write your own.</span>
-          <div className="lgc-fu-actions">
-            <button type="button" className="btn btn-tertiary" onClick={closeFu}>Cancel</button>
-            <span className="spacer" />
-            <button type="button" className="btn btn-secondary" onClick={() => startFu("library")}>
-              <Icon name="book-open" size={16} />Choose from library</button>
-            <button type="button" className="btn btn-secondary" onClick={() => startFu("custom")}>
-              <Icon name="edit-inline" size={16} />Write your own</button>
-          </div>
-        </div>
       ) : (
-        <button type="button" className="btn btn-secondary lgc-fu-add" onClick={() => setFuOpen(true)}>
-          <Icon name="plus" size={16} />Add follow-up question
-        </button>
+        <div className="lgc-fu-add-wrap">
+          <button type="button" className={"btn btn-tertiary" + (fuMenu ? " is-pressed" : "")}
+            aria-haspopup="menu" aria-expanded={fuMenu} onClick={() => setFuMenu(o => !o)}>
+            <Icon name="plus" size={16} />Add follow-up question
+          </button>
+          {fuMenu && (
+            <>
+              <div className="cq-menu-scrim" onMouseDown={() => setFuMenu(false)} />
+              <AddQuestionsMenu className="lgc-fu-menu" onPick={() => setFuMenu(false)}
+                onLibrary={() => onStartFollowUp({ op: "is", answers: [] }, "library")}
+                onCustom={() => onStartFollowUp({ op: "is", answers: [] }, "custom")} />
+            </>
+          )}
+        </div>
       )}
     </div>
   ) : null;
@@ -347,6 +332,15 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
   // fact as the trigger's list): its question is fixed — it IS the link —
   // only the answers can change. Reset logic unlinks it.
   const isFollowUp = !!(answer && answer.followUp && trigger && !answerBroken);
+  // Each condition can go on its own; on a follow-up that unlinks it — the
+  // question stays, now asked to everyone in its place.
+  const removeBtn = (onRemove) => (
+    <Tooltip label="Remove condition" pos="is-left">
+      <button type="button" className="ib ib-24 ib-tertiary" aria-label="Remove condition" onClick={onRemove}>
+        <Icon name="trash" size={16} />
+      </button>
+    </Tooltip>
+  );
   return (
     <>
       {head}
@@ -354,11 +348,14 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
       <div className="lgc-sec">
       <div className="lgc-sec-title">Conditions to show this {noun}</div>
       <div className={"lgc-card" + (answerErr ? " is-invalid" : "")}>
-        {isFollowUp ? (
-          <div className="lgc-card-lbl is-followup"><Icon name="split" size={14} />Follow-up to “{trigger.text}”</div>
-        ) : (
+        <div className="lgc-card-head">
+          {isFollowUp
+            ? <div className="lgc-card-lbl is-followup"><Icon name="split" size={14} />Follow-up to “{trigger.text}”</div>
+            : <div className="lgc-card-lbl">Answer to an earlier question</div>}
+          {answer && removeBtn(() => setAnswer(null))}
+        </div>
+        {!isFollowUp && (
           <>
-            <div className="lgc-card-lbl">Answer to an earlier question</div>
             <MiniSelect ariaLabel="Earlier question" value={answer ? answer.trigger : ""} block
               placeholder={answerBroken ? "Question no longer available" : undefined}
               items={earlierItems}
@@ -377,15 +374,18 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
           </div>
         )}
         {isFollowUp && <span className="lgc-hint">{(answer.answers || []).length
-          ? "It comes right after that question when the answer matches."
-          : "Choose the answers that trigger this follow-up question."}</span>}
+          ? "Comes right after the linked question when the answer matches"
+          : "Choose the answers that trigger this follow-up question"}</span>}
         {earlier.length === 0 && !answer && (
-          <span className="lgc-hint">Nothing comes before this {noun} yet, so there is no earlier answer to use.</span>
+          <span className="lgc-hint">Nothing comes before this {noun} yet, so there is no earlier answer to use</span>
         )}
         {answerErr && <span className="lgc-err">{answerErr}</span>}
       </div>
       <div className={"lgc-card" + (audienceErr ? " is-invalid" : "")}>
-        <div className="lgc-card-lbl">Employee data</div>
+        <div className="lgc-card-head">
+          <div className="lgc-card-lbl">Employee data</div>
+          {audience && removeBtn(() => setAudience(null))}
+        </div>
         <MiniSelect ariaLabel="Who gets this question" value={audience ? audience.attribute : ""} block
           items={[{ value: "", label: "Shown to everyone" },
             ...CHARACTERISTICS.map(a => ({ value: a.key, label: a.label, lead: <Icon name="user" size={16} /> }))]}
@@ -404,10 +404,10 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
         {audienceErr && <span className="lgc-err">{audienceErr}</span>}
       </div>
       </div>
-      {answer && audience && <span className="lgc-hint">Both must match for the {noun} to show.</span>}
+      {answer && audience && <span className="lgc-hint">Both must match for the {noun} to show</span>}
       {(answer || audience) && (
         <button type="button" className="btn btn-secondary lgc-reset" onClick={() => emit(null, null)}>
-          Reset logic
+          Remove all conditions
         </button>
       )}
       {followUpBlock}
@@ -557,20 +557,25 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
   const followUpsFor = () => {
     if (section) return null;
     const opts = answerOptionsOf(selected);
+    const list = new Intl.ListFormat("en", { type: "disjunction" });
     return questions.filter(x => {
       const a = conditionOfType(logicOf(x.id), "answer");
       return a && a.followUp && a.trigger === selKey;
     }).map(x => {
       const a = conditionOfType(logicOf(x.id), "answer");
-      const picked = (a.answers || []).map(i => opts[i]).filter(Boolean).join(" or ");
-      return { id: x.id, text: x.text,
-        line: picked ? `When the answer ${a.op === "not" ? "is not" : "is"} ${picked}` : "Condition not finished yet" };
+      const answers = list.format((a.answers || []).map(i => opts[i]).filter(Boolean));
+      // Whole sentences per case, the answers as the one inserted value.
+      return { id: x.id, text: x.text, type: x.type,
+        line: !answers ? "No answers chosen yet"
+          : a.op === "not" ? `When the answer isn't ${answers}` : `When the answer is ${answers}` };
     });
   };
+  // Any question with fixed answer options can trigger follow-ups — also one
+  // that is shown conditionally itself: its follow-ups simply show only to
+  // the people who got it and answered that way.
   const followUpBlockedWhy = () => {
     if (section) return null;
-    if (!answerOptionsOf(selected).length) return "A text answer has no fixed options, so it can't trigger a follow-up question.";
-    if (condShown(selected)) return "This question is shown conditionally, so it can't trigger follow-up questions. Remove its logic first.";
+    if (!answerOptionsOf(selected).length) return "Text answers can't trigger follow-up questions";
     return null;
   };
   // Remove all logic: stage a null for every rule, questions and topics both.
@@ -674,7 +679,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
                           questions (Jamal) — the pane's inherited note
                           carries the origin when one is selected. */}
                       {x.required
-                        ? <span className="infotag is-alt lgc-q-tag"><Icon name="asterisk" size={12} />Required</span>
+                        ? <RequiredMarker size={20} />
                         : hasRule(x.id) ? <span className={"lgc-q-mark " + (isBroken(x.id) ? "is-broken" : "is-own")}><Icon name="split" size={14} /></span> : null}
                     </button>
                   ))}
@@ -689,7 +694,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
                 ? { kind: "topic", count: section.items.length, desc: section.desc }
                 : { kind: "question", desc: selected._desc }}
               followUps={followUpsFor()} canFollowUp={!followUpBlockedWhy()} followUpBlocked={followUpBlockedWhy()}
-              onStartFollowUp={!section && onStartFollowUp && !(conditionOfType(logic, "answer") || {}).followUp ? launchFollowUp : undefined}
+              onStartFollowUp={!section && onStartFollowUp ? launchFollowUp : undefined}
               onOpenFollowUp={hop}
               showErrors={showErrors} onChange={update} />
           </div>

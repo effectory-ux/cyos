@@ -402,3 +402,25 @@ export function MiniSelect({ value, placeholder, items, onChange, ariaLabel, blo
     </div>
   );
 }
+
+// The one way to add a question: from the question library, or a custom
+// question of your own. Used by a topic's Add questions and by follow-up
+// questions, so both read the same.
+export function AddQuestionsMenu({ className, onPick, onLibrary, onCustom, title, style, onMouseLeave }) {
+  const item = (icon, title, sub, act) => (
+    <div className="menu-item" role="menuitem" onClick={() => { onPick(); act(); }}>
+      <span className="menu-item-icon"><Icon name={icon} size={16} /></span>
+      <span className="menu-item-body">
+        <span className="menu-item-title">{title}</span>
+        <span className="menu-item-sub">{sub}</span>
+      </span>
+    </div>
+  );
+  return (
+    <div className={"menu " + className} role="menu" aria-label={title} style={style} onMouseLeave={onMouseLeave}>
+      {title && <div className="menu-group-lbl">{title}</div>}
+      {item("list-unordered", "Add from question library", "Validated questions with benchmarks", onLibrary)}
+      {item("edit", "Create custom question", "Your own wording, no benchmark", onCustom)}
+    </div>
+  );
+}
