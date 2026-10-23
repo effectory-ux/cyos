@@ -210,6 +210,12 @@ export function ThemeTag({ theme, kept = 0, total = 0, pos = "is-left", float = 
   );
 }
 
+// Complete themes first, then the rest, each group in its own order.
+export const byCompleteFirst = (names, infoFor) => {
+  const done = (n) => { const i = infoFor ? infoFor(n) : null; return !!i && i.total > 0 && i.kept >= i.total; };
+  return [...names.filter(done), ...names.filter(n => !done(n))];
+};
+
 // A question's themes in one slot: its main theme's tag (`q.theme`, so it never
 // jumps around) and, when it's in more themes, a "+N" chip. The chip opens a
 // small popover with every theme, each tag keeping its own status and opening
@@ -260,7 +266,7 @@ export function ThemeTags({ q, infoFor, pos = "is-left", float = false, hl, onOp
             <div ref={pop} className="menu thm-tags-pop" role="dialog" aria-label="Themes of this question"
               style={{ position: "fixed", top: at.top, right: at.right, zIndex: 1300 }} onClick={e => e.stopPropagation()}>
               <div className="thm-tags-pop-title">In {names.length} themes</div>
-              {names.map(n => tag(n, "is-left"))}
+              {byCompleteFirst(names, infoFor).map(n => tag(n, "is-left"))}
             </div>, document.body)}
         </>
       )}

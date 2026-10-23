@@ -9,7 +9,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, Tooltip, ThemeTag, themesOf, useMediaQuery, MiniSelect, AddQuestionsMenu, RequiredMarker, FollowUpNote } from "./shared.jsx";
+import { QTypeIcon, Tooltip, ThemeTag, themesOf, byCompleteFirst, useMediaQuery, MiniSelect, AddQuestionsMenu, RequiredMarker, FollowUpNote } from "./shared.jsx";
 import { LANG_STATUS, LangPanel, AutoTextarea } from "./CustomQuestionDialog.jsx";
 import { QTYPES, SCALE_LABELS, answerOptionsOf } from "../data/data.js";
 import { CHARACTERISTICS, characteristicOf } from "../data/characteristics.js";
@@ -898,7 +898,7 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             </Tooltip>
             {/* Every theme the question counts for: the dialog has the room the
                 row doesn't. */}
-            {themesOf(q).map(n => {
+            {byCompleteFirst(themesOf(q), themeInfoFor || ((n) => (n === q.theme ? themeInfo : null))).map(n => {
               const i = themeInfoFor ? themeInfoFor(n) : (n === q.theme ? themeInfo : null);
               return <ThemeTag key={n} theme={n} kept={i ? i.kept : 0} total={i ? i.total : 0} pos="is-below"
                 onOpen={onOpenTheme ? () => onOpenTheme(n) : undefined} />;
@@ -907,7 +907,6 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
             {(hasLogic || followUp) && <span className="infotag is-logic"><Icon name="split" size={12} />Logic</span>}
           </div>
           <h2 className="dialog-title" id="bmq-title">{title}</h2>
-          <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
         </div>
 
         {followUp && <FollowUpNote info={followUp} onEdit={() => (logicInPlace ? setLogicFor(q.id) : onOpenLogic && onOpenLogic(q.id))} />}

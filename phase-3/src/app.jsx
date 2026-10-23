@@ -73,8 +73,11 @@ export function App() {
   // Design variants (toolbar): flip between candidate designs live.
   // The sidebar dialog (Figma 6316:27977) is the default now; flipping the
   // variant off brings the old tabbed dialog back for comparison.
-  const [variantsOn, setVariantsOn] = useState({ dialogGrouped: false, checkWarnsOnly: false, addAtBottom: false, pagesRail: false, introTextColor: false, introTextBox: false, whiteTopics: false, logicInPlace: false });
+  const [variantsOn, setVariantsOn] = useState({ dialogGrouped: false, checkWarnsOnly: false, addAtBottom: false, pagesRail: false, introTextColor: false, introTextBox: false, whiteTopics: false, logicInPlace: false, tagsInCorner: false });
   const toggleVariant = (key) => setVariantsOn(v => ({ ...v, [key]: !v[key] }));
+  // "Question tags in the corner": a layout-only variant of every question
+  // dialog, so it rides on a class on <html> instead of props through each one.
+  useEffect(() => { document.documentElement.classList.toggle("has-tags-in-corner", !!variantsOn.tagsInCorner); }, [variantsOn.tagsInCorner]);
   const [newCustom, setNewCustom] = useState(false); // create-from-builder ("Add" menu)
   const [addNotice, setAddNotice] = useState(null); // what the last Add from the library put in
   // A survey-in-progress awaiting its name. Set after a template is chosen or
@@ -661,6 +664,16 @@ export function App() {
           pool: [...sv.pool, q], selectedIds: [...sv.selectedIds, q.id] });
         break;
       }
+      // An existing custom question, opened to edit: tags under the title, no subtitle.
+      case "edit-custom-question": {
+        const sv = draftSurvey(); if (!sv) break;
+        const key = "ct-other-demo", q = { id: "c-other-demo", topic: key, theme: null, bench: false, type: "scale5", custom: true, text: "I can switch off after work" };
+        openBuilder({ ...sv, customTopics: [...(sv.customTopics || []), key],
+          topicMeta: { ...sv.topicMeta, [key]: { name: OTHER_TOPIC, auto: true } },
+          pool: [...sv.pool, q], selectedIds: [...sv.selectedIds, q.id] });
+        setEditCustom(q);
+        break;
+      }
       case "add-topic": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "add-topic" }); break; }
       // An empty custom topic, and Next step pressed: the notification and
       // the empty topic outlined.
@@ -675,17 +688,6 @@ export function App() {
       case "new-custom-question": { const sv = draftSurvey(); if (sv) { setGuidelinesAck(true); openBuilder(sv); setNewCustom(true); } break; }
       // The first custom question: the guidelines come first.
       case "question-guidelines": { const sv = draftSurvey(); if (sv) { setGuidelinesAck(false); openBuilder(sv); setNewCustom(true); } break; }
-      case "edit-custom-question": {
-        // A custom question open in its own dialog — also where editing a
-        // follow-up question from the builder row lands.
-        const sv = draftSurvey(); if (!sv) break;
-        const key = "ct-other-demo", q = { id: "c-other-demo", topic: key, theme: null, bench: false, type: "scale5", custom: true, text: "I can switch off after work" };
-        openBuilder({ ...sv, customTopics: [...(sv.customTopics || []), key],
-          topicMeta: { ...sv.topicMeta, [key]: { name: OTHER_TOPIC, auto: true } },
-          pool: [...sv.pool, q], selectedIds: [...sv.selectedIds, q.id] });
-        setEditCustom(q);
-        break;
-      }
       case "theme-details": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "theme", arg: (sv.pool.find(q => sv.selectedIds.includes(q.id) && q.theme) || {}).theme }); break; }
       case "intro-screen": { const sv = draftSurvey(); if (sv) openBuilder(sv, { dialog: "intro-screen" }); break; }
       case "out-of-scope": { setScreen("surveys"); setOutOfScope(surveysList.find(r => r.status === "Live") || null); break; }

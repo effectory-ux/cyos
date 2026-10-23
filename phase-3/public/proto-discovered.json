@@ -1,6 +1,6 @@
 {
-  "version": 1128,
-  "savedAt": "2026-10-23T14:50:52.744Z",
+  "version": 1134,
+  "savedAt": "2026-10-23T14:53:13.169Z",
   "editor": "Jamal van Rooijen",
   "entries": {
     "/projects/:n/survey-list": {
@@ -18,7 +18,7 @@
       "route": "/surveys/:id/questionnaire",
       "example": "#/surveys/s3/questionnaire",
       "label": "questionnaire",
-      "count": 695,
+      "count": 696,
       "firstSeen": "2026-09-04T09:29:29.255Z",
       "via": {
         "builder": true,
@@ -28,7 +28,7 @@
         "logic-broken": true,
         "question-logic": true
       },
-      "lastSeen": "2026-10-23T14:50:51.621Z"
+      "lastSeen": "2026-10-23T14:53:04.052Z"
     },
     "/surveys/:id/questionnaire(dialog:question-settings/:arg)": {
       "route": "/surveys/:id/questionnaire(dialog:question-settings/:arg)",
@@ -129,12 +129,12 @@
       "route": "/surveys/:id/questionnaire(dialog:new-custom-question)",
       "example": "#/surveys/s3/questionnaire(dialog:new-custom-question)",
       "label": "questionnaire · new-custom-question",
-      "count": 51,
+      "count": 52,
       "firstSeen": "2026-09-24T10:16:04.001Z",
       "via": {
         "new-custom-question": true
       },
-      "lastSeen": "2026-10-23T14:20:03.217Z"
+      "lastSeen": "2026-10-23T14:53:07.383Z"
     },
     "/surveys/:id/questionnaire(dialog:theme/:arg)": {
       "route": "/surveys/:id/questionnaire(dialog:theme/:arg)",
@@ -195,12 +195,12 @@
       "route": "/surveys/:id/questionnaire(dialog:question-logic/:arg)",
       "example": "#/surveys/s3/questionnaire(dialog:question-logic/sos-2-0)",
       "label": "questionnaire · question-logic",
-      "count": 107,
+      "count": 111,
       "firstSeen": "2026-10-19T14:41:19.530Z",
       "via": {
         "question-logic": true
       },
-      "lastSeen": "2026-10-23T14:50:51.939Z"
+      "lastSeen": "2026-10-23T14:53:12.365Z"
     },
     "/surveys/:id/questionnaire(dialog:custom-question/:arg)": {
       "route": "/surveys/:id/questionnaire(dialog:custom-question/:arg)",
