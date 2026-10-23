@@ -605,7 +605,11 @@ export function App() {
           { dialog: "question-settings", arg: q.id });
         break;
       }
-      case "question-logic": {
+      case "question-logic":
+      case "logic-overview": {
+        // The same seeded rules; "question-logic" opens the Logic dialog the
+        // way a question does (focused on it), "logic-overview" the way the
+        // bar's Logic button does (every question on the rail).
         const sv = draftSurvey(); if (!sv) break;
         // Two selected scale questions from one topic, in pool order: the
         // earlier one triggers, the later one is masked (logic only looks
@@ -626,7 +630,7 @@ export function App() {
           ] } } },
           topicMeta: otherTopic ? { ...sv.topicMeta, [otherTopic]: { ...(sv.topicMeta || {})[otherTopic],
             logic: { conditions: [{ type: "attribute", attribute: "role", op: "is", values: [0] }] } } } : sv.topicMeta,
-        }, { dialog: "question-logic", arg: target.id });
+        }, { dialog: key === "logic-overview" ? "logic" : "question-logic", arg: target.id });
         break;
       }
       case "logic-broken": {

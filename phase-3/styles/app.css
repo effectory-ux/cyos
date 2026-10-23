@@ -2361,6 +2361,11 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
    group. Badges: green = the question's own rule, blue = the topic's rule,
    pale blue = inherited from the topic. */
 .lgc-dialog { padding: 0; gap: 0; }
+/* The focused view (opened from a question): a standard dialog — its own
+   padding, header and footer — holding just the pane. */
+.dialog.lgc-focus { width: 760px; max-width: 94vw; max-height: min(860px, 90vh); }
+.lgc-focus .lgc-main { flex: 1; min-height: 0; gap: 32px; }
+.lgc-focus .lgc-main > .inline-notif { margin-top: -16px; }
 /* The close button keeps the DS position (absolute, top 15 / right 15 in
    the dialog corner) — no bespoke offsets here. */
 .lgc-layout { flex: 1; min-height: 0; display: flex; }
@@ -2457,6 +2462,7 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 /* The inherited-from-the-topic note and the locked explanation are DS inline
    notifications; in the big pane they sit close under the heading. */
 .lgc-dialog .lgc-main > .inline-notif { margin-top: -16px; }
-/* The dialog is full-bleed (padding 0), so the footer carries the standard
-   dialog spacing itself: 24px above, 32px at the edges — like every dialog. */
-.lgc-dialog .dialog-footer { padding: 24px 32px 32px; }
+/* A full-bleed dialog, so the footer is the question library's (2.3): the
+   same padding tokens and the top border. */
+.lgc-dialog .dialog-footer { padding: var(--spacing-loose) var(--spacing-extra-loose);
+  border-top: 1px solid var(--border-base); }

@@ -1,6 +1,6 @@
 {
-  "version": 1159,
-  "savedAt": "2026-10-23T15:03:30.045Z",
+  "version": 1173,
+  "savedAt": "2026-10-23T15:14:22.560Z",
   "editor": "Jamal van Rooijen",
   "entries": {
     "/projects/:n/survey-list": {
@@ -18,7 +18,7 @@
       "route": "/surveys/:id/questionnaire",
       "example": "#/surveys/s3/questionnaire",
       "label": "questionnaire",
-      "count": 701,
+      "count": 704,
       "firstSeen": "2026-09-04T09:29:29.255Z",
       "via": {
         "builder": true,
@@ -28,13 +28,13 @@
         "logic-broken": true,
         "question-logic": true
       },
-      "lastSeen": "2026-10-23T15:03:28.925Z"
+      "lastSeen": "2026-10-23T15:14:21.443Z"
     },
     "/surveys/:id/questionnaire(dialog:question-settings/:arg)": {
       "route": "/surveys/:id/questionnaire(dialog:question-settings/:arg)",
       "example": "#/surveys/s3/questionnaire(dialog:question-settings/sos-2-1)",
       "label": "questionnaire · question-settings",
-      "count": 145,
+      "count": 149,
       "firstSeen": "2026-09-04T09:29:33.255Z",
       "via": {
         "question-settings": true,
@@ -43,7 +43,7 @@
         "topic-dialog": true,
         "translations": true
       },
-      "lastSeen": "2026-10-23T15:03:18.999Z"
+      "lastSeen": "2026-10-23T15:14:12.531Z"
     },
     "/surveys/:id/questionnaire(dialog:select-questions)": {
       "route": "/surveys/:id/questionnaire(dialog:select-questions)",
@@ -193,14 +193,14 @@
     },
     "/surveys/:id/questionnaire(dialog:question-logic/:arg)": {
       "route": "/surveys/:id/questionnaire(dialog:question-logic/:arg)",
-      "example": "#/surveys/s3/questionnaire(dialog:question-logic/sos-0-0)",
+      "example": "#/surveys/s3/questionnaire(dialog:question-logic/sos-2-1)",
       "label": "questionnaire · question-logic",
-      "count": 121,
+      "count": 126,
       "firstSeen": "2026-10-19T14:41:19.530Z",
       "via": {
         "question-logic": true
       },
-      "lastSeen": "2026-10-23T15:03:29.237Z"
+      "lastSeen": "2026-10-23T15:14:21.753Z"
     },
     "/surveys/:id/questionnaire(dialog:custom-question/:arg)": {
       "route": "/surveys/:id/questionnaire(dialog:custom-question/:arg)",
@@ -212,6 +212,15 @@
         "edit-custom-question": true
       },
       "lastSeen": "2026-10-23T14:54:59.025Z"
+    },
+    "/surveys/:id/questionnaire(dialog:logic/:arg)": {
+      "route": "/surveys/:id/questionnaire(dialog:logic/:arg)",
+      "example": "#/surveys/s3/questionnaire(dialog:logic/sos-0-0)",
+      "label": "questionnaire · logic",
+      "count": 1,
+      "firstSeen": "2026-10-23T15:14:13.154Z",
+      "via": {},
+      "lastSeen": "2026-10-23T15:14:13.154Z"
     }
   }
 }

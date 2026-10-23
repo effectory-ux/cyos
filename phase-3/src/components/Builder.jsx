@@ -478,6 +478,9 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   const [settingsQId, setSettingsQId] = useState(null); // standard question whose dialog is open
   const [logicQId, setLogicQId] = useState(null); // question the standalone logic dialog opened on
   const [logicDraft, setLogicDraft] = useState(false); // opened to add a follow-up
+  // Only the bar's Logic button opens the full dialog (every question on the
+  // rail); from a question it opens focused on that question.
+  const [logicFull, setLogicFull] = useState(false);
   const [translationsOpen, setTranslationsOpen] = useState(false);
   const [introOpen, setIntroOpen] = useState(false);   // participant intro screen
   // Which survey page is shown: the questionnaire (always where you land) or
@@ -520,7 +523,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
   // asked for by a deep link or the prototype toolbar.
   useEffect(() => {
     if (!onDialogChange) return;
-    if (logicQId) onDialogChange({ dialog: "question-logic", arg: logicQId });
+    if (logicQId) onDialogChange({ dialog: logicFull ? "logic" : "question-logic", arg: logicQId });
     else if (settingsQId) onDialogChange({ dialog: "question-settings", arg: settingsQId });
     else if (topicDialog) onDialogChange(topicDialog.creating ? { dialog: "add-topic" } : { dialog: "topic", arg: topicDialog.key });
     else if (translationsOpen) onDialogChange({ dialog: "translations" });
@@ -528,7 +531,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     else if (introOpen) onDialogChange({ dialog: "intro-screen" });
 
     else onDialogChange(null);
-  }, [logicQId, settingsQId, topicDialog, translationsOpen, themeDetail, introOpen]); // eslint-disable-line
+  }, [logicQId, logicFull, settingsQId, topicDialog, translationsOpen, themeDetail, introOpen]); // eslint-disable-line
   // A request from outside (the toolbar's Screens, a link) replaces whatever
   // dialog the builder has open — jumping from one to another never stacks.
   const firstOpen = useRef(true);
@@ -543,6 +546,8 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     // the honest restore there.
     // Back from a follow-up flow: just the logic dialog, on the trigger.
     else if (dialog === "logic-return" && arg) setLogicQId(arg);
+    // The full Logic dialog (the bar's button), on this question or topic.
+    else if (dialog === "logic" && arg) { setLogicFull(true); setLogicQId(arg); }
     else if (dialog === "question-logic" && arg) {
       // A topic's logic ("t:<key>") has no question dialog underneath.
       if (arg.startsWith("t:")) setLogicQId(arg);
@@ -1562,7 +1567,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
           {/* The Logic button, next to Design (the winning variant, now the
               default): opens the logic dialog on the first question. */}
           <button className="btn btn-secondary" title={compact ? "Logic" : undefined} aria-label="Logic"
-            aria-haspopup="dialog" onClick={() => flatOrder.length && setLogicQId(flatOrder[0].id)}>
+            aria-haspopup="dialog" onClick={() => { if (flatOrder.length) { setLogicFull(true); setLogicQId(flatOrder[0].id); } }}>
             <Icon name="split" size={16} /><span className="ctxbar-btn-lbl">Logic</span>
           </button>
           <div className="ctxbar-menu-wrap">
@@ -2007,7 +2012,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
       {/* The standalone logic dialog (the default surface) sits over whatever
           opened it and commits itself — its Save applies, Cancel discards. */}
       {logicQId && (
-        <QuestionLogicDialog initialId={logicQId} initialDraft={logicDraft}
+        <QuestionLogicDialog initialId={logicQId} initialDraft={logicDraft} focused={!logicFull}
           sections={visibleSections.map(x => ({ key: x.key, label: topicName(x.key), desc: (topicMeta[x.key] || {}).desc,
             items: x.items.map(q2 => ({ ...q2, _desc: (qMeta[q2.id] || {}).desc ?? q2.desc })) }))}
           logicByQuestion={Object.fromEntries(flatOrder.map(x => [x.id, (qMeta[x.id] || {}).logic || null]))}
@@ -2018,7 +2023,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
             Object.entries(topics).forEach(([key, lg]) => onUpdateTopicMeta && onUpdateTopicMeta(key, { logic: lg || undefined }));
           }}
           onStartFollowUp={(trigger, fu, source) => startFollowUpFrom(trigger, fu, source, !fu.answers.length)}
-          onClose={() => { setLogicQId(null); setLogicDraft(false); }} />
+          onClose={() => { setLogicQId(null); setLogicDraft(false); setLogicFull(false); }} />
       )}
       {translationsOpen && <TranslationsDialog pool={pool} selectedIds={selectedIds}
         topicMeta={topicMeta} customTopics={customTopics} qMeta={qMeta} i18nEdits={i18nEdits} i18nStale={i18nStale}

@@ -497,7 +497,7 @@ function LogicEditor({ q, logic, onChange, earlier, inherited, about, onClose })
 // rule on the right. It owns its commit: Save applies every touched
 // question's rule immediately, Cancel discards them all — independent of the
 // question dialog's staging, so there is never a nested-save puzzle.
-export function QuestionLogicDialog({ sections = [], initialId, initialDraft = false, logicByQuestion = {}, logicByTopic = {}, onApply, onStartFollowUp, onClose, zIndex }) {
+export function QuestionLogicDialog({ sections = [], initialId, initialDraft = false, focused = false, logicByQuestion = {}, logicByTopic = {}, onApply, onStartFollowUp, onClose, zIndex }) {
   // Opened from a row's "Add follow-up question": that question's pane starts
   // with the draft follow-up card open — once.
   const [draftFor, setDraftFor] = useState(initialDraft ? initialId : null);
@@ -715,6 +715,43 @@ export function QuestionLogicDialog({ sections = [], initialId, initialDraft = f
       rail && rail.removeEventListener("scroll", onScroll);
     };
   }, [selKey]);
+  const pane = (
+    <LogicRulePane key={selKey} selected={selected} logic={logic} earlier={earlierFor(selKey)} startDraft={draftFor === selKey}
+      fuTaken={section ? null : takenFor(selKey, null)}
+      siblingTaken={(() => { const fa = conditionOfType(logic, "answer"); return fa && fa.followUp ? takenFor(fa.trigger, selKey) : null; })()}
+      noun={section ? "topic" : "question"} inherited={inheritedFor()} locked={lockedFor()}
+      about={section
+        ? { kind: "topic", count: section.items.length, desc: section.desc }
+        : { kind: "question", desc: selected._desc }}
+      followUps={followUpsFor()} canFollowUp={!followUpBlockedWhy()} followUpBlocked={followUpBlockedWhy()}
+      onStartFollowUp={!section && onStartFollowUp ? launchFollowUp : undefined}
+      onOpenFollowUp={hop}
+      showErrors={showErrors} onChange={update} />
+  );
+  // Opened FROM a question (its dialog, its row, a follow-up's note): a
+  // simplified view of just that question's logic — no rail. The bar's
+  // Logic button opens the full dialog with every question on the rail.
+  if (focused) {
+    return (
+      <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: zIndex || 70 }}
+        onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="dialog lgc-focus" role="dialog" aria-modal="true" aria-labelledby="lgc-title">
+          <Tooltip label="Close" pos="is-left" wrapClass="dialog-close-tt">
+            <button className="dialog-close" aria-label="Close" onClick={onClose}><Icon name="cross" /></button>
+          </Tooltip>
+          <div className="dialog-header is-sm"><h2 className="dialog-title" id="lgc-title">Logic</h2></div>
+          <div className="lgc-main scroll-y">
+            {pane}
+          </div>
+          <div className="dialog-footer">
+            <div className="spacer" />
+            <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button className="btn btn-primary" onClick={save}>Save</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="overlay" style={{ background: "var(--bg-interface-overlay)", zIndex: zIndex || 70 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -764,17 +801,7 @@ export function QuestionLogicDialog({ sections = [], initialId, initialDraft = f
             })}
           </div>
           <div className="lgc-main scroll-y">
-            <LogicRulePane key={selKey} selected={selected} logic={logic} earlier={earlierFor(selKey)} startDraft={draftFor === selKey}
-              fuTaken={section ? null : takenFor(selKey, null)}
-              siblingTaken={(() => { const fa = conditionOfType(logic, "answer"); return fa && fa.followUp ? takenFor(fa.trigger, selKey) : null; })()}
-              noun={section ? "topic" : "question"} inherited={inheritedFor()} locked={lockedFor()}
-              about={section
-                ? { kind: "topic", count: section.items.length, desc: section.desc }
-                : { kind: "question", desc: selected._desc }}
-              followUps={followUpsFor()} canFollowUp={!followUpBlockedWhy()} followUpBlocked={followUpBlockedWhy()}
-              onStartFollowUp={!section && onStartFollowUp ? launchFollowUp : undefined}
-              onOpenFollowUp={hop}
-              showErrors={showErrors} onChange={update} />
+            {pane}
           </div>
         </div>
         <div className="dialog-footer">
