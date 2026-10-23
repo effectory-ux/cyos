@@ -611,6 +611,8 @@ export function QuestionLogicDialog({ sections = [], initialId, initialDraft = f
   const followUpBlockedWhy = () => {
     if (section) return null;
     if (!answerOptionsOf(selected).length) return "Text answers can't trigger follow-up questions";
+    // One follow-up per question, for now (Jamal).
+    if ((followUpsFor() || []).length) return "Each question can have one follow-up question";
     return null;
   };
   // Remove all logic: stage a null for every rule, questions and topics both.

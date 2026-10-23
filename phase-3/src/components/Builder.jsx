@@ -223,11 +223,19 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
     <div className={"qrow" + (dragging ? " is-dragging" : "") + (away ? " is-away" : "") + (entering ? " is-entering" : "") + (pulsing ? " is-fresh" : "") + (followDepth ? " is-followup" : "")} data-qid={q.id}
       style={entering || order != null || slotH || followDepth ? { ...(entering ? { "--enter-delay": entering.delay + "ms" } : {}), ...(order != null ? { order } : {}), ...(slotH ? { "--row-h": slotH + "px" } : {}), ...(followDepth ? { "--fu-depth": followDepth } : {}) } : undefined}
       onClick={rowClick} onMouseEnter={pulsing && onSeen ? onSeen : undefined}>
-      <Tooltip label="Drag to reorder" pos="is-left">
-        <button className="ib ib-36 ib-tertiary drag-ib" aria-label="Drag to reorder" draggable
-          onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={e => e.preventDefault()}>
-          <Icon name="drag-drop" size={16} /></button>
-      </Tooltip>
+      {/* A follow-up can't be dragged on its own — it moves with its
+          question — so its handle is the link to the question above. */}
+      {linked ? (
+        <Tooltip label="Moves with the question it follows" pos="is-left">
+          <span className="qrow-fu-ic" aria-label="Follow-up question"><Icon name="follow-up" size={16} /></span>
+        </Tooltip>
+      ) : (
+        <Tooltip label="Drag to reorder" pos="is-left">
+          <button className="ib ib-36 ib-tertiary drag-ib" aria-label="Drag to reorder" draggable
+            onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={e => e.preventDefault()}>
+            <Icon name="drag-drop" size={16} /></button>
+        </Tooltip>
+      )}
       <div className="qrow-main">
         <div style={{ fontSize: 14, fontWeight: 500, lineHeight: "22.4px" }}>{text}</div>
         {showDesc && !(meta && meta.descHidden) && tr(`q:${q.id}:desc`, desc || "") && <div className="qrow-desc">{tr(`q:${q.id}:desc`, desc || "")}</div>}
@@ -285,7 +293,7 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
                     {linked && (
                       <div className="menu-item is-disabled" role="menuitem" aria-disabled="true">
                         <span className="menu-item-icon"><Icon name="import-export" size={16} /></span>
-                        <span className="menu-item-body"><span className="menu-item-title">Move</span><span className="menu-item-sub">A follow-up question moves with its question</span></span>
+                        <span className="menu-item-body"><span className="menu-item-title">Move</span><span className="menu-item-sub">Moves with the question it follows</span></span>
                       </div>
                     )}
                     {!linked && canUp && (
@@ -729,19 +737,49 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
 
   // Reorder a question to `idx` within its own topic (idx is in the topic's
   // order excluding the dragged item). No-ops if nothing changes.
+  // A question and its follow-ups (and theirs) move as ONE block: `idx` is
+  // where the question lands in the topic's order without it; its
+  // follow-ups come along right behind it.
+  const fuTriggerOf = (id) => {
+    const a = conditionOfType((qMeta[id] || {}).logic, "answer");
+    return a && a.followUp ? a.trigger : null;
+  };
+  const descendantIds = (id, items) => {
+    const out = [];
+    const walk = (pid) => items.forEach(x => { if (fuTriggerOf(x.id) === pid && !out.includes(x.id)) { out.push(x.id); walk(x.id); } });
+    walk(id);
+    return out;
+  };
   const reorderQuestion = (secKey, id, idx) => {
     setLayout(prev => {
       const si = prev.findIndex(s => s.key === secKey); if (si < 0) return prev;
       const items = prev[si].items;
       const dragged = items.find(x => x.id === id); if (!dragged) return prev;
+      const kids = descendantIds(id, items);
       const without = items.filter(x => x.id !== id);
       const clamped = Math.max(0, Math.min(idx, without.length));
-      without.splice(clamped, 0, dragged);
-      const nextArr = attachFollowUps([...prev.slice(0, si), { ...prev[si], items: without }, ...prev.slice(si + 1)], qMeta);
+      const before = without.slice(0, clamped).filter(x => kids.includes(x.id)).length;
+      const block = [dragged, ...items.filter(x => kids.includes(x.id))];
+      const rest = items.filter(x => x.id !== id && !kids.includes(x.id));
+      rest.splice(Math.max(0, Math.min(clamped - before, rest.length)), 0, ...block);
+      const nextArr = attachFollowUps([...prev.slice(0, si), { ...prev[si], items: rest }, ...prev.slice(si + 1)], qMeta);
       const after = nextArr[si].items;
       if (after.length === items.length && after.every((x, k) => x.id === items[k].id)) return prev;
       return nextArr;
     });
+  };
+  // Block-aware neighbours for Move up / Move down: a question steps over a
+  // whole neighbouring block (a question with its follow-ups), never into one.
+  const blockEnd = (items, i) => i + descendantIds(items[i].id, items).length;
+  const blockRoot = (items, j) => {
+    let k = j, guard = 0;
+    while (k > 0 && guard++ < 10) {
+      const t = fuTriggerOf(items[k].id);
+      const ti = t ? items.findIndex(x => x.id === t) : -1;
+      if (ti < 0) break;
+      k = ti;
+    }
+    return k;
   };
   // Reorder a whole section before/after another. No-ops if nothing changes.
   const reorderSection = (dragKey, overKey, after) => {
@@ -1210,7 +1248,12 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     const t = pool.find(p => p.id === a.trigger);
     return t ? fuDepth(t, n + 1) : n;
   };
-  const followUpBlockFor = (qq) => (answerOptionsOf(qq).length ? null : "Text answers can't trigger follow-up questions");
+  // One follow-up per question, for now (Jamal).
+  const followUpBlockFor = (qq) => {
+    if (!answerOptionsOf(qq).length) return "Text answers can't trigger follow-up questions";
+    if (chosen.some(x => fuTriggerOf(x.id) === qq.id)) return "This question already has a follow-up question";
+    return null;
+  };
   // Start a follow-up's flow (the library, or the custom question dialog with
   // its checks); the app runs it ON TOP of the open dialogs and gives the
   // arrivals the link — nothing here closes.
@@ -1806,12 +1849,12 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                     onFollowUp={() => { setLogicDraft(true); setLogicQId(qq.id); }}
                     order={slotAt != null ? (i >= slotAt ? i + 1 : i) : shown === s.items ? undefined : shown.indexOf(qq)}
                     away={isDragged && !!qHint && qHint.secKey !== s.key} meta={qMeta[qq.id]} tr={tr} showDesc={showDesc}
-                    onRemove={onRemoveQuestion} onEdit={onEditCustom} dragging={!!drag && drag.kind === "q" && drag.id === qq.id}
+                    onRemove={onRemoveQuestion} onEdit={onEditCustom} dragging={!!drag && drag.kind === "q" && (drag.id === qq.id || descendantIds(drag.id, s.items).includes(qq.id))}
                     onSettings={(qq2) => qq2.custom ? (onEditCustom && onEditCustom(qq2)) : setSettingsQId(qq2.id)}
                     onResetDesc={() => onUpdateQMeta && onUpdateQMeta(qq.id, { desc: undefined, descHidden: undefined, variant: undefined })}
-                    canUp={i > 0} canDown={i < s.items.length - 1}
-                    onMoveUp={() => { snapFirst(); reorderQuestion(s.key, qq.id, i - 1); }}
-                    onMoveDown={() => { snapFirst(); reorderQuestion(s.key, qq.id, i + 1); }}
+                    canUp={i > 0} canDown={blockEnd(s.items, i) < s.items.length - 1}
+                    onMoveUp={() => { snapFirst(); reorderQuestion(s.key, qq.id, blockRoot(s.items, i - 1)); }}
+                    onMoveDown={() => { snapFirst(); reorderQuestion(s.key, qq.id, blockEnd(s.items, blockEnd(s.items, i) + 1)); }}
                     topics={visibleSections.map(x => ({ key: x.key, label: topicName(x.key) }))} onMoveTopic={(t) => onMoveTopic && onMoveTopic(qq.id, t)}
                     entering={enteringIds.has(qq.id) && !enteringSecs.has(s.key) ? { delay: enterDelay } : null}
                     pulsing={pulseIds.has(qq.id)} onSeen={() => stopPulse(qq.id)} themeInfo={themeMap[qq.theme]} themeInfoFor={(n) => themeMap[n]}

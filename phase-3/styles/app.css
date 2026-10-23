@@ -509,12 +509,11 @@ button.sel-btn.cq-sel { font-size: 14px; }
   border-bottom: 1px solid var(--border-base); background: var(--bg-base); }
 .qrow:last-child { border-bottom: none; }
 /* A follow-up sits right under its question: indented one step per link in
-   its chain, with a connector from the row above — the link made visible. */
-.qrow.is-followup { position: relative; padding-left: calc(var(--spacing-base) + var(--fu-depth, 1) * 28px); }
-.qrow.is-followup::before { content: ""; position: absolute; top: 0; height: 50%; width: 14px;
-  left: calc(var(--spacing-base) + (var(--fu-depth, 1) - 1) * 28px + 8px);
-  border-left: 2px solid var(--border-info-subtle); border-bottom: 2px solid var(--border-info-subtle);
-  border-bottom-left-radius: 6px; pointer-events: none; }
+   its chain, and in place of a drag handle (it moves with its question) the
+   follow-up icon — the link to the row above. */
+.qrow.is-followup { padding-left: calc(var(--spacing-base) + (var(--fu-depth, 1) - 1) * 28px + 16px); }
+.qrow-fu-ic { width: 36px; height: 36px; flex: none; display: grid; place-items: center; color: var(--content-info-secondary); }
+.qrow-fu-ic i, .qrow-fu-ic svg { display: block; }
 .qrow-main { flex: 1; min-width: 0; }
 .qrow-meta { display: flex; align-items: center; gap: var(--spacing-base-tight); flex: none; }
 /* Tags inside a question row carry a 1px surface-coloured ring so they read
