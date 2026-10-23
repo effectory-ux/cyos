@@ -5,23 +5,35 @@
   "track": "Surveying",
   "pages": [
     {
-      "label": "CYOS research · central library sync",
-      "path": "site/research/central-library-sync/index.html"
-    },
-    {
       "label": "Phase 1 — survey creation flow",
-      "path": "phase-1/index.html",
+      "path": "demo/phase-1/index.html",
       "tag": "In development"
     },
     {
       "label": "Phase 2 — survey-scoped customization",
-      "path": "phase-2/index.html",
+      "path": "demo/phase-2/index.html",
       "tag": "In testing"
     },
     {
-      "label": "Phase 3 — question logic",
-      "path": "phase-3/index.html",
+      "label": "Phase 2.1 — iteration on phase 2",
+      "path": "demo/phase-2.1/index.html"
+    },
+    {
+      "label": "Phase 2.2 — iteration on phase 2.1",
+      "path": "demo/phase-2.2/index.html"
+    },
+    {
+      "label": "Phase 2.3 — iteration on phase 2.2",
+      "path": "demo/phase-2.3/index.html"
+    },
+    {
+      "label": "Phase 3 — next version",
+      "path": "demo/phase-3/index.html",
       "tag": "In progress"
+    },
+    {
+      "label": "CYOS research · central library sync",
+      "path": "demo/research/central-library-sync/index.html"
     }
   ]
 }
