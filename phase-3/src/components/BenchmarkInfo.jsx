@@ -18,7 +18,7 @@ export function BenchmarkInfo({ onClose }) {
           <h3 className="dialog-title" id="bi-title">What a benchmarked question is</h3>
         </div>
         <div className="bi-body">
-          <p>Effectory developed and tested each benchmarked question. Many organisations ask it in exactly the same way, so you can compare your results with theirs. That comparison is the benchmark, and it's why we always recommend a benchmarked question over writing your own.</p>
+          <p>Effectory developed and tested each benchmarked question. Many organizations ask it in exactly the same way, so you can compare your results with theirs. That comparison is the benchmark, and it's why we always recommend a benchmarked question over writing your own.</p>
           <p>To keep the comparison fair, the wording, the answer scale and the translations stay the same. You can still:</p>
           <ul>
             <li>choose one of the approved alternative wordings</li>

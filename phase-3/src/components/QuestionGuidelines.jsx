@@ -25,7 +25,7 @@ const RULES = [
   "Keep the wording respectful and neutral.",
 ];
 
-// `confirm`: the first time — a checkbox, and Continue once it's ticked.
+// `confirm`: the first time — a checkbox, and Start writing once it's ticked.
 // Without it: the same guidelines to read again, from the dialog's link.
 export function QuestionGuidelinesDialog({ confirm = false, onContinue, onClose }) {
   const [agreed, setAgreed] = useState(false);
@@ -56,7 +56,7 @@ export function QuestionGuidelinesDialog({ confirm = false, onContinue, onClose 
             <>
               <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
               <button className={"btn btn-primary" + (agreed ? "" : " is-disabled")} disabled={!agreed}
-                onClick={() => { setGuidelinesAck(true); onContinue && onContinue(); }}>Continue</button>
+                onClick={() => { setGuidelinesAck(true); onContinue && onContinue(); }}>Start writing</button>
             </>
           ) : (
             <button className="btn btn-primary" onClick={onClose}>Got it</button>

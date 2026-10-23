@@ -2347,13 +2347,17 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 /* The close button keeps the DS position (absolute, top 15 / right 15 in
    the dialog corner) — no bespoke offsets here. */
 .lgc-layout { flex: 1; min-height: 0; display: flex; }
-.lgc-rail { flex: none; width: 280px; display: flex; flex-direction: column; gap: 4px;
+/* Rows within a topic sit 2px apart; topics get clear air between them, so
+   the list reads as groups rather than one uniform column. */
+.lgc-rail { flex: none; width: 280px; display: flex; flex-direction: column; gap: 16px;
   padding: 0 24px 24px; border-right: 1px solid var(--border-base);
   position: relative; overflow-anchor: none; }
 .lgc-title { position: sticky; top: 0; z-index: 1; background: var(--bg-base);
   font-size: 20px; font-weight: 600; line-height: 28px; color: var(--content-primary);
   margin: 0 0 8px; padding: 28px 12px 12px; }
-.lgc-group { display: flex; flex-direction: column; gap: 4px; }
+.lgc-group { display: flex; flex-direction: column; gap: 2px; }
+/* The question dialog's Required tag, reused in the rail row. */
+.lgc-q-tag { flex: none; gap: 4px; padding: 2px 8px; line-height: 18px; }
 .lgc-q { display: flex; align-items: center; gap: 12px; min-height: 48px; width: 100%;
   border: none; background: none; text-align: left; padding: 12px; border-radius: 8px;
   font: inherit; font-size: 14px; font-weight: 500; line-height: 22.4px;

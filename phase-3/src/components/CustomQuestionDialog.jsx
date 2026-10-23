@@ -856,7 +856,7 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
   const benchNote = (
     <span className="cq-bench-note">
       <Icon name="info" size={16} />
-      <span>Custom questions do not have a <button type="button" className="btn-link-inline" aria-haspopup="dialog"
+      <span>Custom questions don't have a <button type="button" className="btn-link-inline" aria-haspopup="dialog"
         onClick={() => setBenchInfo(true)}>benchmark</button> comparison in the results</span>
     </span>
   );
@@ -926,7 +926,7 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
               <>
                 <div className="cq-step-head">
                   <h3 className="cq-step-title">We found similar existing questions</h3>
-                  <p className="cq-step-sub is-wide">Reusing an existing question keeps your results comparable with the rest of the organisation and with earlier surveys. Keeping your own wording is fine too: it just won't have a benchmark to compare against.</p>
+                  <p className="cq-step-sub is-wide">Reusing an existing question keeps your results comparable with the rest of the organization and with earlier surveys. Keeping your own wording is fine too: it just won't have a benchmark to compare against.</p>
                 </div>
                 {/* Two named sections, so the choice reads as "mine or one of
                     theirs" instead of one list where your question happens to

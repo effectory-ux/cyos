@@ -102,11 +102,11 @@ function QCheck({ q, on, onClick }) {
     return (
       <>
         <CheckBtn btnRef={confirm.btn} on={moved} elsewhere={!moved} label={label}
-          tip={confirm.at ? null : moved ? "Don't move" : `Already in ${from}. Move to ${qt(ctx.target.label)}`}
+          tip={confirm.at ? null : moved ? "Don't move" : `Already in ${from}. Move to ${qt(ctx.target.label)}.`}
           aria-haspopup={moved ? undefined : "dialog"} aria-expanded={moved ? undefined : !!confirm.at}
           onClick={() => (moved ? ctx.undoMove(q.id) : confirm.toggle())} />
         {confirm.at && <AnchorConfirm at={confirm.at} anchor={confirm.btn} onClose={confirm.close}
-          text={`This question is already in your questionnaire, under ${from}`}
+          text={`This question is already in ${from}`}
           actions={[{ label: `Move to ${qt(ctx.target.label)}`, primary: true, onPick: () => { confirm.close(); ctx.move(q.id); } }]} />}
       </>
     );

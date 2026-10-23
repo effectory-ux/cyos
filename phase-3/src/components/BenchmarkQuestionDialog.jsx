@@ -674,7 +674,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
                           questions (Jamal) — the pane's inherited note
                           carries the origin when one is selected. */}
                       {x.required
-                        ? <span className="lgc-q-mark"><Icon name="asterisk" size={12} /></span>
+                        ? <span className="infotag is-alt lgc-q-tag"><Icon name="asterisk" size={12} />Required</span>
                         : hasRule(x.id) ? <span className={"lgc-q-mark " + (isBroken(x.id) ? "is-broken" : "is-own")}><Icon name="split" size={14} /></span> : null}
                     </button>
                   ))}
