@@ -85,3 +85,22 @@ export const followUpOf = (logic, questions) => {
   return { triggerId: t.id, triggerText: t.text, op: a.op === "not" ? "not" : "is",
     answersText: picked.length ? new Intl.ListFormat("en", { type: "disjunction" }).format(picked) : null };
 };
+
+// One follow-up per ANSWER (Jamal): a question can have several follow-ups,
+// but each of its answers triggers at most one. A follow-up "covers" the
+// answers that show it — the chosen ones with "is", every other one with
+// "is not". `taken` = what the trigger's other follow-ups already cover.
+export const coveredAnswers = (cond, optionCount) => {
+  const picked = (cond && cond.answers) || [];
+  if (cond && cond.op === "not") return Array.from({ length: optionCount }, (_, i) => i).filter(i => !picked.includes(i));
+  return picked.slice();
+};
+export const takenAnswers = (triggerId, exceptId, questions, logicOf, optionCount) => {
+  const taken = new Set();
+  (questions || []).forEach(x => {
+    if (x.id === exceptId) return;
+    const a = conditionOfType(logicOf(x.id), "answer");
+    if (a && a.followUp && a.trigger === triggerId) coveredAnswers(a, optionCount).forEach(i => taken.add(i));
+  });
+  return taken;
+};

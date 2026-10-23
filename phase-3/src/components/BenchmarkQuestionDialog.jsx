@@ -13,7 +13,7 @@ import { QTypeIcon, Tooltip, ThemeTag, themesOf, useMediaQuery, MiniSelect, AddQ
 import { LANG_STATUS, LangPanel, AutoTextarea } from "./CustomQuestionDialog.jsx";
 import { QTYPES, SCALE_LABELS, answerOptionsOf } from "../data/data.js";
 import { CHARACTERISTICS, characteristicOf } from "../data/characteristics.js";
-import { conditionOK, conditionOfType, conditionBroken, logicBroken, logicSummary, activeConditions, followUpOf } from "../data/logic.js";
+import { conditionOK, conditionOfType, conditionBroken, logicBroken, logicSummary, activeConditions, followUpOf, coveredAnswers, takenAnswers } from "../data/logic.js";
 import { LANGUAGES, flagSrc, autoTranslation, scaleFor } from "../data/i18n.js";
 import { variantsOf } from "../data/variants.js";
 import { designWash } from "../data/designs.js";
@@ -156,7 +156,7 @@ function DetachWarning({ theme, completes, themeCount, onCancel, onConfirm }) {
 
 // Multi-select for a condition's answers/values: a select-shaped button whose
 // menu holds checkboxes; it stays open while picking, the scrim closes it.
-function LgcValues({ options, picked, onToggle, placeholder, invalid }) {
+function LgcValues({ options, picked, onToggle, placeholder, invalid, taken }) {
   const [open, setOpen] = useState(false);
   const label = picked.map(i => options[i]).filter(Boolean).join(" or ");
   return (
@@ -176,16 +176,21 @@ function LgcValues({ options, picked, onToggle, placeholder, invalid }) {
           <div className="cq-menu-scrim" onMouseDown={() => setOpen(false)} />
           <div className="menu" role="listbox" aria-multiselectable="true"
             style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 3, maxHeight: 260, overflowY: "auto" }}>
-            {options.map((o, i) => (
-              <div key={i} role="option" aria-selected={picked.includes(i)}
-                className={"menu-item" + (picked.includes(i) ? " is-selected" : "")}
-                onClick={() => onToggle(i)}>
+            {options.map((o, i) => {
+              // An answer another follow-up already covers can't be picked.
+              const off = !!(taken && taken.has(i)) && !picked.includes(i);
+              return (
+              <div key={i} role="option" aria-selected={picked.includes(i)} aria-disabled={off || undefined}
+                className={"menu-item" + (picked.includes(i) ? " is-selected" : "") + (off ? " is-disabled" : "")}
+                onClick={() => { if (!off) onToggle(i); }}>
                 <span className="cb-wrap" style={{ pointerEvents: "none" }}>
                   <input type="checkbox" className="cb" checked={picked.includes(i)} readOnly tabIndex={-1} />
                 </span>
-                <span className="menu-item-body"><span className="menu-item-title">{o}</span></span>
+                <span className="menu-item-body"><span className="menu-item-title">{o}</span>
+                  {off && <span className="menu-item-sub">Already triggers a follow-up question</span>}</span>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
@@ -199,7 +204,7 @@ const OP_ITEMS = [{ value: "is", label: "Is" }, { value: "not", label: "Is not" 
 // since topics became selectable in the rail — a whole topic (`noun` keeps the
 // copy honest). `onChange` gets the whole normalized logic (or null when both
 // cards sit on their neutral option).
-function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, locked, about, followUps, canFollowUp, followUpBlocked, onStartFollowUp, onOpenFollowUp, startDraft = false, onChange }) {
+function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, locked, about, followUps, canFollowUp, followUpBlocked, onStartFollowUp, onOpenFollowUp, startDraft = false, fuTaken, siblingTaken, onChange }) {
   // The FORWARD flow (Jamal's tester feedback): from this question, add a
   // direct follow-up. It is added the way every question is — the Add
   // questions menu: the question library, or a custom question with its
@@ -216,6 +221,9 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
   const discardDraft = () => { setDraft(null); setDraftErr(null); setFuMenu(false); };
   const openFuMenu = () => {
     if (!draft.answers.length) { setDraftErr("Choose at least one answer"); return; }
+    if (fuTaken && coveredAnswers(draft, myOpts.length).some(i => fuTaken.has(i))) {
+      setDraftErr("Some of these answers already trigger a follow-up question"); return;
+    }
     setFuMenu(o => !o);
   };
   const startFu = (source) => { const fu = draft; discardDraft(); onStartFollowUp(fu, source); };
@@ -254,6 +262,7 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
           <div className="lgc-row">
             <MiniSelect ariaLabel="Is or is not" value={draft.op} items={OP_ITEMS} onChange={(op) => setDraft(d => ({ ...d, op }))} />
             <LgcValues options={myOpts} picked={draft.answers} placeholder="Choose answers" invalid={!!draftErr}
+              taken={draft.op === "is" ? fuTaken : null}
               onToggle={(i) => { setDraftErr(null); setDraft(d => ({ ...d, answers: d.answers.includes(i) ? d.answers.filter(x => x !== i) : [...d.answers, i].sort((x, y) => x - y) })); }} />
           </div>
           {draftErr && <span className="lgc-err">{draftErr}</span>}
@@ -346,8 +355,13 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
   // A broken condition (its question left or moved below) warns right away —
   // no showErrors needed: the creator should see it the moment the pane opens.
   const answerBroken = conditionBroken(answer, earlier);
+  // A follow-up's answers can't overlap what its siblings already cover —
+  // shown right away, like a broken condition.
+  const overlaps = !!(answer && answer.followUp && trigger && siblingTaken
+    && coveredAnswers(answer, triggerOpts.length).some(i => siblingTaken.has(i)));
   const answerErr = answerBroken
     ? "This points to a question that was removed or now comes later. Choose another question, or reset the logic."
+    : overlaps ? "Some of these answers already trigger another follow-up question"
     : showErrors && answer && (!trigger ? "Choose an earlier question" : !(answer.answers || []).length ? "Choose at least one answer" : null);
   const audienceErr = showErrors && audience && !(audience.values || []).length ? "Choose at least one value" : null;
   // Typeform-style grouping: the earlier questions carry their topic as a
@@ -398,7 +412,7 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
             <MiniSelect ariaLabel="Is or is not" value={answer.op || "is"} items={OP_ITEMS}
               onChange={(op) => setAnswer({ ...answer, op })} />
             <LgcValues options={triggerOpts} picked={answer.answers || []} placeholder="Choose answers"
-              invalid={!!answerErr} onToggle={(i) => {
+              invalid={!!answerErr} taken={answer.followUp && (answer.op || "is") === "is" ? siblingTaken : null} onToggle={(i) => {
                 const cur = answer.answers || [];
                 setAnswer({ ...answer, answers: cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i].sort((a, b) => a - b) });
               }} />
@@ -538,7 +552,13 @@ export function QuestionLogicDialog({ sections = [], initialId, initialDraft = f
   const canLeave = () => {
     const untouched = JSON.stringify(normLogic(logicOf(selKey))) === JSON.stringify(baseOf(selKey));
     const conditions = (logic && logic.conditions) || [];
-    if (untouched || conditions.every(c => conditionOK(c, earlierFor(selKey)))) { setShowErrors(false); return true; }
+    const fa = conditionOfType(logic, "answer");
+    const overlap = !!(fa && fa.followUp && !untouched && (() => {
+      const t = questions.find(x => x.id === fa.trigger); if (!t) return false;
+      const taken = takenFor(fa.trigger, selKey);
+      return coveredAnswers(fa, answerOptionsOf(t).length).some(i => taken.has(i));
+    })());
+    if (!overlap && (untouched || conditions.every(c => conditionOK(c, earlierFor(selKey))))) { setShowErrors(false); return true; }
     setShowErrors(true); return false;
   };
   const hop = (key) => { if (key !== selKey && canLeave()) { setShowErrors(false); setDraftFor(null); setSelectedKey(key); } };
@@ -565,6 +585,15 @@ export function QuestionLogicDialog({ sections = [], initialId, initialDraft = f
   // needs the red flag. A half-picked condition is editing, not a rule.
   const hasAny = (key) => { const l = logicOf(key); return !!(l && (l.conditions || []).length); };
   const isBroken = (key) => logicBroken(logicOf(key), earlierFor(key));
+  // What a trigger's follow-ups already cover (one follow-up per answer).
+  const takenFor = (triggerId, exceptId) => {
+    const t = questions.find(x => x.id === triggerId);
+    return takenAnswers(triggerId, exceptId, questions, logicOf, t ? answerOptionsOf(t).length : 0);
+  };
+  const hasFollowUps = (id) => questions.some(x => {
+    const a = conditionOfType(logicOf(x.id), "answer");
+    return a && a.followUp && a.trigger === id;
+  });
   // A follow-up's depth in its chain — the rail indents it under its question.
   const fuDepthOf = (id, n = 0) => {
     const a = conditionOfType(logicOf(id), "answer");
@@ -611,8 +640,9 @@ export function QuestionLogicDialog({ sections = [], initialId, initialDraft = f
   const followUpBlockedWhy = () => {
     if (section) return null;
     if (!answerOptionsOf(selected).length) return "Text answers can't trigger follow-up questions";
-    // One follow-up per question, for now (Jamal).
-    if ((followUpsFor() || []).length) return "Each question can have one follow-up question";
+    // One follow-up per ANSWER: once every answer triggers one, that's it.
+    const opts = answerOptionsOf(selected).length;
+    if (takenAnswers(selKey, null, questions, logicOf, opts).size >= opts) return "Every answer already triggers a follow-up question";
     return null;
   };
   // Remove all logic: stage a null for every rule, questions and topics both.
@@ -718,7 +748,10 @@ export function QuestionLogicDialog({ sections = [], initialId, initialDraft = f
                           carries the origin when one is selected. */}
                       {x.required
                         ? <RequiredMarker size={20} />
-                        : hasRule(x.id) ? <span className={"lgc-q-mark " + (isBroken(x.id) ? "is-broken" : "is-own")}><Icon name="split" size={14} /></span> : null}
+                        : isBroken(x.id) ? <span className="lgc-q-mark is-broken"><Icon name="split" size={14} /></span>
+                        // A follow-up's indent and connector already say it;
+                        // a question WITH follow-ups gets the badge.
+                        : (hasRule(x.id) && !fuDepthOf(x.id)) || hasFollowUps(x.id) ? <span className="lgc-q-mark is-own"><Icon name="split" size={14} /></span> : null}
                     </button>
                   ))}
                 </div>
@@ -727,6 +760,8 @@ export function QuestionLogicDialog({ sections = [], initialId, initialDraft = f
           </div>
           <div className="lgc-main scroll-y">
             <LogicRulePane key={selKey} selected={selected} logic={logic} earlier={earlierFor(selKey)} startDraft={draftFor === selKey}
+              fuTaken={section ? null : takenFor(selKey, null)}
+              siblingTaken={(() => { const fa = conditionOfType(logic, "answer"); return fa && fa.followUp ? takenFor(fa.trigger, selKey) : null; })()}
               noun={section ? "topic" : "question"} inherited={inheritedFor()} locked={lockedFor()}
               about={section
                 ? { kind: "topic", count: section.items.length, desc: section.desc }

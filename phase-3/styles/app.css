@@ -511,8 +511,8 @@ button.sel-btn.cq-sel { font-size: 14px; }
 /* A follow-up sits right under its question: indented one step per link in
    its chain, and in place of a drag handle (it moves with its question) the
    follow-up icon — the link to the row above. */
-.qrow.is-followup { padding-left: calc(var(--spacing-base) + (var(--fu-depth, 1) - 1) * 28px + 16px); }
-.qrow-fu-ic { width: 36px; height: 36px; flex: none; display: grid; place-items: center; color: var(--content-info-secondary); }
+.qrow-fu-ic { width: 36px; height: 36px; flex: none; display: grid; place-items: center; color: var(--content-info-secondary);
+  margin-left: calc((var(--fu-depth, 1) - 1) * 28px); }
 .qrow-fu-ic i, .qrow-fu-ic svg { display: block; }
 .qrow-main { flex: 1; min-width: 0; }
 .qrow-meta { display: flex; align-items: center; gap: var(--spacing-base-tight); flex: none; }

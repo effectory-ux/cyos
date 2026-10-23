@@ -8,7 +8,7 @@ import { BenchmarkQuestionDialog, QuestionLogicDialog } from "./BenchmarkQuestio
 import { TopicDialog } from "./TopicDialog.jsx";
 import { TranslationsDialog } from "./TranslationsDialog.jsx";
 import { THEMES, CUSTOM_GROUP, answerOptionsOf } from "../data/data.js";
-import { activeConditions, conditionOfType, logicBroken, logicSummary } from "../data/logic.js";
+import { activeConditions, conditionOfType, logicBroken, logicSummary, takenAnswers } from "../data/logic.js";
 import { DESIGNS, DEFAULT_DESIGN, designById, designWash, introSurface, textLook, boxFill } from "../data/designs.js";
 import { autoTranslation } from "../data/i18n.js";
 
@@ -253,8 +253,8 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
             <span className="tt-title">Broken logic</span>
             It points to a question that was removed or now comes later. Click to fix it.
           </> : <>
-            <span className="tt-title">{logic.followUp ? "Follow-up question" : "Shows conditionally"}</span>
-            {logic.line}
+            <span className="tt-title">{logic.hasFollowUps && !logic.count ? "Triggers follow-up questions" : "Shows conditionally"}</span>
+            {logic.line}{logic.extra && <><br />{logic.extra}</>}
           </>}>
             <button type="button" className={"tag-logic-tile" + (logic.broken ? " is-broken" : "")}
               aria-label={"Logic: " + (logic.broken ? "broken" : logic.line)}
@@ -1227,15 +1227,22 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     // A follow-up shows its link even before its answers are chosen (made
     // from the row menu, the answers come right after) — it's a follow-up
     // from the moment it exists.
+    // A follow-up shows no tile: the link icon on its left already says it.
     const a = conditionOfType(rule, "answer");
-    if (a && a.followUp && !broken) {
-      const trig = flatOrder.find(x => x.id === a.trigger);
-      return { count: live.length, broken: false, followUp: true,
-        line: live.length ? logicSummary({ ...rule, conditions: live }, earlier)
-          : `Follow-up to “${trig ? trig.text : ""}”. Choose the answers that trigger it.` };
-    }
+    if (a && a.followUp && !broken) return null;
     if (!live.length && !broken) return null;
     return { count: live.length, broken, line: live.length ? logicSummary({ ...rule, conditions: live }, earlier) : "" };
+  };
+  // The tile on a question: its own logic, and — for a question that HAS
+  // follow-ups — that it triggers them.
+  const rowLogicFor = (qq) => {
+    const own = logicInfoFor(qq);
+    const kids = flatOrder.filter(x => fuTriggerOf(x.id) === qq.id).length;
+    if (!kids) return own;
+    const fuLine = kids === 1 ? "Has 1 follow-up question" : `Has ${kids} follow-up questions`;
+    if (own && own.broken) return own;
+    return { count: own ? own.count : 0, broken: false, hasFollowUps: true,
+      line: own && own.line ? own.line : fuLine, extra: own && own.line ? fuLine : null };
   };
   // Can this question trigger follow-ups? Any question with fixed answer
   // options can — also one shown conditionally: its follow-ups then show only
@@ -1248,10 +1255,11 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
     const t = pool.find(p => p.id === a.trigger);
     return t ? fuDepth(t, n + 1) : n;
   };
-  // One follow-up per question, for now (Jamal).
+  // One follow-up per ANSWER: blocked once every answer triggers one.
   const followUpBlockFor = (qq) => {
-    if (!answerOptionsOf(qq).length) return "Text answers can't trigger follow-up questions";
-    if (chosen.some(x => fuTriggerOf(x.id) === qq.id)) return "This question already has a follow-up question";
+    const n = answerOptionsOf(qq).length;
+    if (!n) return "Text answers can't trigger follow-up questions";
+    if (takenAnswers(qq.id, null, chosen, (id) => (qMeta[id] || {}).logic, n).size >= n) return "Every answer already triggers a follow-up question";
     return null;
   };
   // Start a follow-up's flow (the library, or the custom question dialog with
@@ -1841,7 +1849,7 @@ export function Builder({ survey, onDetachQuestion, onEditQuestions, onExit, onS
                   const i = s.items.findIndex(x => x.id === qq.id);
                   const shown = previewItems(s);
                   const isDragged = !!drag && drag.kind === "q" && drag.id === qq.id;
-                  return <BuilderRow key={qq.id} q={qq} logic={logicInfoFor(qq)} slotH={isDragged && liftSrc.current ? liftSrc.current.height : null}
+                  return <BuilderRow key={qq.id} q={qq} logic={rowLogicFor(qq)} slotH={isDragged && liftSrc.current ? liftSrc.current.height : null}
                     onOpenLogic={(qq2) => (logicInPlace ? setSettingsQId(qq2.id) : setLogicQId(qq2.id))}
                     followUpBlocked={followUpBlockFor(qq)}
                     linked={(() => { const a = conditionOfType((qMeta[qq.id] || {}).logic, "answer"); return !!(a && a.followUp && sel.has(a.trigger)); })()}

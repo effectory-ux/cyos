@@ -998,11 +998,11 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
         </div>
 
         <div className="dialog-body cq-body">
-          {/* Started from a topic: the same banner as the question library's,
-              naming where the question goes — it follows the topic picked below. */}
           {/* An existing follow-up, opened to edit: the same note as on a
               library question's dialog, with the way to its logic. */}
           {editing && followUpLink && <FollowUpNote info={followUpLink} onEdit={onEditLogic} />}
+          {/* Started from a topic: the same banner as the question library's,
+              naming where the question goes — it follows the topic picked below. */}
           {!editing && followUp ? (
             <div className="eq-target-note" role="status">
               <Icon name="split" size={16} />
@@ -1021,16 +1021,13 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
           <div className="cq-selects">
             <div className="cq-field">
               <span className="cq-lbl">Add to topic
-                <Tooltip label={"Topics organise questions in your questionnaire. They don't affect benchmarks." + (autoTopic && !editing ? ` No topic chosen? It goes to “${autoTopic}”.` : "")} pos="is-above" float>
+                <Tooltip label={"Topics organize questions in your questionnaire. They don't affect benchmarks." + (autoTopic && !editing ? ` No topic chosen? It goes to “${autoTopic}”.` : "")} pos="is-above" float>
                   <button type="button" className="cq-info" aria-label="About topics"><Icon name="info" size={16} /></button>
                 </Tooltip>
               </span>
               {/* A follow-up sits right after its question, so its topic is
                   that question's — shown, not chosen. */}
-              {/* An existing follow-up, opened to edit: the same note as on a
-              library question's dialog, with the way to its logic. */}
-          {editing && followUpLink && <FollowUpNote info={followUpLink} onEdit={onEditLogic} />}
-          {!editing && followUp ? (
+              {!editing && followUp ? (
                 <div className="bmq-type-disabled" aria-disabled="true" title="A follow-up question goes in the same topic as the question it follows">
                   <span>{topicLabel(topic)}</span>
                   <span className="spacer" />
