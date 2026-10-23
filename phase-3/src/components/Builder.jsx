@@ -226,7 +226,7 @@ function BuilderRow({ order, away, slotH, q, meta, tr, showDesc, onRemove, onEdi
       {/* A follow-up can't be dragged on its own — it moves with its
           question — so its handle is the link to the question above. */}
       {linked ? (
-        <Tooltip label="Moves with the question it follows" pos="is-left">
+        <Tooltip label="Follow-up question" pos="is-left">
           <span className="qrow-fu-ic" aria-label="Follow-up question"><Icon name="follow-up" size={16} /></span>
         </Tooltip>
       ) : (

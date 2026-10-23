@@ -1,5 +1,5 @@
 // shared.jsx — small reusable pieces built on the Engage DS.
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 import { POOL, THEMES, CUSTOM_GROUP, QTYPES } from "../data/data.js";
@@ -364,11 +364,37 @@ export function useMediaQuery(query) {
 // ---- compact DS select (sel-btn trigger + .menu popover) ----------------
 // An item with `header: true` renders as a DS group label instead of an option,
 // so a grouped list (primary vs translations) keeps its structure in the menu.
+// A dropdown that would run past the bottom of whatever clips it (a scrolling
+// pane, the dialog above its footer) opens upward instead. `wrapRef` holds the
+// trigger and its menu (`.menu`); returns whether to flip.
+export function useFlipUp(open, wrapRef) {
+  const [up, setUp] = useState(false);
+  useLayoutEffect(() => {
+    if (!open) { setUp(false); return; }
+    const wrap = wrapRef.current, menu = wrap && wrap.querySelector(".menu");
+    if (!menu) return;
+    let clip = wrap.parentElement;
+    while (clip && clip !== document.body) {
+      const o = getComputedStyle(clip).overflowY;
+      if (o === "auto" || o === "scroll" || o === "hidden") break;
+      clip = clip.parentElement;
+    }
+    const bottom = clip && clip !== document.body ? clip.getBoundingClientRect().bottom : window.innerHeight;
+    const top = clip && clip !== document.body ? clip.getBoundingClientRect().top : 0;
+    const m = menu.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+    // Flip only when there is more room above than below.
+    if (m.bottom > bottom - 8 && w.top - top > bottom - w.bottom) setUp(true);
+  }, [open]); // eslint-disable-line
+  return up;
+}
+
 export function MiniSelect({ value, placeholder, items, onChange, ariaLabel, block, invalid }) {
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const up = useFlipUp(open, wrapRef);
   const sel = items.find(it => !it.header && it.value === value);
   return (
-    <div className={"cq-menu-wrap" + (block ? " is-block" : "")}>
+    <div ref={wrapRef} className={"cq-menu-wrap" + (block ? " is-block" : "")}>
       <button type="button" className={"sel-btn cq-sel" + (open ? " is-pressed" : "") + (invalid ? " is-error" : "")}
         aria-haspopup="listbox" aria-expanded={open} aria-label={ariaLabel}
         onClick={() => setOpen(o => !o)}>
@@ -385,7 +411,7 @@ export function MiniSelect({ value, placeholder, items, onChange, ariaLabel, blo
       {open && (
         <>
           <div className="cq-menu-scrim" onMouseDown={() => setOpen(false)} />
-          <div className="menu cq-menu-pop" role="listbox">
+          <div className={"menu cq-menu-pop" + (up ? " is-up" : "")} role="listbox">
             {items.map((it, i) => (it.header ? (
               <div key={"h" + i} className="menu-group-lbl" role="presentation">{it.label}</div>
             ) : (

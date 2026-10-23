@@ -9,7 +9,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, Tooltip, ThemeTag, themesOf, byCompleteFirst, useMediaQuery, MiniSelect, AddQuestionsMenu, RequiredMarker, FollowUpNote } from "./shared.jsx";
+import { QTypeIcon, Tooltip, ThemeTag, themesOf, byCompleteFirst, useMediaQuery, MiniSelect, AddQuestionsMenu, RequiredMarker, FollowUpNote, useFlipUp } from "./shared.jsx";
 import { LANG_STATUS, LangPanel, AutoTextarea } from "./CustomQuestionDialog.jsx";
 import { QTYPES, SCALE_LABELS, answerOptionsOf } from "../data/data.js";
 import { CHARACTERISTICS, characteristicOf } from "../data/characteristics.js";
@@ -158,9 +158,11 @@ function DetachWarning({ theme, completes, themeCount, onCancel, onConfirm }) {
 // menu holds checkboxes; it stays open while picking, the scrim closes it.
 function LgcValues({ options, picked, onToggle, placeholder, invalid, taken }) {
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const up = useFlipUp(open, wrapRef);
   const label = picked.map(i => options[i]).filter(Boolean).join(" or ");
   return (
-    <div className="cq-menu-wrap is-block">
+    <div ref={wrapRef} className="cq-menu-wrap is-block">
       <button type="button" className={"sel-btn" + (open ? " is-pressed" : "") + (invalid ? " is-error" : "")}
         aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(o => !o)}>
         <Icon name="filter" size={16} className="lgc-filter-ic" />
@@ -174,8 +176,8 @@ function LgcValues({ options, picked, onToggle, placeholder, invalid, taken }) {
       {open && (
         <>
           <div className="cq-menu-scrim" onMouseDown={() => setOpen(false)} />
-          <div className="menu" role="listbox" aria-multiselectable="true"
-            style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 3, maxHeight: 260, overflowY: "auto" }}>
+          <div className={"menu cq-menu-pop" + (up ? " is-up" : "")} role="listbox" aria-multiselectable="true"
+            style={{ zIndex: 3, maxHeight: 260, overflowY: "auto" }}>
             {options.map((o, i) => {
               // An answer another follow-up already covers can't be picked.
               const off = !!(taken && taken.has(i)) && !picked.includes(i);
@@ -217,6 +219,8 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
   const [draft, setDraft] = useState(startDraft ? { op: "is", answers: [] } : null);
   const [draftErr, setDraftErr] = useState(null);
   const [fuMenu, setFuMenu] = useState(false);
+  const fuWrapRef = useRef(null);
+  const fuUp = useFlipUp(fuMenu, fuWrapRef);
   const myOpts = answerOptionsOf(selected);
   const discardDraft = () => { setDraft(null); setDraftErr(null); setFuMenu(false); };
   const openFuMenu = () => {
@@ -266,7 +270,7 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
               onToggle={(i) => { setDraftErr(null); setDraft(d => ({ ...d, answers: d.answers.includes(i) ? d.answers.filter(x => x !== i) : [...d.answers, i].sort((x, y) => x - y) })); }} />
           </div>
           {draftErr && <span className="lgc-err">{draftErr}</span>}
-          <div className="lgc-fu-add-wrap">
+          <div className="lgc-fu-add-wrap" ref={fuWrapRef}>
             <button type="button" className={"btn btn-secondary" + (fuMenu ? " is-pressed" : "")}
               aria-haspopup="menu" aria-expanded={fuMenu} onClick={openFuMenu}>
               <Icon name="plus" size={16} />Add question
@@ -274,7 +278,7 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
             {fuMenu && (
               <>
                 <div className="cq-menu-scrim" onMouseDown={() => setFuMenu(false)} />
-                <AddQuestionsMenu className="lgc-fu-menu" onPick={() => setFuMenu(false)}
+                <AddQuestionsMenu className={"lgc-fu-menu" + (fuUp ? " is-up" : "")} onPick={() => setFuMenu(false)}
                   onLibrary={() => startFu("library")} onCustom={() => startFu("custom")} />
               </>
             )}
@@ -742,6 +746,12 @@ export function QuestionLogicDialog({ sections = [], initialId, initialDraft = f
                       ref={x.id === selKey ? selRef : undefined}
                       className={"lgc-q" + (x.id === selKey ? " is-selected" : "") + (fuDepthOf(x.id) ? " is-followup" : "")}
                       style={fuDepthOf(x.id) ? { "--fu-depth": fuDepthOf(x.id) } : undefined} onClick={() => hop(x.id)}>
+                      {/* The builder's follow-up icon, so a follow-up reads the same in both. */}
+                      {fuDepthOf(x.id) > 0 && (
+                        <Tooltip label="Follow-up question" pos="is-right">
+                          <span className="lgc-q-fu-ic" aria-label="Follow-up question"><Icon name="follow-up" size={16} /></span>
+                        </Tooltip>
+                      )}
                       <span className="lgc-q-text">{x.text}</span>
                       {/* A ruled topic's badge is NOT repeated on its
                           questions (Jamal) — the pane's inherited note

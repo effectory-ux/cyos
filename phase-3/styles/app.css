@@ -57,6 +57,8 @@ button.sel-btn.cq-sel { font-size: 14px; }
 .cq-menu-wrap { position: relative; }
 .cq-menu-wrap.is-block { width: 100%; }
 .cq-menu-pop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 2; }
+/* Near the bottom of what clips it, a dropdown opens upward (useFlipUp). */
+.cq-menu-pop.is-up, .lgc-fu-menu.is-up { top: auto; bottom: calc(100% + 4px); }
 .cq-menu-scrim { position: fixed; inset: 0; z-index: 1; }
 
 /* Inline "Heads up" notification (Figma 143:5017): dismissible info banner. */
@@ -2376,11 +2378,11 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
   font: inherit; font-size: 14px; font-weight: 500; line-height: 22.4px;
   color: var(--content-action); cursor: pointer; }
 .lgc-q.is-topic { font-size: 16px; font-weight: 600; line-height: 24px; }
-.lgc-q.is-followup { position: relative; padding-left: calc(12px + var(--fu-depth, 1) * 20px); }
-.lgc-q.is-followup::before { content: ""; position: absolute; top: -2px; height: calc(50% + 2px); width: 10px;
-  left: calc(12px + (var(--fu-depth, 1) - 1) * 20px + 2px);
-  border-left: 2px solid var(--border-info-subtle); border-bottom: 2px solid var(--border-info-subtle);
-  border-bottom-left-radius: 6px; pointer-events: none; }
+/* A follow-up in the rail: the builder's follow-up icon in front, one
+   step further in per extra link in its chain. */
+.lgc-q.is-followup { padding-left: calc(12px + (var(--fu-depth, 1) - 1) * 20px); gap: 8px; }
+.lgc-q-fu-ic { flex: none; display: flex; color: var(--content-info-secondary); }
+.lgc-q-fu-ic svg { display: block; }
 .lgc-q:hover { background: var(--bg-secondary); }
 .lgc-q.is-selected { background: var(--bg-brand-subtle-selected); color: var(--content-action-pressed); }
 .lgc-q-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
