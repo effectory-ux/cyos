@@ -69,3 +69,17 @@ in the code, so they need the same treatment on purpose:
   case; no final dot on one-sentence UI text, full stops when there are two
   or more sentences; approved terms ("question library", "open-ended
   questions").
+
+## Phase 3 builds on phase 2.3
+
+`phase-3/` is phase 2.3 plus the logic work, and it keeps absorbing 2.3:
+
+- `./phase-3/sync-from-phase-2.3.sh` replays every phase-2.3 commit since
+  `phase-3/.phase23-sync-base` onto phase-3. Run it at the start of phase-3
+  work and whenever 2.3 moves on — a UserPromptSubmit hook
+  (`phase-3/check-phase-2.3-updates.sh`) says so when it has.
+- Resolve `.rej` hunks by building on 2.3: where phase 3 only duplicated
+  something 2.3 now has, 2.3's version wins and phase 3's copy goes. Skip
+  `proto-discovered.json` hunks — each phase keeps its own route log.
+- Never edit `phase-2.3/` from phase-3 work, and don't port its uncommitted
+  working tree by hand: the later replay then rejects every hunk.
