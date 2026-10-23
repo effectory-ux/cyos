@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r \".tool_input.file_path // .tool_response.filePath // empty\" | { read -r f; case \"$f\" in *.jsx) jq -n --arg f \"$f\" \"{hookSpecificOutput:{hookEventName:\\\"PostToolUse\\\",additionalContext:(\\\"UI text may have changed in \\\" + \\$f + \\\". If any user-visible string was added or changed, invoke the ux-copy:ux-copy skill (review mode) on those strings before committing.\\\")}}\";; esac; } 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

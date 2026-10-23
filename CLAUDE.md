@@ -49,3 +49,23 @@ Rules:
   (`USE_CASES`, `START_POINTS`, `VARIANTS`) or `src/data/edgecases.js` in the
   same change. A state that exists in the app but not in the toolbar is a bug.
 
+
+## UI copy
+
+The design system lives in the code (tokens, components, icons), so building
+on existing patterns keeps the UI consistent by itself. Copy rules don't live
+in the code, so they need the same treatment on purpose:
+
+- **Every user-visible string that is added or changed goes through the
+  `ux-copy:ux-copy` skill** (review mode) before it is committed — also copy
+  that comes along with feature work, and the strings around wording Jamal
+  dictates. Having loaded the skill earlier in the session doesn't count. A
+  PostToolUse hook in `.claude/settings.json` reminds you after every `.jsx`
+  edit.
+- The rules that slip most often: never split one sentence across UI
+  elements (label + selects that only read as a sentence together); never
+  build grammar in code (concatenated "is"/"isn't"/" or "); placeholders as
+  `{{camelCase}}`; no vague "it"/"this"; US English ("organize"); sentence
+  case; no final dot on one-sentence UI text, full stops when there are two
+  or more sentences; approved terms ("question library", "open-ended
+  questions").
