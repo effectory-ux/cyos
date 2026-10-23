@@ -70,3 +70,18 @@ export const logicSummary = (logic, earlier) => {
 
 export const activeConditions = (logic, earlier) =>
   (logic && logic.conditions ? logic.conditions : []).filter(c => conditionOK(c, earlier));
+
+// A follow-up question's link, for the places that describe it (its own
+// dialogs, the builder): the question it follows and the answers that show
+// it. `questions` = the survey's questions to find the trigger in. Null when
+// the question isn't a follow-up, or its question left the survey.
+export const followUpOf = (logic, questions) => {
+  const a = conditionOfType(logic, "answer");
+  if (!a || !a.followUp) return null;
+  const t = (questions || []).find(x => x.id === a.trigger);
+  if (!t) return null;
+  const opts = answerOptionsOf(t);
+  const picked = (a.answers || []).map(i => opts[i]).filter(Boolean);
+  return { triggerId: t.id, triggerText: t.text, op: a.op === "not" ? "not" : "is",
+    answersText: picked.length ? new Intl.ListFormat("en", { type: "disjunction" }).format(picked) : null };
+};

@@ -16,7 +16,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
 import { designWash } from "../data/designs.js";
-import { QTypeIcon, Tooltip, useMediaQuery, MiniSelect } from "./shared.jsx";
+import { QTypeIcon, Tooltip, useMediaQuery, MiniSelect, FollowUpNote } from "./shared.jsx";
 import { BenchmarkInfo } from "./BenchmarkInfo.jsx";
 import { QuestionGuidelinesDialog, useGuidelinesAck } from "./QuestionGuidelines.jsx";
 import { useAnchorMenu, AnchorConfirm, CONFIRM_GAP } from "./AnchorMenu.jsx";
@@ -402,7 +402,7 @@ function ManualConflictDialog({ langs, onKeep, onOverwrite }) {
 // choice, so it has to outlast reading it.
 const DONE_MS = 6000;
 
-export function CustomQuestionDialog({ question, topics, design, autoTopic, onGoToQuestion, pool = [], selectedIds = [], alwaysSimilar = false, checkBlocks = true, qMeta = {}, translations = {}, defaultTopic, followUp = null, focusTitle = false, onUseSuggestion, onMoveSuggestion, onCancel, onAdd, onAddAnother, onOpenCreated, onSubmit, onDelete }) {
+export function CustomQuestionDialog({ question, topics, design, autoTopic, onGoToQuestion, pool = [], selectedIds = [], alwaysSimilar = false, checkBlocks = true, qMeta = {}, translations = {}, defaultTopic, followUp = null, followUpLink = null, onEditLogic, focusTitle = false, onUseSuggestion, onMoveSuggestion, onCancel, onAdd, onAddAnother, onOpenCreated, onSubmit, onDelete }) {
   const editing = !!question;
   const submitFn = onSubmit || onAdd;
   // Only offer topics that actually exist in this survey (as {value,label} —
@@ -1000,6 +1000,9 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
         <div className="dialog-body cq-body">
           {/* Started from a topic: the same banner as the question library's,
               naming where the question goes — it follows the topic picked below. */}
+          {/* An existing follow-up, opened to edit: the same note as on a
+              library question's dialog, with the way to its logic. */}
+          {editing && followUpLink && <FollowUpNote info={followUpLink} onEdit={onEditLogic} />}
           {!editing && followUp ? (
             <div className="eq-target-note" role="status">
               <Icon name="split" size={16} />
@@ -1024,7 +1027,10 @@ export function CustomQuestionDialog({ question, topics, design, autoTopic, onGo
               </span>
               {/* A follow-up sits right after its question, so its topic is
                   that question's — shown, not chosen. */}
-              {!editing && followUp ? (
+              {/* An existing follow-up, opened to edit: the same note as on a
+              library question's dialog, with the way to its logic. */}
+          {editing && followUpLink && <FollowUpNote info={followUpLink} onEdit={onEditLogic} />}
+          {!editing && followUp ? (
                 <div className="bmq-type-disabled" aria-disabled="true" title="A follow-up question goes in the same topic as the question it follows">
                   <span>{topicLabel(topic)}</span>
                   <span className="spacer" />

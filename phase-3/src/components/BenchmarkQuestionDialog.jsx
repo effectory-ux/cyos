@@ -9,11 +9,11 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon.jsx";
-import { QTypeIcon, Tooltip, ThemeTag, themesOf, useMediaQuery, MiniSelect, AddQuestionsMenu, RequiredMarker } from "./shared.jsx";
+import { QTypeIcon, Tooltip, ThemeTag, themesOf, useMediaQuery, MiniSelect, AddQuestionsMenu, RequiredMarker, FollowUpNote } from "./shared.jsx";
 import { LANG_STATUS, LangPanel, AutoTextarea } from "./CustomQuestionDialog.jsx";
 import { QTYPES, SCALE_LABELS, answerOptionsOf } from "../data/data.js";
 import { CHARACTERISTICS, characteristicOf } from "../data/characteristics.js";
-import { conditionOK, conditionOfType, conditionBroken, logicBroken, logicSummary, activeConditions } from "../data/logic.js";
+import { conditionOK, conditionOfType, conditionBroken, logicBroken, logicSummary, activeConditions, followUpOf } from "../data/logic.js";
 import { LANGUAGES, flagSrc, autoTranslation, scaleFor } from "../data/i18n.js";
 import { variantsOf } from "../data/variants.js";
 import { designWash } from "../data/designs.js";
@@ -199,14 +199,26 @@ const OP_ITEMS = [{ value: "is", label: "Is" }, { value: "not", label: "Is not" 
 // since topics became selectable in the rail — a whole topic (`noun` keeps the
 // copy honest). `onChange` gets the whole normalized logic (or null when both
 // cards sit on their neutral option).
-function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, locked, about, followUps, canFollowUp, followUpBlocked, onStartFollowUp, onOpenFollowUp, onChange }) {
+function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question", inherited, locked, about, followUps, canFollowUp, followUpBlocked, onStartFollowUp, onOpenFollowUp, startDraft = false, onChange }) {
   // The FORWARD flow (Jamal's tester feedback): from this question, add a
   // direct follow-up. It is added the way every question is — the Add
   // questions menu: the question library, or a custom question with its
   // guidelines and similar-question check — and arrives right after this
   // question, linked to it; the Logic dialog then opens on it to choose the
   // answers that trigger it.
+  // Conditions come first: "Add follow-up question" opens a draft condition
+  // card (the same card as the conditions above, with its own remove), and
+  // only with answers chosen does Add question open the usual menu.
+  const [draft, setDraft] = useState(startDraft ? { op: "is", answers: [] } : null);
+  const [draftErr, setDraftErr] = useState(null);
   const [fuMenu, setFuMenu] = useState(false);
+  const myOpts = answerOptionsOf(selected);
+  const discardDraft = () => { setDraft(null); setDraftErr(null); setFuMenu(false); };
+  const openFuMenu = () => {
+    if (!draft.answers.length) { setDraftErr("Choose at least one answer"); return; }
+    setFuMenu(o => !o);
+  };
+  const startFu = (source) => { const fu = draft; discardDraft(); onStartFollowUp(fu, source); };
   const followUpBlock = onStartFollowUp ? (
     <div className="lgc-fu">
       <div className="lgc-sec-head">
@@ -229,21 +241,40 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
       )}
       {!canFollowUp ? (
         <span className="lgc-hint">{followUpBlocked}</span>
-      ) : (
-        <div className="lgc-fu-add-wrap">
-          <button type="button" className={"btn btn-tertiary" + (fuMenu ? " is-pressed" : "")}
-            aria-haspopup="menu" aria-expanded={fuMenu} onClick={() => setFuMenu(o => !o)}>
-            <Icon name="plus" size={16} />Add follow-up question
-          </button>
-          {fuMenu && (
-            <>
-              <div className="cq-menu-scrim" onMouseDown={() => setFuMenu(false)} />
-              <AddQuestionsMenu className="lgc-fu-menu" onPick={() => setFuMenu(false)}
-                onLibrary={() => onStartFollowUp({ op: "is", answers: [] }, "library")}
-                onCustom={() => onStartFollowUp({ op: "is", answers: [] }, "custom")} />
-            </>
-          )}
+      ) : draft ? (
+        <div className={"lgc-card" + (draftErr ? " is-invalid" : "")}>
+          <div className="lgc-card-head">
+            <div className="lgc-card-lbl">Answers that trigger the follow-up question</div>
+            <Tooltip label="Remove condition" pos="is-left">
+              <button type="button" className="ib ib-24 ib-tertiary" aria-label="Remove condition" onClick={discardDraft}>
+                <Icon name="trash" size={16} />
+              </button>
+            </Tooltip>
+          </div>
+          <div className="lgc-row">
+            <MiniSelect ariaLabel="Is or is not" value={draft.op} items={OP_ITEMS} onChange={(op) => setDraft(d => ({ ...d, op }))} />
+            <LgcValues options={myOpts} picked={draft.answers} placeholder="Choose answers" invalid={!!draftErr}
+              onToggle={(i) => { setDraftErr(null); setDraft(d => ({ ...d, answers: d.answers.includes(i) ? d.answers.filter(x => x !== i) : [...d.answers, i].sort((x, y) => x - y) })); }} />
+          </div>
+          {draftErr && <span className="lgc-err">{draftErr}</span>}
+          <div className="lgc-fu-add-wrap">
+            <button type="button" className={"btn btn-secondary" + (fuMenu ? " is-pressed" : "")}
+              aria-haspopup="menu" aria-expanded={fuMenu} onClick={openFuMenu}>
+              <Icon name="plus" size={16} />Add question
+            </button>
+            {fuMenu && (
+              <>
+                <div className="cq-menu-scrim" onMouseDown={() => setFuMenu(false)} />
+                <AddQuestionsMenu className="lgc-fu-menu" onPick={() => setFuMenu(false)}
+                  onLibrary={() => startFu("library")} onCustom={() => startFu("custom")} />
+              </>
+            )}
+          </div>
         </div>
+      ) : (
+        <button type="button" className="btn btn-tertiary lgc-fu-start" onClick={() => setDraft({ op: "is", answers: [] })}>
+          <Icon name="plus" size={16} />Add follow-up question
+        </button>
       )}
     </div>
   ) : null;
@@ -453,7 +484,10 @@ function LogicEditor({ q, logic, onChange, earlier, inherited, about, onClose })
 // rule on the right. It owns its commit: Save applies every touched
 // question's rule immediately, Cancel discards them all — independent of the
 // question dialog's staging, so there is never a nested-save puzzle.
-export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion = {}, logicByTopic = {}, onApply, onStartFollowUp, onClose, zIndex }) {
+export function QuestionLogicDialog({ sections = [], initialId, initialDraft = false, logicByQuestion = {}, logicByTopic = {}, onApply, onStartFollowUp, onClose, zIndex }) {
+  // Opened from a row's "Add follow-up question": that question's pane starts
+  // with the draft follow-up card open — once.
+  const [draftFor, setDraftFor] = useState(initialDraft ? initialId : null);
   // `_group` rides along for the earlier-question menu's topic headers.
   const questions = sections.flatMap(s => s.items.map(x => ({ ...x, _group: s.label })));
   // The rail selects questions AND topics (a topic's rule gates its whole
@@ -507,7 +541,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
     if (untouched || conditions.every(c => conditionOK(c, earlierFor(selKey)))) { setShowErrors(false); return true; }
     setShowErrors(true); return false;
   };
-  const hop = (key) => { if (key !== selKey && canLeave()) { setShowErrors(false); setSelectedKey(key); } };
+  const hop = (key) => { if (key !== selKey && canLeave()) { setShowErrors(false); setDraftFor(null); setSelectedKey(key); } };
   const commit = () => {
     const qPatches = {}, tPatches = {};
     Object.keys(logicMap).forEach(key => {
@@ -688,7 +722,7 @@ export function QuestionLogicDialog({ sections = [], initialId, logicByQuestion 
             })}
           </div>
           <div className="lgc-main scroll-y">
-            <LogicRulePane selected={selected} logic={logic} earlier={earlierFor(selKey)}
+            <LogicRulePane key={selKey} selected={selected} logic={logic} earlier={earlierFor(selKey)} startDraft={draftFor === selKey}
               noun={section ? "topic" : "question"} inherited={inheritedFor()} locked={lockedFor()}
               about={section
                 ? { kind: "topic", count: section.items.length, desc: section.desc }
@@ -743,6 +777,9 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
   const ownLogic = normLogic(logicOf(q.id));
   const liveOwn = activeConditions(ownLogic, earlierFor(q.id));
   const hasLogic = liveOwn.length > 0;
+  // A follow-up says so on its own dialog — also before its answers are
+  // chosen (then the link is all it has).
+  const followUp = followUpOf(ownLogic, allQuestions);
   const logicLine = hasLogic ? logicSummary({ conditions: liveOwn }, earlierFor(q.id)) : "";
   const [lang, setLang] = useState("en");
   // Same breakpoint as the custom-question dialog: below it the language list
@@ -828,12 +865,13 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                 onOpen={onOpenTheme ? () => onOpenTheme(n) : undefined} />;
             })}
             {q.required && <span className="infotag is-alt"><Icon name="asterisk" size={12} />Required</span>}
-            {hasLogic && <span className="infotag is-logic"><Icon name="split" size={12} />Logic</span>}
+            {(hasLogic || followUp) && <span className="infotag is-logic"><Icon name="split" size={12} />Logic</span>}
           </div>
           <h2 className="dialog-title" id="bmq-title">{title}</h2>
           <p className="dialog-subtitle">Defined by our professionals and compared to relevant benchmarks.</p>
         </div>
 
+        {followUp && <FollowUpNote info={followUp} onEdit={() => (logicInPlace ? setLogicFor(q.id) : onOpenLogic && onOpenLogic(q.id))} />}
         <div className="bmq-selects">
           <div className="bmq-field">
             <span className="bmq-lbl">Add to topic
@@ -866,12 +904,12 @@ export function BenchmarkQuestionDialog({ q, meta = {}, topicKey, topicOptions =
                 <Icon name="chevron-right" size={16} />
               </div>
             ) : (
-              <Tooltip label={hasLogic ? logicLine : "Show this question only after a chosen answer, or only to some employees"} wrapClass="bmq-who-tt">
+              <Tooltip label={hasLogic ? logicLine : followUp ? "Choose the answers that trigger this question" : "Show this question only after a chosen answer, or only to some employees"} wrapClass="bmq-who-tt">
                 <button type="button" className={"sel-btn bmq-who" + (hasLogic ? " is-some" : "")} aria-haspopup="dialog"
                   onClick={() => (logicInPlace ? setLogicFor(q.id) : onOpenLogic && onOpenLogic(q.id))}>
                   <span className="bmq-who-ic"><Icon name="split" size={16} /></span>
                   <span className="sel-btn-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {hasLogic ? `Some · ${liveOwn.length} ${liveOwn.length === 1 ? "condition" : "conditions"}` : "Everyone"}
+                    {followUp ? "Follow-up question" : hasLogic ? `Some · ${liveOwn.length} ${liveOwn.length === 1 ? "condition" : "conditions"}` : "Everyone"}
                   </span>
                   <span className="spacer" />
                   <Icon name="chevron-right" size={16} />

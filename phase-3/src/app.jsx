@@ -6,6 +6,7 @@ import { TemplateModal } from "./components/TemplateModal.jsx";
 import { EditQuestionsDialog, ThemeConfirm, AddedNotice } from "./components/EditQuestionsDialog.jsx";
 import { CustomQuestionDialog } from "./components/CustomQuestionDialog.jsx";
 import { setGuidelinesAck } from "./components/QuestionGuidelines.jsx";
+import { followUpOf } from "./data/logic.js";
 import { NameSurveyDialog } from "./components/NameSurveyDialog.jsx";
 import { themeStatus, themesOf } from "./components/shared.jsx";
 import { SEED_SURVEYS, surveyFromTemplate } from "./data/data.js";
@@ -772,6 +773,8 @@ export function App() {
         onCancel={() => setNewCustom(false)} onAdd={addCustomDirect} onAddAnother={addCustomKeepOpen}
         onOpenCreated={(q) => { setNewCustom(false); setEditCustom(q); }} />}
       {editCustom && <CustomQuestionDialog question={editCustom} translations={questionI18n(editCustom)} design={survey ? designById(survey.design) : null}
+        followUpLink={survey ? followUpOf(((survey.qMeta || {})[editCustom.id] || {}).logic, survey.pool.filter(p => survey.selectedIds.includes(p.id))) : null}
+        onEditLogic={() => { const id = editCustom.id; setEditCustom(null); setFocusTitle(false); setOpenInBuilder({ dialog: "logic-return", arg: id }); }}
         topics={surveyTopicOptions()} focusTitle={focusTitle}
         onCancel={() => { setEditCustom(null); setFocusTitle(false); }}
         onSubmit={(q) => { saveCustomEdit(q); setFocusTitle(false); }}

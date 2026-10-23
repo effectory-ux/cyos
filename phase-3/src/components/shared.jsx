@@ -424,3 +424,28 @@ export function AddQuestionsMenu({ className, onPick, onLibrary, onCustom, title
     </div>
   );
 }
+
+// On a follow-up question's own dialogs: that it is one, what shows it, and a
+// way to its logic. `info` from logic.js followUpOf(). Whole sentences per
+// case; only the question and the answers are inserted.
+export function FollowUpNote({ info, onEdit }) {
+  if (!info) return null;
+  const text = !info.answersText
+    ? <>This question is a follow-up to <b>“{info.triggerText}”</b>. Choose the answers that trigger this question.</>
+    : info.op === "not"
+      ? <>This question is a follow-up to <b>“{info.triggerText}”</b>, asked right after it when the answer isn't {info.answersText}</>
+      : <>This question is a follow-up to <b>“{info.triggerText}”</b>, asked right after it when the answer is {info.answersText}</>;
+  return (
+    <div className="inline-notif is-info is-one-liner fu-note">
+      <img className="inline-notif-icon" alt="" width="24" height="24" src="assets/icons/notification-information.svg" />
+      <div className="inline-notif-content">
+        <div className="inline-notif-text">{text}</div>
+        {onEdit && (
+          <div className="inline-notif-actions">
+            <button type="button" className="btn btn-secondary" onClick={onEdit}>Edit</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
