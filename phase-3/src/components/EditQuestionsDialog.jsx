@@ -96,6 +96,11 @@ function QCheck({ q, on, onClick }) {
   const confirm = useAnchorMenu(130, "left", CONFIRM_GAP);
   const label = q.text;
   const inQ = ctx.initial.has(q.id);
+  // Picking one follow-up: a click adds the question; one already in the
+  // questionnaire is simply not available (no move offer).
+  if (ctx.pickOne) {
+    return <CheckBtn on={false} unavailable={inQ} label={label} onClick={onClick} />;
+  }
   if (ctx.isElsewhere(q.id)) {
     const moved = ctx.moves.has(q.id);
     const from = qt(ctx.topicLabel(ctx.topicOf(q)));
@@ -887,7 +892,11 @@ function TemplateDetailView({ t, sel, onBack, onToggleQuestion, onSelectAll }) {
 // "sidebar" — Miro/Qualtrics-style: a left rail to browse (with the topics as
 //             jump anchors) and ONE search on top that looks across questions,
 //             themes and templates, results grouped by where they came from.
-export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", qMeta = {}, addToTopic = null, followUp = null, topicOptions = [], onUpdateQMeta, onMoveTopic, onAddTopic, translationsFor, onCommitCustom, onCommitCustomEdit, autoTopic, onClose, onSave }) {
+export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, initialTab = "questions", nav = "tabs", qMeta = {}, addToTopic = null, followUp = null, onPickOne, topicOptions = [], onUpdateQMeta, onMoveTopic, onAddTopic, translationsFor, onCommitCustom, onCommitCustomEdit, autoTopic, onClose, onSave }) {
+  // Opened for a follow-up: pick ONE question — a click adds it and closes.
+  // No ticking several, no Save; what is already in the questionnaire stays
+  // put (it can't become this follow-up).
+  const pickOne = !!(followUp && onPickOne);
   const compact = useMediaQuery(EQ_COMPACT);
   const narrow = compact;
   const [pool, setPool] = useState(initialPool);
@@ -1133,6 +1142,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     reqTimer.current = setTimeout(() => setReqNotice(0), 4000);
   };
   const toggle = (qq) => {
+    if (pickOne) { if (!initial.has(qq.id)) onPickOne(qq); return; }
     if (locked(qq.id)) return; // required, or in already when opened from a topic
     const isOn = sel.has(qq.id);
     if (!isOn && blocked(qq.id)) return;
@@ -1304,7 +1314,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     return b ? `In ${qt(topicLabel(b))}` : null;
   };
   const addCtx = { initial, sel, qMeta, where, target, topicLabel, blocked, hasText, whereMany, joinNames, whereLine,
-    isRequired: (id) => requiredIds.has(id), isLocked: locked, isElsewhere, moves, move, undoMove, topicOf, setMany };
+    isRequired: (id) => requiredIds.has(id), isLocked: locked, isElsewhere, moves, move, undoMove, topicOf, setMany, pickOne };
   // Per-section collapse (Questions tab): a chevron per header, plus a
   // collapse-all / expand-all toolbar toggle over the currently visible groups.
   // Collapse all acts on the sections of the page you are on.
@@ -1341,7 +1351,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     return { ...g, shown: g.rows.filter(r => (!gqt2 || byName || rowHit(r.q)) && (rowShown(r.q) || leaving.has(r.q.id))) };
   }).filter(g => g.shown.length > 0);
   const gKey = (g) => view + ":" + g.key;
-  const toggleRow = (r) => (r.kind === "org" ? toggleOrgQuestion(r.q) : r.kind === "tmpl" ? toggleTemplateQuestion(r.t, r.q.id) : toggle(r.q));
+  const toggleRow = (r) => (pickOne ? toggle(r.q) : r.kind === "org" ? toggleOrgQuestion(r.q) : r.kind === "tmpl" ? toggleTemplateQuestion(r.t, r.q.id) : toggle(r.q));
   const addAllGroup = (g, allOn) => {
     if (g.onAll) return g.onAll(!allOn);
     const ids = g.rows.map(r => r.q.id);
@@ -1376,7 +1386,7 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
     <div className="overlay is-fullbleed" onMouseDown={e => { if (e.target === e.currentTarget && !hasChanges) close(); }}>
       {/* Height lives in CSS (.eq-dialog): on a small screen this dialog IS
           the screen, and an inline height would win over that rule. */}
-      <div className={"dialog dialog-l dialog-worksurface eq-dialog" + (nav === "sidebar" ? " eq-wide" : "")} role="dialog" aria-modal="true" aria-labelledby="eq-title"
+      <div className={"dialog dialog-l dialog-worksurface eq-dialog" + (nav === "sidebar" ? " eq-wide" : "") + (pickOne ? " is-pick-one" : "")} role="dialog" aria-modal="true" aria-labelledby="eq-title"
         style={{ display: "flex", flexDirection: "column" }}>
         {/* The DS close: top right of the dialog — in the tabbed layout, and in
             the sidebar layout once the rail is gone (the title takes its row). */}
@@ -1649,10 +1659,10 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
                 on that question, in the same banner the topic target uses. */}
             {followUp
               ? <span className="eq-target-txt">{!followUp.answersText
-                  ? <>Questions you add become follow-ups to <b>“{followUp.triggerText}”</b> and are asked right after it. Next, choose the answers that trigger them.</>
+                  ? <>Choose a question to ask right after <b>“{followUp.triggerText}”</b></>
                   : followUp.op === "not"
-                    ? <>Questions you add become follow-ups to <b>“{followUp.triggerText}”</b>, asked right after it when the answer isn't {followUp.answersText}</>
-                    : <>Questions you add become follow-ups to <b>“{followUp.triggerText}”</b>, asked right after it when the answer is {followUp.answersText}</>}</span>
+                    ? <>Choose a question to ask right after <b>“{followUp.triggerText}”</b> when the answer isn't {followUp.answersText}</>
+                    : <>Choose a question to ask right after <b>“{followUp.triggerText}”</b> when the answer is {followUp.answersText}</>}</span>
               : <span className="eq-target-txt">Questions you add go to <b>{target.label}</b> in your questionnaire</span>}
           </div>
         ) : null}
@@ -1894,12 +1904,14 @@ export function EditQuestionsDialog({ initialPool, initialSelected, tweaks, init
 
         {/* What Save does — added, where to, and removed — and the one place
             it happens. Save is always there: with nothing changed it closes. */}
+        {!pickOne && (
         <div className="dialog-footer">
           <span className="text-medium text-w500 eq-change-line" style={{ color: "var(--content-base)" }}>{changeLine()}</span>
           <div className="spacer" />
           <button className="btn btn-secondary" onClick={close}>Cancel</button>
           <button className="btn btn-primary" onClick={hasChanges ? apply : close}>Save</button>
         </div>
+        )}
       </div>
 
       {customOpen && <CustomQuestionDialog defaultTopic={target ? target.key : undefined} autoTopic={autoTopic}

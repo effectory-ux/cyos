@@ -25,6 +25,7 @@ export const USE_CASES = [
   { key: "question-settings", label: "Benchmarked question", desc: "Alternative wording + description" },
   { key: "question-edited", label: "Question with a variant", desc: "Alternative wording already applied" },
   { key: "question-logic", label: "Question with logic", desc: "Opened from a question: the Logic dialog focused on that question — a low earlier answer plus a manager-only rule" },
+  { key: "follow-up-library", label: "Follow-up from the library", desc: "The question library as a picker: one click adds the follow-up question and closes" },
   { key: "logic-overview", label: "Logic: all questions", desc: "From the bar's Logic button: every topic and question on the rail, one topic set to managers only" },
   { key: "logic-broken", label: "Broken logic", desc: "A rule points to a removed question: red Logic tag on the row, red badge and an error in the dialog" },
   { key: "topic-dialog", label: "Topic settings", desc: "Participant intro screen" },

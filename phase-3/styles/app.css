@@ -581,6 +581,14 @@ button.sel-btn.cq-sel { font-size: 14px; }
   min-height: 59px; border-top: 1px solid var(--border-base); cursor: pointer;
   transition: background var(--motion-fast) var(--ease-standard); }
 .aql-row:hover { background: var(--bg-base-hover); }
+/* Picking ONE follow-up question: a click on a row adds it and closes the
+   dialog — no checkboxes, no select-all, no creating (that's the other
+   menu item); questions already in the questionnaire can't be picked. */
+.is-pick-one .aql-check, .is-pick-one .aql-selectall, .is-pick-one .eq-create-q,
+.is-pick-one [aria-label="Create question"] { display: none; }
+.is-pick-one .aql-row { cursor: pointer; }
+.is-pick-one .aql-row:has(.aql-check.is-disabled) { cursor: default; opacity: .5; }
+.is-pick-one .aql-row:has(.aql-check.is-disabled):hover { background: none; }
 /* Room either side inside the list, so a row's hover fill wraps its icon and
    Add button instead of stopping flush against them; group headers get the
    same inset so everything keeps one left and right edge. */

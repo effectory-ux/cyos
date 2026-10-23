@@ -633,6 +633,18 @@ export function App() {
         }, { dialog: key === "logic-overview" ? "logic" : "question-logic", arg: target.id });
         break;
       }
+      case "follow-up-library": {
+        // The question library as a picker for ONE follow-up question: opened
+        // from a scale question's Logic, answers "Strongly disagree" chosen.
+        const sv = draftSurvey(); if (!sv) break;
+        const sel = new Set(sv.selectedIds);
+        const trigger = sv.pool.find(x => !x.custom && !x.required && x.type === "scale5" && sel.has(x.id));
+        if (!trigger) break;
+        openBuilder(sv);
+        startFollowUp({ trigger: trigger.id, triggerText: trigger.text, topic: trigger.topic, topicLabel: trigger.topic,
+          op: "is", answers: [0], answersText: "Strongly disagree", source: "library", pickAnswers: false, created: [] });
+        break;
+      }
       case "logic-broken": {
         // The guardrail state: a finished rule whose trigger question was
         // removed afterwards — red Logic tag on the row, red badge and an
@@ -762,6 +774,7 @@ export function App() {
           qMeta={survey.qMeta} onUpdateQMeta={updateQMeta} onMoveTopic={moveQuestionTopic} onAddTopic={addTopic} translationsFor={questionI18n}
           initialTab={editTab} nav={variantsOn.dialogGrouped ? "group" : "sidebar"}
           addToTopic={editTarget} followUp={followUpInfo} topicOptions={surveyTopicOptions()}
+          onPickOne={followUpInfo ? (q) => { setEditing(false); setEditTarget(null); afterClose(() => addQuestionsToSurvey([q])); } : undefined}
           onCommitCustom={addCustomKeepOpen} onCommitCustomEdit={saveCustomEdit} autoTopic={OTHER_TOPIC}
           onClose={() => { setEditing(false); setEditTarget(null); }}
           onSave={(ids, pool, summary) => { saveQuestions(ids, pool, summary); setEditTarget(null); }} />
