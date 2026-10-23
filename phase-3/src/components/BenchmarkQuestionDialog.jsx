@@ -454,11 +454,6 @@ function LogicRulePane({ selected, logic, earlier, showErrors, noun = "question"
       </div>
       </div>
       {answer && audience && <span className="lgc-hint">Both must match for the {noun} to show</span>}
-      {(answer || audience) && (
-        <button type="button" className="btn btn-secondary lgc-reset" onClick={() => emit(null, null)}>
-          Remove all conditions
-        </button>
-      )}
       {followUpBlock}
     </>
   );

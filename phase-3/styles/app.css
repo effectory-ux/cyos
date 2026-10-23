@@ -2416,7 +2416,6 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .lgc-row { display: flex; gap: 8px; flex: 1 1 100%; min-width: 0; }
 .lgc-row > .cq-menu-wrap:first-child { flex: none; }
 .lgc-row > .cq-menu-wrap.is-block { flex: 1; min-width: 0; }
-.lgc-reset { align-self: flex-start; }
 /* Follow-up questions: the forward flow. */
 .lgc-fu { display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
   padding-top: 24px; border-top: 1px solid var(--border-base); }
@@ -2452,11 +2451,12 @@ button.infotag { border: 0; font-family: inherit; font-size: 12px; font-weight: 
 .lgc-hint { font-size: 12px; line-height: 18px; color: var(--content-secondary); }
 .lgc-err { font-size: 12px; line-height: 18px; color: var(--content-negative); }
 .lgc-card .lgc-hint, .lgc-card .lgc-err { flex: 1 1 100%; }
-/* The pane-level hint and the reset button belong right under the cards, not
+/* The pane-level hint belongs right under the cards, not
    spread over the pane's 32px rhythm. */
 .lgc-main > .lgc-hint { margin-top: -16px; }
-.lgc-main > .lgc-reset { margin-top: -8px; }
 /* The inherited-from-the-topic note and the locked explanation are DS inline
    notifications; in the big pane they sit close under the heading. */
 .lgc-dialog .lgc-main > .inline-notif { margin-top: -16px; }
-.lgc-dialog .dialog-footer { padding: 16px 24px; border-top: 1px solid var(--border-base); }
+/* The dialog is full-bleed (padding 0), so the footer carries the standard
+   dialog spacing itself: 24px above, 32px at the edges — like every dialog. */
+.lgc-dialog .dialog-footer { padding: 24px 32px 32px; }
